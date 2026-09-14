@@ -1,0 +1,6 @@
+{
+  "name": "Education Concept",
+  "description": "A complete, production-ready educational PDF and e-notes platform to search, read, and download curated study materials across diverse subjects.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
