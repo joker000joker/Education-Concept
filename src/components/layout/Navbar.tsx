@@ -5,6 +5,7 @@ import { HamburgerDrawer } from './HamburgerDrawer';
 import { EditProfileModal } from '../profile/EditProfileModal';
 import { ChangePasswordModal } from '../profile/ChangePasswordModal';
 import { SettingsModal } from '../profile/SettingsModal';
+import { PWAInstallButton } from '../common/PWAInstallButton';
 import {
   GraduationCap,
   Search,
@@ -117,6 +118,8 @@ export const Navbar: React.FC = () => {
 
             {/* Right Actions & Hamburger Button (visible on both Desktop & Mobile) */}
             <div className="flex items-center gap-2 sm:gap-3">
+              <PWAInstallButton />
+              
               {/* Desktop quick auth / profile preview */}
               <div className="hidden sm:flex items-center gap-2">
                 {user ? (
