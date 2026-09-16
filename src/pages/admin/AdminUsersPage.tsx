@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { BackButton } from '../../components/common/BackButton';
 import { useToast } from '../../context/ToastContext';
 import { Users, Search, ShieldCheck, User, RefreshCw, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -78,6 +79,9 @@ export const AdminUsersPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <div className="mb-2">
+        <BackButton fallbackTo="/admin" label="Back to Dashboard" forceFallback={true} />
+      </div>
       {/* Header & Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-center">

@@ -6,17 +6,21 @@ interface BackButtonProps {
   label?: string;
   fallbackTo?: string;
   className?: string;
+  forceFallback?: boolean;
 }
 
 export const BackButton: React.FC<BackButtonProps> = ({
   label = 'Back',
   fallbackTo = '/',
   className = '',
+  forceFallback = false,
 }) => {
   const navigate = useNavigate();
 
   const handleBack = () => {
-    if (window.history.length > 1) {
+    if (forceFallback) {
+      navigate(fallbackTo);
+    } else if (window.history.length > 1) {
       navigate(-1);
     } else {
       navigate(fallbackTo);

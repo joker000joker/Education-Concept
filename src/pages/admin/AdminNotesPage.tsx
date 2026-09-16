@@ -12,6 +12,7 @@ import { INITIAL_CATEGORIES } from '../../data/categories';
 import { useToast } from '../../context/ToastContext';
 import { EditNoteModal } from '../../components/admin/EditNoteModal';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
+import { BackButton } from '../../components/common/BackButton';
 import {
   Search,
   Plus,
@@ -130,6 +131,9 @@ export const AdminNotesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <div className="mb-2">
+        <BackButton fallbackTo="/admin" label="Back to Dashboard" forceFallback={true} />
+      </div>
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

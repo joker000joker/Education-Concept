@@ -1,94 +1,67 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { GraduationCap, BookOpen, ShieldCheck, Heart } from 'lucide-react';
-import { INITIAL_CATEGORIES } from '../../data/categories';
+import { Link, useLocation } from 'react-router-dom';
+import { GraduationCap } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+  const location = useLocation();
+  const normalizedPath = location.pathname.replace(/\/$/, '') || '/';
+  const showFooter = normalizedPath === '/' || normalizedPath === '/tests';
+
+  if (!showFooter) return null;
+
   return (
-    <footer className="bg-slate-900 text-slate-300 border-t border-slate-800 mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-12">
-          {/* Brand & Purpose */}
-          <div className="md:col-span-1 space-y-4">
+    <footer className="bg-slate-950 border-t border-slate-800/80 mt-12 md:mt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 md:gap-12">
+          
+          {/* Brand */}
+          <div className="flex flex-col gap-1.5 shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                <GraduationCap className="w-5 h-5" />
+              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                <GraduationCap className="w-4 h-4" />
               </div>
-              <span className="text-lg font-extrabold text-white tracking-tight">
+              <span className="text-base font-extrabold text-white tracking-tight">
                 EDUCATION CONCEPT
               </span>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              A high-performance educational platform providing students and aspirants with syllabus-aligned, structured PDF notes and e-notes across 12 key disciplines.
+            <p className="text-xs font-medium text-slate-400 md:ml-10">
+              Smart learning. Focused preparation.
             </p>
-            <div className="pt-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                Verified Educational Materials
-              </span>
-            </div>
           </div>
 
-          {/* Core Subjects Quick Access */}
-          <div className="md:col-span-2">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">
-              Explore Subjects
+          {/* Quick Access */}
+          <div className="w-full md:w-auto">
+            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 md:hidden">
+              Quick Access
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {INITIAL_CATEGORIES.map((cat) => (
-                <Link
-                  key={cat.id}
-                  to={`/subjects/${encodeURIComponent(cat.name.toLowerCase().replace(/\s+/g, '-'))}`}
-                  className="text-xs text-slate-400 hover:text-white transition-colors truncate"
-                >
-                  {cat.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Links & Platform */}
-          <div>
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">
-              Quick Links
-            </h4>
-            <ul className="space-y-2 text-xs text-slate-400">
+            <ul className="grid grid-cols-2 sm:flex sm:flex-row gap-x-4 gap-y-3 sm:gap-6 lg:gap-8 text-[13px] font-semibold text-slate-300">
               <li>
-                <Link to="/" className="hover:text-white transition-colors">
-                  Home
-                </Link>
+                <Link to="/paid-ebooks" className="hover:text-white transition-colors">Paid E-Books</Link>
               </li>
               <li>
-                <Link to="/subjects" className="hover:text-white transition-colors">
-                  All Subjects
-                </Link>
+                <Link to="/free-ebooks" className="hover:text-white transition-colors">Free E-Books</Link>
               </li>
               <li>
-                <Link to="/notes" className="hover:text-white transition-colors">
-                  Search & Browse Notes
-                </Link>
+                <Link to="/notes" className="hover:text-white transition-colors">Notes</Link>
               </li>
               <li>
-                <Link to="/login" className="hover:text-white transition-colors">
-                  Student Login
-                </Link>
+                <Link to="/current-affairs" className="hover:text-white transition-colors">Current Affairs</Link>
               </li>
               <li>
-                <Link to="/signup" className="hover:text-white transition-colors">
-                  Register Account
-                </Link>
+                <Link to="/tests" className="hover:text-white transition-colors">Tests</Link>
               </li>
             </ul>
           </div>
         </div>
-
-        <div className="mt-12 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} Education Concept. All rights reserved.</p>
-          <p className="flex items-center gap-1">
-            Built for learners and educators with clean digital resources.
+        
+        {/* Bottom Line */}
+        <div className="mt-8 pt-6 border-t border-slate-800/60 flex items-center justify-center md:justify-start">
+          <p className="text-[11px] font-medium text-slate-500 tracking-wide">
+            © 2026 Education Concept • All Rights Reserved
           </p>
         </div>
       </div>
     </footer>
   );
 };
+

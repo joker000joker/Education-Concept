@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BackButton } from '../../components/common/BackButton';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Category } from '../../types';
@@ -150,6 +151,9 @@ export const AdminUploadPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      <div className="mb-2">
+        <BackButton fallbackTo="/admin/notes" label="Back to Notes" forceFallback={true} />
+      </div>
       <div>
         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
           Upload Educational PDF Note

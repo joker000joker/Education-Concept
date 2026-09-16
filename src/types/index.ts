@@ -39,3 +39,110 @@ export interface CategoryMeta {
   borderColor: string;
   description: string;
 }
+
+export interface PaidEbook {
+  id: number;
+  title: string;
+  description: string | null;
+  category: string;
+  price: number;
+  file_path: string;
+  file_name: string;
+  file_size: number | null;
+  cover_image_path: string | null;
+  published: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+export interface FreeEbook {
+  id: number;
+  title: string;
+  description: string | null;
+  category: string;
+  file_path: string;
+  file_name: string;
+  file_size: number | null;
+  cover_image_path: string | null;
+  published: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+export interface CurrentAffair {
+  id: number;
+  title: string;
+  file_path: string;
+  file_name: string;
+  file_size: number | null;
+  published: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+export interface ExamPattern {
+  id: number;
+  exam_category: string;
+  exam_name: string;
+  pattern_file_path: string | null;
+  syllabus_file_path: string | null;
+  published: boolean;
+  created_at: string;
+}
+
+export interface StudyResource {
+  id: number;
+  title: string;
+  category: string;
+  file_path: string;
+  file_name: string;
+  file_size: number | null;
+  published: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+export interface Question {
+  id: number;
+  question_text: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_answer: string;
+  explanation: string | null;
+  subject: string | null;
+  chapter: string | null;
+  difficulty: string | null;
+  created_at: string;
+}
+
+export interface Test {
+  id: number;
+  title: string;
+  test_type: string;
+  subject: string | null;
+  chapter: string | null;
+  exam_name: string | null;
+  duration_minutes: number | null;
+  is_free: boolean;
+  price: number | null;
+  published: boolean;
+  scheduled_time: string | null;
+  created_at: string;
+}
+
+export interface Banner {
+  id: number;
+  section: string;
+  image_path: string;
+  link_url: string | null;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface AppSetting {
+  key: string;
+  value: string;
+}
