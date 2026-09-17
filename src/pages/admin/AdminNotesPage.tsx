@@ -151,7 +151,7 @@ export const AdminNotesPage: React.FC = () => {
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-xs shadow-blue-600/20 transition-colors self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>Upload New Note</span>
+          <span>Upload New PDF</span>
         </Link>
       </div>
 
@@ -249,7 +249,7 @@ export const AdminNotesPage: React.FC = () => {
                       <td className="py-3.5 px-4 max-w-xs">
                         <div className="font-bold text-slate-900 line-clamp-1">{note.title}</div>
                         <div className="text-[11px] text-blue-600 font-semibold mt-0.5">
-                          {note.category?.name || 'General'}
+                          {note.category_id === 9 ? 'Other E-Notes' : (note.category?.name || 'General')}
                         </div>
                       </td>
 
@@ -334,7 +334,7 @@ export const AdminNotesPage: React.FC = () => {
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                        {note.category?.name || 'General'}
+                        {note.category_id === 9 ? 'Other E-Notes' : (note.category?.name || 'General')}
                       </span>
                       <button
                         onClick={() => handleTogglePublish(note)}
@@ -404,7 +404,7 @@ export const AdminNotesPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Upload New Note</span>
+            <span>Upload New PDF</span>
           </Link>
         </div>
       )}

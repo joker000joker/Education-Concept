@@ -11,6 +11,30 @@ export const isSupabaseConfigured = Boolean(
   !SUPABASE_URL.includes('your-project')
 );
 
+// Resilient fetch wrapper with automatic retry for transient network hiccups
+const resilientFetch: typeof fetch = async (input, init) => {
+  const maxRetries = 2;
+  let attempt = 0;
+  while (attempt <= maxRetries) {
+    try {
+      return await fetch(input, init);
+    } catch (err: any) {
+      const isTransient =
+        attempt < maxRetries &&
+        (err?.name === 'TypeError' ||
+          String(err?.message || err).toLowerCase().includes('failed to fetch') ||
+          String(err?.message || err).toLowerCase().includes('network'));
+      if (isTransient) {
+        attempt++;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+        continue;
+      }
+      throw err;
+    }
+  }
+  return fetch(input, init);
+};
+
 export const supabase: SupabaseClient = createClient(
   isSupabaseConfigured ? SUPABASE_URL : 'https://placeholder.supabase.co',
   isSupabaseConfigured ? SUPABASE_KEY : 'placeholder-anon-key',
@@ -19,6 +43,9 @@ export const supabase: SupabaseClient = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+    },
+    global: {
+      fetch: resilientFetch,
     },
   }
 );
@@ -108,7 +135,7 @@ export async function fetchUserProfileAndRole(userId: string): Promise<{
   };
 }
 
-// Category service
+// Category service (Notes categories only; Current Affairs is a separate module)
 export async function getCategories(): Promise<Category[]> {
   if (!isSupabaseConfigured) return [];
   try {
@@ -121,7 +148,10 @@ export async function getCategories(): Promise<Category[]> {
       console.warn('Error fetching categories:', error.message);
       return [];
     }
-    return (data || []) as Category[];
+    // Exclude Current Affairs so Notes contains only academic disciplines
+    return ((data || []) as Category[]).filter(
+      (c) => c.name.toLowerCase() !== 'current affairs' && c.id !== 9
+    );
   } catch (err) {
     console.error('Error fetching categories:', err);
     return [];
@@ -181,8 +211,11 @@ export async function fetchNotes(options: FetchNotesOptions = {}): Promise<{ not
     const { data, error, count } = await query;
 
     if (error) {
-      console.error('Error fetching notes:', error.message);
-      throw error;
+      console.warn('[Supabase] Warning fetching notes:', error.message || error);
+      return {
+        notes: [],
+        count: 0,
+      };
     }
 
     return {
@@ -190,8 +223,50 @@ export async function fetchNotes(options: FetchNotesOptions = {}): Promise<{ not
       count: count || 0,
     };
   } catch (err) {
-    console.error('fetchNotes error:', err);
-    throw err;
+    console.warn('[Supabase] Exception in fetchNotes:', err);
+    return {
+      notes: [],
+      count: 0,
+    };
+  }
+}
+
+
+export async function fetchFreeEbookById(id: number | string): Promise<any | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data, error } = await supabase
+      .from('free_ebooks')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) {
+      console.warn('[Supabase] Warning fetching free ebook by id:', error.message || error);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.warn('[Supabase] Exception in fetchFreeEbookById:', err);
+    return null;
+  }
+}
+
+export async function fetchCurrentAffairById(id: number | string): Promise<any | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data, error } = await supabase
+      .from('current_affairs')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) {
+      console.warn('[Supabase] Warning fetching current affair by id:', error.message || error);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.warn('[Supabase] Exception in fetchCurrentAffairById:', err);
+    return null;
   }
 }
 
@@ -205,13 +280,13 @@ export async function fetchNoteById(id: number | string): Promise<Note | null> {
       .single();
 
     if (error) {
-      console.error('Error fetching note by id:', error.message);
+      console.warn('[Supabase] Warning fetching note by id:', error.message || error);
       return null;
     }
 
     return data as Note;
   } catch (err) {
-    console.error('fetchNoteById error:', err);
+    console.warn('[Supabase] Exception in fetchNoteById:', err);
     return null;
   }
 }
@@ -328,11 +403,52 @@ export async function uploadPdfFile(
     .upload(filePath, file, {
       cacheControl: '3600',
       upsert: false,
-      contentType: 'application/pdf',
+      contentType: file.type || 'application/pdf',
     });
 
   if (uploadError) {
     throw new Error(`Upload error: ${uploadError.message}`);
+  }
+
+  return {
+    filePath,
+    fileName: file.name,
+    fileSize: file.size,
+  };
+}
+
+export async function uploadBannerImage(
+  file: File
+): Promise<{ filePath: string; fileName: string; fileSize: number }> {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase credentials are not configured.');
+  }
+
+  // Validate supported image formats
+  const validMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+  if (!validMimes.includes(file.type.toLowerCase())) {
+    throw new Error('Unsupported format. Please select a JPG, PNG, or WEBP image.');
+  }
+
+  // Max 10MB
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error('Image file size exceeds 10MB limit.');
+  }
+
+  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  const filePath = `banners/${uniqueId}-${cleanName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type || 'image/jpeg',
+    });
+
+  if (uploadError) {
+    throw new Error(`Banner upload error: ${uploadError.message}`);
   }
 
   return {

@@ -305,103 +305,177 @@ export const AdminPaidEbooksPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-              <tr>
-                <th className="px-6 py-4">Title & Details</th>
-                <th className="px-6 py-4">Category</th>
-                <th className="px-6 py-4">Price</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Order</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-blue-500 mx-auto" />
-                  </td>
-                </tr>
-              ) : filteredEbooks.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                    <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                    <p className="font-medium text-slate-700">No Paid E-Books found</p>
-                    <p className="text-xs">Adjust your filters or add a new one.</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredEbooks.map((ebook) => (
-                  <tr key={ebook.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
-                          {ebook.cover_image_path ? (
-                            <div className="w-full h-full bg-slate-200 text-[10px] flex items-center justify-center text-slate-400">Cover</div>
-                          ) : (
-                            <ImageIcon className="w-5 h-5 text-slate-400" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900 line-clamp-1 max-w-[200px]">{ebook.title}</p>
-                          <p className="text-[11px] text-slate-500 mt-0.5 max-w-[200px] truncate">{ebook.file_name} • {formatBytes(ebook.file_size)}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide uppercase bg-slate-100 text-slate-700">
-                        {CATEGORIES.find(c => c.value === ebook.category)?.label || ebook.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-bold text-slate-800">
-                      ₹{ebook.price}
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleTogglePublish(ebook)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                          ebook.published
-                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
-                            : 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300'
-                        }`}
-                      >
-                        {ebook.published ? (
-                          <><CheckCircle2 className="w-3 h-3" /><span>Published</span></>
-                        ) : (
-                          <><FileQuestion className="w-3 h-3" /><span>Draft</span></>
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600 font-medium">
-                      {ebook.display_order}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleOpenEdit(ebook)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeletingEbook(ebook)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Content: Desktop Table & Mobile Cards */}
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-2xs">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-2" />
+          <p className="text-sm text-slate-500 font-medium">Loading e-books...</p>
         </div>
-      </div>
+      ) : filteredEbooks.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-2xs">
+          <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <p className="font-medium text-slate-700">No Paid E-Books found</p>
+          <p className="text-xs text-slate-400 mt-1">Adjust your filters or add a new one.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Desktop Table View (Hidden on mobile) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                  <tr>
+                    <th className="px-6 py-4">Title & Details</th>
+                    <th className="px-6 py-4">Category</th>
+                    <th className="px-6 py-4">Price</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Order</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredEbooks.map((ebook) => (
+                    <tr key={ebook.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
+                            {ebook.cover_image_path ? (
+                              <div className="w-full h-full bg-slate-200 text-[10px] flex items-center justify-center text-slate-400">Cover</div>
+                            ) : (
+                              <ImageIcon className="w-5 h-5 text-slate-400" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 line-clamp-1 max-w-[200px]">{ebook.title}</p>
+                            <p className="text-[11px] text-slate-500 mt-0.5 max-w-[200px] truncate">{ebook.file_name} • {formatBytes(ebook.file_size)}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide uppercase bg-slate-100 text-slate-700">
+                          {CATEGORIES.find(c => c.value === ebook.category)?.label || ebook.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-bold text-slate-800">
+                        ₹{ebook.price}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => handleTogglePublish(ebook)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                            ebook.published
+                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
+                              : 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300'
+                          }`}
+                        >
+                          {ebook.published ? (
+                            <><CheckCircle2 className="w-3 h-3" /><span>Published</span></>
+                          ) : (
+                            <><FileQuestion className="w-3 h-3" /><span>Draft</span></>
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 font-medium">
+                        {ebook.display_order}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleOpenEdit(ebook)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingEbook(ebook)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Cards View (Optimized for narrow screens, zero horizontal overflow) */}
+          <div className="grid grid-cols-1 gap-3.5 md:hidden">
+            {filteredEbooks.map((ebook) => (
+              <div
+                key={ebook.id}
+                className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-3"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
+                    {ebook.cover_image_path ? (
+                      <div className="w-full h-full bg-slate-200 text-[10px] flex items-center justify-center text-slate-500 font-medium">Cover</div>
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-slate-900 text-sm break-words leading-snug">
+                      {ebook.title}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-1 break-words">
+                      {ebook.file_name} • {formatBytes(ebook.file_size)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase bg-slate-100 text-slate-700">
+                      {CATEGORIES.find(c => c.value === ebook.category)?.label || ebook.category}
+                    </span>
+                    <span className="font-extrabold text-slate-900 text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
+                      ₹{ebook.price}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      Order: {ebook.display_order}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => handleTogglePublish(ebook)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer min-h-[32px] ${
+                      ebook.published
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        : 'bg-amber-100 text-amber-800 border border-amber-300'
+                    }`}
+                  >
+                    {ebook.published ? (
+                      <><CheckCircle2 className="w-3 h-3" /><span>Published</span></>
+                    ) : (
+                      <><FileQuestion className="w-3 h-3" /><span>Draft</span></>
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    onClick={() => handleOpenEdit(ebook)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors min-h-[44px]"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => setDeletingEbook(ebook)}
+                    className="flex items-center justify-center p-2.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-colors min-w-[44px] min-h-[44px]"
+                    title="Delete E-Book"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Modal */}
       {isModalOpen && (

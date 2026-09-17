@@ -21,9 +21,13 @@ export const EditNoteModal: React.FC<EditNoteModalProps> = ({
 }) => {
   if (!isOpen || !note) return null;
 
+  const initialCatId = categories.some((c) => c.id === note.category_id)
+    ? note.category_id
+    : (categories.find((c) => c.id === 12)?.id || categories[0]?.id || 1);
+
   const [title, setTitle] = useState(note.title);
   const [description, setDescription] = useState(note.description || '');
-  const [categoryId, setCategoryId] = useState(note.category_id);
+  const [categoryId, setCategoryId] = useState(initialCatId);
   const [published, setPublished] = useState(note.published);
   const [newFile, setNewFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);

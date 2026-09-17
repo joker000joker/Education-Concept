@@ -38,10 +38,15 @@ import { AdminNotesPage } from './pages/admin/AdminNotesPage';
 import { AdminUploadPage } from './pages/admin/AdminUploadPage';
 
 import { 
-  AdminFreeEbooksPage, AdminCurrentAffairsPage, 
-  AdminExamPatternPage, AdminStudyResourcesPage, AdminQuestionsPage,
-  AdminTestsPage, AdminTestPassPage, AdminBannersPage, AdminRecommendationsPage
+  AdminFreeEbooksPage, 
+  AdminQuestionsPage,
+  AdminTestsPage, AdminTestPassPage
 } from './pages/admin/AdminDynamicPages';
+import { AdminRecommendationsPage } from './pages/admin/AdminRecommendationsPage';
+import { AdminBannersPage } from './pages/admin/AdminBannersPage';
+import { AdminStudyResourcesPage } from './pages/admin/AdminStudyResourcesPage';
+import { AdminCurrentAffairsPage } from './pages/admin/AdminCurrentAffairsPage';
+import { AdminExamPatternPage } from './pages/admin/AdminExamPatternPage';
 import { AdminWhatsAppPage } from './pages/admin/AdminWhatsAppPage';
 import { AdminPaidEbooksPage } from './pages/admin/AdminPaidEbooksPage';
 import { AdminComingSoonPage } from './pages/admin/AdminComingSoonPage';
@@ -82,6 +87,8 @@ export default function App() {
                 <Route path="/syllabus/:category/:exam/:type" element={<SyllabusContentPage />} />
                 <Route path="/resources" element={<StudyResourcesPage />} />
                 <Route path="/resources/:category" element={<StudyResourcesListingPage />} />
+                <Route path="/study-resources" element={<StudyResourcesPage />} />
+                <Route path="/study-resources/:category" element={<StudyResourcesListingPage />} />
                 
                 {/* EC Test Routes */}
                 <Route path="/tests/*" element={<ComingSoonPage />} />

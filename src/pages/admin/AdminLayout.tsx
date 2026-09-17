@@ -63,34 +63,50 @@ export const AdminLayout: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-x-hidden md:overflow-x-visible">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-6 h-6 text-blue-600" />
-          <span className="font-bold text-slate-900">Admin Panel</span>
+      <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+        <div className="flex items-center gap-3">
+          <button 
+            id="admin-mobile-menu-toggle-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-1.5 -ml-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors focus:outline-hidden"
+            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-blue-600" />
+            <span className="font-bold text-slate-900 text-sm">Admin Panel</span>
+          </div>
         </div>
-        <button 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 -mr-2 text-slate-600 hover:bg-slate-100 rounded-lg"
-        >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        <BackButton fallbackTo="/" label="Exit" className="!px-2.5 !py-1 !text-xs" />
       </div>
 
-      {/* Sidebar */}
-      <div className={`
-        fixed md:sticky top-0 left-0 z-20 h-screen w-64 bg-white border-r border-slate-200 
-        transform transition-transform duration-200 ease-in-out flex flex-col
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
-        <div className="p-4 border-b border-slate-200 hidden md:block">
-          <div className="flex items-center gap-2 mb-4">
+      {/* Sidebar / Left Navigation Drawer on Mobile */}
+      <div 
+        id="admin-navigation-drawer"
+        className={`
+          fixed md:sticky inset-y-0 left-0 right-auto z-50 md:z-20 h-screen w-64 bg-white border-r border-slate-200 
+          flex flex-col shadow-2xl md:shadow-none
+          transition-transform duration-200 ease-in-out
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
+        <div className="p-4 border-b border-slate-200">
+          <div className="flex items-center justify-between mb-4">
             <BackButton fallbackTo="/" label="Exit" className="!px-2 !py-1 !text-xs" />
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="md:hidden p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              aria-label="Close navigation menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
           <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 border border-blue-100">
-            <ShieldCheck className="w-4 h-4 text-blue-600" />
-            <div className="flex flex-col">
+            <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+            <div className="flex flex-col min-w-0">
               <span className="text-xs font-bold text-blue-900">Admin Active</span>
               <span className="text-[10px] text-blue-600 truncate max-w-[160px]">{user.email}</span>
             </div>
@@ -155,8 +171,10 @@ export const AdminLayout: React.FC = () => {
       {/* Mobile overlay backdrop */}
       {mobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-slate-900/50 z-10 md:hidden"
+          id="admin-mobile-drawer-backdrop"
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 md:hidden transition-opacity duration-200"
           onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
         />
       )}
     </div>

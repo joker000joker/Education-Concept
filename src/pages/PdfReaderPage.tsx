@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Note } from '../types';
-import { fetchNoteById, getSecurePdfUrl, downloadNotePdf, formatBytes } from '../lib/supabase';
+import { fetchNoteById, fetchFreeEbookById, fetchCurrentAffairById, getSecurePdfUrl, downloadNotePdf, formatBytes } from '../lib/supabase';
 import { getCategoryMeta } from '../data/categories';
 import { BackButton } from '../components/common/BackButton';
 import { useToast } from '../context/ToastContext';
@@ -36,6 +36,8 @@ import {
 export const PdfReaderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const type = searchParams.get('type');
   const [note, setNote] = useState<Note | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -123,7 +125,16 @@ export const PdfReaderPage: React.FC = () => {
         setError(null);
 
         // Fetch note metadata
-        const noteData = await fetchNoteById(id);
+        let noteData;
+        if (type === 'current-affairs') {
+          noteData = await fetchCurrentAffairById(id);
+          if (noteData) noteData.category = { name: 'Current Affairs' };
+        } else if (type === 'free-ebooks') {
+          noteData = await fetchFreeEbookById(id);
+          if (noteData) noteData.category = { name: noteData.category || 'Free E-Book' };
+        } else {
+          noteData = await fetchNoteById(id);
+        }
         if (!noteData) {
           if (isMounted) {
             setError('Note not found or has been removed.');
@@ -229,7 +240,7 @@ export const PdfReaderPage: React.FC = () => {
     }
   };
 
-  const categoryName = note?.category?.name || 'General';
+  const categoryName = note?.category_id === 9 ? 'Other E-Notes' : (note?.category?.name || 'General');
   const categoryMeta = getCategoryMeta(categoryName);
 
   if (loading) {

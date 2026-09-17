@@ -66,8 +66,6 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const handleLogout = async () => {
     onClose();
     await signOut();
@@ -87,21 +85,31 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-hidden animate-in fade-in duration-200"
-      aria-modal="true"
+      id="hamburger-drawer-root"
+      className={`fixed inset-0 z-50 overflow-hidden transition-[visibility] ${
+        isOpen ? 'pointer-events-auto visible duration-0' : 'pointer-events-none invisible duration-300 delay-300'
+      }`}
+      aria-modal={isOpen ? 'true' : 'false'}
       role="dialog"
       aria-label="Application Navigation and Account Menu"
+      aria-hidden={!isOpen}
     >
       {/* Dimmed backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+        id="hamburger-drawer-backdrop"
+        className={`fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${
+          isOpen ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="fixed inset-y-0 left-0 right-auto max-w-full flex pr-10 pointer-events-none">
         <div
           ref={drawerRef}
-          className="w-screen max-w-sm sm:max-w-md bg-white shadow-2xl border-l border-slate-200 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-250 ease-out"
+          id="hamburger-drawer-panel"
+          className={`w-screen max-w-sm sm:max-w-md bg-white shadow-2xl border-r border-slate-200 flex flex-col justify-between overflow-y-auto pointer-events-auto transition-transform duration-300 ease-in-out transform ${
+            isOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
         >
           {/* Drawer Header */}
           <div>

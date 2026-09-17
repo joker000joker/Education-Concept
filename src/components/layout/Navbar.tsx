@@ -54,8 +54,10 @@ export const Navbar: React.FC = () => {
         <div className="lg:hidden flex items-center justify-between h-14 px-4">
           <div className="flex items-center gap-3">
             <button
+              id="main-mobile-hamburger-btn"
               onClick={() => setIsDrawerOpen(true)}
               className="p-1 hover:bg-blue-700 rounded-lg transition-colors"
+              aria-label="Open main menu"
             >
               <Menu className="w-6 h-6 text-white" />
             </button>

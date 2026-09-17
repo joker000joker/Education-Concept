@@ -140,9 +140,48 @@ export interface Banner {
   display_order: number;
   is_active: boolean;
   created_at: string;
+  updated_at?: string;
+  title?: string | null;
 }
 
 export interface AppSetting {
   key: string;
   value: string;
+}
+
+export type RecommendationContentType = 
+  | 'notes' 
+  | 'paid_ebooks' 
+  | 'free_ebooks' 
+  | 'current_affairs' 
+  | 'exam_patterns' 
+  | 'study_resources';
+
+export interface ResolvedRecommendationItem {
+  id: number;
+  title: string;
+  description?: string | null;
+  category?: string;
+  price?: number;
+  file_path?: string | null;
+  file_name?: string | null;
+  file_size?: number | null;
+  cover_image_path?: string | null;
+  published?: boolean;
+  destination_url: string;
+  pattern_file_path?: string | null;
+  syllabus_file_path?: string | null;
+  exam_category?: string;
+}
+
+export interface TopRecommendation {
+  id: number;
+  content_type: RecommendationContentType | string;
+  content_id: number;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+  resolved_item?: ResolvedRecommendationItem | null;
+  is_missing?: boolean;
 }

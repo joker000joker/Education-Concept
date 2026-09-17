@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BackButton } from '../components/common/BackButton';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
@@ -16,11 +16,16 @@ import {
   KeyRound,
   Settings,
   UserCheck,
+  BookOpen,
+  FileText,
+  Sparkles
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
   const { user, profile, isAdmin, signOut, loading, roleLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const tab = searchParams.get("tab");
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -29,6 +34,63 @@ export const ProfilePage: React.FC = () => {
     await signOut();
     navigate('/');
   };
+
+
+  // ---------------------------------------------------------
+  // EMPTY STATES FOR BOTTOM NAVIGATION TABS (NO PURCHASE YET)
+  // ---------------------------------------------------------
+  if (tab === 'notes') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 pb-32 min-h-[80vh] flex flex-col items-center justify-center space-y-6">
+        <div className="bg-white p-10 rounded-[2rem] border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-center max-w-md w-full relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+          <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100/50">
+            <BookOpen className="w-10 h-10 stroke-[1.5]" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">No Purchase Available</h2>
+          <p className="text-sm text-slate-500 mt-3 leading-relaxed">
+            You currently do not have any active purchased notes or study materials in your account.
+          </p>
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-[0_4px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_6px_16px_rgba(37,99,235,0.3)] transition-all active:scale-[0.98]"
+            >
+              Browse Education Concept
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === 'tests') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 pb-32 min-h-[80vh] flex flex-col items-center justify-center space-y-6">
+        <div className="bg-white p-10 rounded-[2rem] border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-center max-w-md w-full relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-400 to-indigo-600"></div>
+          <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-indigo-100/50 relative">
+            <FileText className="w-10 h-10 stroke-[1.5]" />
+            <div className="absolute -top-2 -right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-sm">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Tests Coming Soon</h2>
+          <p className="text-sm text-slate-500 mt-3 leading-relaxed">
+            We are actively building a state-of-the-art testing platform. Mock tests and performance analytics will be available in a future update.
+          </p>
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-xl text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 shadow-[0_4px_12px_rgba(15,23,42,0.15)] hover:shadow-[0_6px_16px_rgba(15,23,42,0.2)] transition-all active:scale-[0.98]"
+            >
+              Return Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading || roleLoading) {
     return (

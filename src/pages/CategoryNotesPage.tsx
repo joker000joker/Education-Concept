@@ -28,6 +28,17 @@ export const CategoryNotesPage: React.FC = () => {
 
   // Decode and match category name/id from route param
   const rawParam = categoryParam ? decodeURIComponent(categoryParam).toLowerCase() : '';
+
+  useEffect(() => {
+    if (
+      rawParam === '9' ||
+      rawParam === 'current-affairs' ||
+      rawParam === 'current affairs'
+    ) {
+      navigate('/current-affairs', { replace: true });
+    }
+  }, [rawParam, navigate]);
+
   const matchedCategory = useMemo(() => {
     // Try by ID first
     const numericId = parseInt(rawParam, 10);
@@ -60,10 +71,13 @@ export const CategoryNotesPage: React.FC = () => {
         });
 
         if (isMounted) {
-          setNotes(res.notes);
+          setNotes(res.notes || []);
         }
       } catch (err) {
-        console.error('Error fetching category notes:', err);
+        console.warn('Warning fetching category notes in CategoryNotesPage:', err);
+        if (isMounted) {
+          setNotes([]);
+        }
       } finally {
         if (isMounted) {
           setLoading(false);

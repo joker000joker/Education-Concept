@@ -96,18 +96,4 @@ export const AdminBannersPage = () => (
   />
 );
 
-export const AdminRecommendationsPage = () => (
-  <DynamicTableManager 
-    tableName="top_recommendations" 
-    title="Top Recommendations" 
-    fields={[
-      { name: 'content_type', label: 'Content Type', type: 'select', options: [
-        { value: 'notes', label: 'Note' },
-        { value: 'paid_ebooks', label: 'Paid E-Book' },
-        { value: 'tests', label: 'Test' }
-      ], required: true },
-      { name: 'content_id', label: 'Content ID', type: 'number', required: true },
-      { name: 'is_active', label: 'Active', type: 'boolean' }
-    ]} 
-  />
-);
+export { AdminRecommendationsPage } from './AdminRecommendationsPage';

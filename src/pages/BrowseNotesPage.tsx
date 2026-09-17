@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Note, Category } from '../types';
 import { INITIAL_CATEGORIES } from '../data/categories';
 import { fetchNotes, getCategories } from '../lib/supabase';
@@ -20,6 +20,7 @@ import {
 const PAGE_SIZE = 9;
 
 export const BrowseNotesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
   const initialCategory = searchParams.get('category') || 'all';
@@ -43,6 +44,17 @@ export const BrowseNotesPage: React.FC = () => {
       })
       .catch(() => {});
   }, []);
+
+  // Redirect legacy Current Affairs category requests to the dedicated Current Affairs module
+  useEffect(() => {
+    if (
+      initialCategory === '9' ||
+      initialCategory.toLowerCase() === 'current-affairs' ||
+      initialCategory.toLowerCase() === 'current affairs'
+    ) {
+      navigate('/current-affairs', { replace: true });
+    }
+  }, [initialCategory, navigate]);
 
   // Update query params when search / category changes
   useEffect(() => {
@@ -70,11 +82,15 @@ export const BrowseNotesPage: React.FC = () => {
         });
 
         if (isMounted) {
-          setNotes(res.notes);
-          setTotalCount(res.count);
+          setNotes(res.notes || []);
+          setTotalCount(res.count || 0);
         }
       } catch (err) {
-        console.error('Error fetching notes:', err);
+        console.warn('Warning fetching notes in BrowseNotesPage:', err);
+        if (isMounted) {
+          setNotes([]);
+          setTotalCount(0);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -150,7 +166,7 @@ export const BrowseNotesPage: React.FC = () => {
               aria-label="Filter by subject"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 bg-slate-50/50 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             >
-              <option value="all">All Subjects (12)</option>
+              <option value="all">All Subjects ({categories.length})</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id.toString()}>
                   {c.name}

@@ -18,7 +18,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, showCategoryBadge = tr
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const categoryName = note.category?.name || 'General';
+  const categoryName = note.category_id === 9 ? 'Other E-Notes' : (note.category?.name || 'General');
   const categoryMeta = getCategoryMeta(categoryName);
 
   const formattedDate = note.created_at

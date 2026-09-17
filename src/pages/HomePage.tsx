@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Category, Note } from '../types';
+import { Category, Note, TopRecommendation } from '../types';
 import { INITIAL_CATEGORIES } from '../data/categories';
-import { getCategories, fetchNotes } from '../lib/supabase';
+import { getCategories, fetchNotes, supabase, getSecurePdfUrl } from '../lib/supabase';
+import { fetchPublicRecommendations } from '../services/recommendationService';
 import { CategoryCard } from '../components/common/CategoryCard';
 import { NoteCard } from '../components/common/NoteCard';
+import { RecommendationCard } from '../components/common/RecommendationCard';
 import {
   Search,
   BookOpen,
@@ -37,11 +39,6 @@ import {
   CreateTestIcon
 } from '../components/icons/PremiumServiceIcons';
 
-const CAROUSEL_BANNERS = [
-  { id: 1, image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80', alt: 'Study Materials Banner', title: 'Study Materials Banner', subtitle: 'Discover premium resources tailored for competitive exam success.' },
-  { id: 2, image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80', alt: 'Test Series Banner', title: 'Test Series Banner', subtitle: 'Discover premium resources tailored for competitive exam success.' }
-];
-
 const MOBILE_TEST_CATEGORIES_ROW1 = [
   { id: 'daily-quiz', title: 'Daily Quiz', icon: DailyQuizIcon, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
   { id: 'chapter-wise', title: 'Chapter Wise Test', icon: ChapterTestIcon, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
@@ -52,11 +49,6 @@ const MOBILE_TEST_CATEGORIES_ROW2 = [
   { id: 'test-pass', title: 'Test Pass', icon: TestPassIcon, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
   { id: 'live-test', title: 'Live Test', icon: LiveTestIcon, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
   { id: 'create-test', title: 'Create Test', icon: CreateTestIcon, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
-];
-
-const PROMO_BANNERS = [
-  { id: 1, image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&ar=21:9&q=80', alt: 'Prepare effectively' },
-  { id: 2, image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&ar=21:9&q=80', alt: 'Unlock potential' }
 ];
 
 const SERVICES = [
@@ -77,19 +69,30 @@ const TEST_CATEGORIES = [
   { id: 'defense', title: 'Defense Exams', count: '55+ Tests', icon: ShieldCheck, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
 ];
 
-interface Banner {
+interface HomeBannerItem {
   id: number;
   image: string;
   alt: string;
-  title?: string;
-  subtitle?: string;
+  title?: string | null;
+  link_url?: string | null;
 }
 
-const Carousel = ({ banners, className = "mb-6", autoPlayInterval = 4000 }: { banners: Banner[], className?: string, autoPlayInterval?: number }) => {
+const Carousel = ({
+  banners,
+  fallbackVariant = 'notes',
+  className = "mb-6",
+  autoPlayInterval = 4000
+}: {
+  banners: HomeBannerItem[];
+  fallbackVariant?: 'notes' | 'test';
+  className?: string;
+  autoPlayInterval?: number;
+}) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
+    if (banners.length <= 1) return;
     const interval = setInterval(() => {
       if (scrollContainerRef.current) {
         const clientWidth = scrollContainerRef.current.clientWidth;
@@ -125,6 +128,31 @@ const Carousel = ({ banners, className = "mb-6", autoPlayInterval = 4000 }: { ba
     }
   };
 
+  // Clean, minimal fallbacks (16:9 ratio, no fake content)
+  if (banners.length === 0) {
+    if (fallbackVariant === 'test') {
+      return (
+        <div className={`w-full aspect-[16/9] rounded-2xl bg-gradient-to-r from-[#0C122A] via-[#151D42] to-[#1E2756] border border-[#1E2756] p-6 sm:p-8 flex flex-col justify-center text-white shadow-md relative overflow-hidden isolate ${className}`}>
+          <div className="relative z-10 max-w-xl">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-400/30 mb-2">
+              EC Test Series
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
+              Practice • Improve • Prepare
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-md">
+              Comprehensive mock tests, chapter-wise tests, and quizzes coming soon.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Gracefully hide the banner area when there are no published EC Notes banners.
+    // Do NOT show the old static "Distraction-Free Exam Preparation" banner.
+    return null;
+  }
+
   return (
     <div className={`w-full relative overflow-hidden rounded-2xl shadow-xs group isolate ${className}`}>
       <div 
@@ -132,35 +160,61 @@ const Carousel = ({ banners, className = "mb-6", autoPlayInterval = 4000 }: { ba
         onScroll={handleScroll}
         className="flex w-full overflow-x-auto snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       >
-        {banners.map((banner) => (
-          <div key={banner.id} className="w-full shrink-0 snap-center relative">
-            <img
-              src={banner.image}
-              alt={banner.alt}
-              className="w-full h-auto block rounded-2xl"
-            />
-            {(banner.title || banner.subtitle) && (
-              <>
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent rounded-2xl" />
-                <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6">
-                   {banner.title && <h3 className="text-white font-bold text-lg sm:text-2xl drop-shadow-md">{banner.title}</h3>}
-                   {banner.subtitle && <p className="text-white/90 text-xs sm:text-sm drop-shadow-sm mt-1 max-w-md">{banner.subtitle}</p>}
-                </div>
-              </>
-            )}
-          </div>
-        ))}
+        {banners.map((banner) => {
+          const content = (
+            <div className="w-full h-full relative">
+              <img
+                src={banner.image}
+                alt={banner.alt}
+                className="w-full h-full object-cover block rounded-2xl"
+                loading="lazy"
+              />
+              {banner.title && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent rounded-2xl pointer-events-none" />
+                  <div className="absolute bottom-3 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 pointer-events-none">
+                    <h3 className="text-white font-bold text-base sm:text-2xl drop-shadow-md line-clamp-1">{banner.title}</h3>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+
+          return (
+            <div
+              key={banner.id}
+              className="w-full shrink-0 snap-center relative aspect-[16/9] overflow-hidden rounded-2xl bg-slate-900"
+            >
+              {banner.link_url ? (
+                banner.link_url.startsWith('http') ? (
+                  <a href={banner.link_url} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                    {content}
+                  </a>
+                ) : (
+                  <Link to={banner.link_url} className="block w-full h-full">
+                    {content}
+                  </Link>
+                )
+              ) : (
+                content
+              )}
+            </div>
+          );
+        })}
       </div>
       {/* Scroll hints */}
-      <div className="absolute bottom-3 right-4 flex gap-1.5 z-10">
-         {banners.map((_, i) => (
-            <div 
+      {banners.length > 1 && (
+        <div className="absolute bottom-3 right-4 flex gap-1.5 z-10">
+          {banners.map((_, i) => (
+            <button 
               key={i} 
               onClick={() => scrollToSlide(i)}
               className={`w-2 h-2 rounded-full cursor-pointer transition-colors ${i === currentSlide ? 'bg-white' : 'bg-white/50 hover:bg-white/80'}`} 
+              aria-label={`Slide ${i + 1}`}
             />
-         ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -172,6 +226,9 @@ export const HomePage: React.FC = () => {
   );
   const [latestNotes, setLatestNotes] = useState<Note[]>([]);
   const [categoryCounts, setCategoryCounts] = useState<Record<number, number>>({});
+  const [topRecommendations, setTopRecommendations] = useState<TopRecommendation[]>([]);
+  const [notesBanners, setNotesBanners] = useState<HomeBannerItem[]>([]);
+  const [testBanners, setTestBanners] = useState<HomeBannerItem[]>([]);
   const [loading, setLoading] = useState(true);
   
   const navigate = useNavigate();
@@ -182,13 +239,20 @@ export const HomePage: React.FC = () => {
     const loadHomeData = async () => {
       try {
         setLoading(true);
-        // Load categories from Supabase (or fallback to INITIAL_CATEGORIES)
-        const [catData, notesResult] = await Promise.all([
+        // Load categories, notes, live active banners, and published recommendations in parallel
+        const [catData, notesResult, bannerRes, recommendationsData] = await Promise.all([
           getCategories().catch(() => []),
           fetchNotes({ publishedOnly: true, limit: 6, sortBy: 'newest' }).catch(() => ({
             notes: [],
             count: 0,
           })),
+          supabase
+            .from('banners')
+            .select('*')
+            .eq('is_active', true)
+            .order('display_order', { ascending: true })
+            .order('created_at', { ascending: false }),
+          fetchPublicRecommendations().catch(() => []),
         ]);
 
         if (isMounted) {
@@ -196,8 +260,9 @@ export const HomePage: React.FC = () => {
             setCategories(catData);
           }
           setLatestNotes(notesResult.notes);
+          setTopRecommendations(recommendationsData || []);
 
-          // Calculate counts by category if possible
+          // Calculate counts by category
           const counts: Record<number, number> = {};
           notesResult.notes.forEach((n) => {
             if (n.category_id) {
@@ -205,6 +270,51 @@ export const HomePage: React.FC = () => {
             }
           });
           setCategoryCounts(counts);
+
+          // Separate and resolve live active banners
+          const rawBanners = (bannerRes as any)?.data || [];
+          // Load only published/active banners belonging to the EC Notes section
+          const rawNotes = rawBanners.filter((b: any) => {
+            const sec = (b.section || '').trim().toLowerCase();
+            return sec === 'ec notes' || sec === 'home' || sec === 'notes';
+          });
+          const rawTest = rawBanners.filter((b: any) => {
+            const sec = (b.section || '').trim().toLowerCase();
+            return sec === 'ec test' || sec === 'test';
+          });
+
+          const resolveBannerItems = async (list: any[]): Promise<HomeBannerItem[]> => {
+            const items = await Promise.all(
+              list.map(async (b: any): Promise<HomeBannerItem | null> => {
+                if (!b.image_path) return null;
+                let imgUrl = '';
+                if (b.image_path.startsWith('http://') || b.image_path.startsWith('https://')) {
+                  imgUrl = b.image_path;
+                } else {
+                  imgUrl = (await getSecurePdfUrl(b.image_path, 3600)) || '';
+                }
+                if (!imgUrl) return null;
+                return {
+                  id: b.id,
+                  image: imgUrl,
+                  alt: b.title || 'Education Concept Banner',
+                  title: b.title || undefined,
+                  link_url: b.link_url,
+                };
+              })
+            );
+            return items.filter((item): item is HomeBannerItem => item !== null);
+          };
+
+          const [resolvedNotes, resolvedTest] = await Promise.all([
+            resolveBannerItems(rawNotes),
+            resolveBannerItems(rawTest),
+          ]);
+
+          if (isMounted) {
+            setNotesBanners(resolvedNotes);
+            setTestBanners(resolvedTest);
+          }
         }
       } catch (err) {
         console.error('Error loading homepage data:', err);
@@ -280,32 +390,78 @@ export const HomePage: React.FC = () => {
     </section>
   );
 
-  const renderTopRecommendations = () => (
-    <section className="mb-12">
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">⭐ Top Recommendations</h2>
-        <Link to="/notes" className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-          View All <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
+  const renderTopRecommendations = () => {
+    if (loading) {
+      return (
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <span className="text-amber-500">⭐</span> Top Recommendations
+            </h2>
+          </div>
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+          </div>
+        </section>
+      );
+    }
 
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-12 gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-        </div>
-      ) : latestNotes.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {latestNotes.map((note) => (
-            <NoteCard key={note.id} note={note} />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center text-slate-500 text-sm">
-          No recommendations available at the moment.
-        </div>
-      )}
-    </section>
-  );
+    // When admin has published top recommendations, render them dynamically
+    if (topRecommendations.length > 0) {
+      return (
+        <section id="top-recommendations-section" className="mb-12">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div>
+              <h2 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <span className="text-amber-500">⭐</span> Top Recommendations
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Handpicked, syllabus-aligned notes, e-books, and study resources.
+              </p>
+            </div>
+            <Link to="/notes" className="text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+              Explore All <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {topRecommendations.map((rec) => (
+              <RecommendationCard key={rec.id} recommendation={rec} />
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    // Clean fallback when top_recommendations has no published items yet
+    if (latestNotes.length > 0) {
+      return (
+        <section id="top-recommendations-section" className="mb-12">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div>
+              <h2 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <span className="text-amber-500">⭐</span> Top Recommendations
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Handpicked, syllabus-aligned study material.
+              </p>
+            </div>
+            <Link to="/notes" className="text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+              View All <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {latestNotes.map((note) => (
+              <NoteCard key={note.id} note={note} />
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    return null;
+  };
 
   const renderDesktopTests = () => (
     <section className="mb-12">
@@ -313,6 +469,10 @@ export const HomePage: React.FC = () => {
         <h2 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">EC Test Series</h2>
         <p className="text-sm text-slate-500 mt-1">Comprehensive mock tests for all major exams.</p>
       </div>
+
+      {testBanners.length > 0 && (
+        <Carousel banners={testBanners} fallbackVariant="test" className="mb-6" autoPlayInterval={5000} />
+      )}
       
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
         {TEST_CATEGORIES.map((test) => (
@@ -352,8 +512,8 @@ export const HomePage: React.FC = () => {
         ))}
       </div>
 
-      {/* PROMO SLIDER */}
-      <Carousel banners={PROMO_BANNERS} className="my-6" autoPlayInterval={5000} />
+      {/* EC TEST PROMO SLIDER (Live active banners from Supabase) */}
+      <Carousel banners={testBanners} fallbackVariant="test" className="my-6" autoPlayInterval={5000} />
 
       {/* Row 2 */}
       <div className="grid grid-cols-3 gap-3">
@@ -422,7 +582,7 @@ export const HomePage: React.FC = () => {
         <div className="lg:hidden space-y-8">
           {activeTab === 'notes' ? (
             <>
-              <Carousel banners={CAROUSEL_BANNERS} />
+              <Carousel banners={notesBanners} fallbackVariant="notes" />
               {renderServices()}
               {renderTopRecommendations()}
             </>
@@ -433,7 +593,7 @@ export const HomePage: React.FC = () => {
 
         {/* Desktop View */}
         <div className="hidden lg:block space-y-8">
-          <Carousel banners={CAROUSEL_BANNERS} />
+          <Carousel banners={notesBanners} fallbackVariant="notes" />
           {renderServices()}
           {renderECNotes()}
           {renderDesktopTests()}

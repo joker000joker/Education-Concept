@@ -74,15 +74,6 @@ export const INITIAL_CATEGORIES: CategoryMeta[] = [
     description: 'Botany, zoology, human anatomy, genetics, and ecology.',
   },
   {
-    id: 9,
-    name: 'Current Affairs',
-    iconName: 'Newspaper',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50 hover:bg-orange-100/80',
-    borderColor: 'border-orange-200',
-    description: 'Monthly roundups, government schemes, summits, and key news events.',
-  },
-  {
     id: 10,
     name: 'Hindi',
     iconName: 'BookOpenCheck',
@@ -113,10 +104,19 @@ export const INITIAL_CATEGORIES: CategoryMeta[] = [
 
 export function getCategoryMeta(idOrName: number | string): CategoryMeta {
   if (typeof idOrName === 'number') {
+    // Gracefully map legacy id 9 (Current Affairs) to Other E-Notes
+    if (idOrName === 9) {
+      const other = INITIAL_CATEGORIES.find((c) => c.id === 12);
+      if (other) return other;
+    }
     const found = INITIAL_CATEGORIES.find((c) => c.id === idOrName);
     if (found) return found;
   } else {
     const clean = idOrName.trim().toLowerCase();
+    if (clean === 'current affairs' || clean === 'current-affairs') {
+      const other = INITIAL_CATEGORIES.find((c) => c.id === 12);
+      if (other) return other;
+    }
     const found = INITIAL_CATEGORIES.find(
       (c) => c.name.toLowerCase() === clean || c.name.toLowerCase().replace(/\s+/g, '-') === clean
     );
