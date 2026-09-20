@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 
 interface BackButtonProps {
   label?: string;
+  to?: string;
   fallbackTo?: string;
   className?: string;
   forceFallback?: boolean;
@@ -11,19 +12,21 @@ interface BackButtonProps {
 
 export const BackButton: React.FC<BackButtonProps> = ({
   label = 'Back',
+  to,
   fallbackTo = '/',
   className = '',
   forceFallback = false,
 }) => {
   const navigate = useNavigate();
+  const target = to || fallbackTo;
 
   const handleBack = () => {
-    if (forceFallback) {
-      navigate(fallbackTo);
+    if (forceFallback || to) {
+      navigate(target);
     } else if (window.history.length > 1) {
       navigate(-1);
     } else {
-      navigate(fallbackTo);
+      navigate(target);
     }
   };
 

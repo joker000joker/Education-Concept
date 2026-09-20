@@ -185,3 +185,108 @@ export interface TopRecommendation {
   resolved_item?: ResolvedRecommendationItem | null;
   is_missing?: boolean;
 }
+
+export type SectionalSubject =
+  | 'Mathematics'
+  | 'Reasoning'
+  | 'English'
+  | 'Hindi'
+  | 'Current Affairs'
+  | 'History'
+  | 'Geography'
+  | 'Polity'
+  | 'Economics'
+  | 'Physics'
+  | 'Chemistry'
+  | 'Biology';
+
+export interface SectionalTest {
+  id: number;
+  title: string;
+  subject: SectionalSubject | string;
+  total_questions: number;
+  total_marks: number;
+  duration_minutes: number;
+  negative_marking: number;
+  published: boolean;
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  questions?: SectionalQuestion[];
+}
+
+export interface SectionalQuestion {
+  id?: number;
+  test_id?: number;
+  question_order: number;
+  question_text: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_option: 'A' | 'B' | 'C' | 'D' | string;
+  explanation?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TestAttemptResult {
+  testId: number;
+  testTitle: string;
+  subject: string;
+  totalQuestions: number;
+  totalMarks: number;
+  marksPerQuestion: number;
+  negativeMarking: number;
+  negativeMarksTotal?: number;
+  score: number;
+  percentage: number;
+  correctCount: number;
+  incorrectCount: number;
+  unattemptedCount: number;
+  accuracy: number;
+  timeTakenSeconds: number;
+  userAnswers: Record<number, string>;
+  submittedAt: string;
+}
+
+export interface StoredQuestionAnswer {
+  questionId?: number;
+  questionOrder: number;
+  questionText: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  selectedOption: string | null;
+  correctOption: string;
+  status: 'correct' | 'incorrect' | 'unattempted';
+  marksAwarded: number;
+  explanation?: string | null;
+}
+
+export interface SectionalTestResult {
+  id?: number | string;
+  test_id: number;
+  user_id: string;
+  score: number;
+  total_marks: number;
+  correct_answers: number;
+  incorrect_answers: number;
+  unattempted_answers: number;
+  accuracy: number;
+  negative_marks: number;
+  time_taken_seconds: number;
+  answers: {
+    questions: StoredQuestionAnswer[];
+    userAnswers: Record<number, string>;
+  };
+  completed_at: string;
+  created_at?: string;
+  updated_at?: string;
+  // UI helper fields
+  test_title?: string;
+  subject?: string;
+  percentage?: number;
+}
+

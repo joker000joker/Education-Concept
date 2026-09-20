@@ -6,6 +6,7 @@ import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { BottomNav } from './components/layout/BottomNav';
 import { EnvNotice } from './components/common/EnvNotice';
+import { ScrollToTop } from './components/common/ScrollToTop';
 
 // Pages
 import { HomePage } from './pages/HomePage';
@@ -30,6 +31,10 @@ import { ProfilePage } from './pages/ProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
 
 import { ComingSoonPage } from './pages/ComingSoonPage';
+import { TestsLandingPage } from './pages/TestsLandingPage';
+import { SectionalSubjectsPage } from './pages/sectional/SectionalSubjectsPage';
+import { SectionalSubjectTestsPage } from './pages/sectional/SectionalSubjectTestsPage';
+import { SectionalTestTakePage } from './pages/sectional/SectionalTestTakePage';
 
 // Admin Pages
 import { AdminLayout } from './pages/admin/AdminLayout';
@@ -50,20 +55,26 @@ import { AdminExamPatternPage } from './pages/admin/AdminExamPatternPage';
 import { AdminWhatsAppPage } from './pages/admin/AdminWhatsAppPage';
 import { AdminPaidEbooksPage } from './pages/admin/AdminPaidEbooksPage';
 import { AdminComingSoonPage } from './pages/admin/AdminComingSoonPage';
+import { AdminSectionalTestsPage } from './pages/admin/AdminSectionalTestsPage';
 
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <ToastProvider>
           <div className="min-h-screen flex flex-col bg-[#F4F8FF] md:bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white">
             {/* Status notice if environment secrets are pending */}
-            <EnvNotice />
+            <div className="env-notice-container">
+              <EnvNotice />
+            </div>
 
             {/* Sticky Navigation Bar */}
-            <Navbar />
+            <div className="global-navbar-container">
+              <Navbar />
+            </div>
 
             {/* Main Application Routes */}
             <main className="flex-1">
@@ -91,6 +102,10 @@ export default function App() {
                 <Route path="/study-resources/:category" element={<StudyResourcesListingPage />} />
                 
                 {/* EC Test Routes */}
+                <Route path="/tests" element={<TestsLandingPage />} />
+                <Route path="/tests/sectional" element={<SectionalSubjectsPage />} />
+                <Route path="/tests/sectional/:subject" element={<SectionalSubjectTestsPage />} />
+                <Route path="/tests/sectional/test/:testId" element={<SectionalTestTakePage />} />
                 <Route path="/tests/*" element={<ComingSoonPage />} />
                 
                 {/* Authentication & User Account */}
@@ -116,7 +131,7 @@ export default function App() {
                 <Route path="question-bank" element={<AdminQuestionsPage />} />
                 <Route path="daily-quiz" element={<AdminTestsPage />} />
                 <Route path="chapter-test" element={<AdminTestsPage />} />
-                <Route path="sectional-test" element={<AdminTestsPage />} />
+                <Route path="sectional-test" element={<AdminSectionalTestsPage />} />
                 <Route path="test-pass" element={<AdminTestPassPage />} />
                 <Route path="live-test" element={<AdminTestsPage />} />
                 <Route path="create-test" element={<AdminTestsPage />} />
@@ -138,12 +153,14 @@ export default function App() {
             </main>
 
             {/* Global Footer */}
-            <div className="pb-16 md:pb-0">
+            <div className="global-footer-container pb-16 md:pb-0">
               <Footer />
             </div>
 
             {/* Mobile Bottom Navigation */}
-            <BottomNav />
+            <div className="global-bottomnav-container">
+              <BottomNav />
+            </div>
           </div>
         </ToastProvider>
       </AuthProvider>

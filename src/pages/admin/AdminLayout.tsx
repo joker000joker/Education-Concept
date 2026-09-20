@@ -33,20 +33,27 @@ export const AdminLayout: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  const NavItem = ({ to, icon: Icon, label, exact = false }) => {
+  const NavItem = ({ to, icon: Icon, label, exact = false, badge = null }: { to: string; icon: any; label: string; exact?: boolean; badge?: string | null }) => {
     const active = isTabActive(to, exact);
     return (
       <Link
         to={to}
         onClick={() => setMobileMenuOpen(false)}
-        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+        className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
           active 
             ? 'bg-blue-50 text-blue-700' 
             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
         }`}
       >
-        <Icon className={`w-4 h-4 ${active ? 'text-blue-600' : 'text-slate-400'}`} />
-        {label}
+        <div className="flex items-center gap-3 min-w-0">
+          <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-400'}`} />
+          <span className="truncate">{label}</span>
+        </div>
+        {badge && (
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 shrink-0">
+            {badge}
+          </span>
+        )}
       </Link>
     );
   };
@@ -134,11 +141,11 @@ export const AdminLayout: React.FC = () => {
           </NavGroup>
 
           <NavGroup label="EC Test">
+            <NavItem to="/admin/sectional-test" icon={Grid} label="Sectional Tests" badge="Active" />
             <NavItem to="/admin/test-dashboard" icon={ClipboardList} label="Test Dashboard" />
             <NavItem to="/admin/question-bank" icon={Database} label="Question Bank" />
             <NavItem to="/admin/daily-quiz" icon={CheckSquare} label="Daily Quiz" />
             <NavItem to="/admin/chapter-test" icon={FileQuestion} label="Chapter Wise Test" />
-            <NavItem to="/admin/sectional-test" icon={Grid} label="Sectional Test" />
             <NavItem to="/admin/test-pass" icon={Ticket} label="Test Pass" />
             <NavItem to="/admin/live-test" icon={Radio} label="Live Test" />
             <NavItem to="/admin/create-test" icon={Edit3} label="Create Test" />

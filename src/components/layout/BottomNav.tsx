@@ -23,6 +23,11 @@ export const BottomNav: React.FC = () => {
   const path = location.pathname;
   const search = location.search;
 
+  // Safeguard: Never render mobile website bottom navigation while exam mode is active
+  if (typeof document !== 'undefined' && document.body.classList.contains('exam-mode-active')) {
+    return null;
+  }
+
   const navItems = [
     {
       label: 'Home',

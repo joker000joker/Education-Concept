@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Category, Note, TopRecommendation } from '../types';
 import { INITIAL_CATEGORIES } from '../data/categories';
 import { getCategories, fetchNotes, supabase, getSecurePdfUrl } from '../lib/supabase';
@@ -40,33 +40,75 @@ import {
 } from '../components/icons/PremiumServiceIcons';
 
 const MOBILE_TEST_CATEGORIES_ROW1 = [
-  { id: 'daily-quiz', title: 'Daily Quiz', icon: DailyQuizIcon, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-  { id: 'chapter-wise', title: 'Chapter Wise Test', icon: ChapterTestIcon, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  { id: 'sectional', title: 'Sectional Test', icon: SectionalTestIcon, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
+  { id: 'daily-quiz', title: 'Daily Quiz', icon: DailyQuizIcon, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', path: '/tests/daily-quiz', isActive: false },
+  { id: 'chapter-wise', title: 'Chapter Wise Test', icon: ChapterTestIcon, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', path: '/tests/chapter-wise', isActive: false },
+  { id: 'sectional', title: 'Sectional Test', icon: SectionalTestIcon, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', path: '/tests/sectional', isActive: true },
 ];
 
 const MOBILE_TEST_CATEGORIES_ROW2 = [
-  { id: 'test-pass', title: 'Test Pass', icon: TestPassIcon, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-  { id: 'live-test', title: 'Live Test', icon: LiveTestIcon, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
-  { id: 'create-test', title: 'Create Test', icon: CreateTestIcon, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
+  { id: 'test-pass', title: 'Test Pass', icon: TestPassIcon, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', path: '/tests/test-pass', isActive: false },
+  { id: 'live-test', title: 'Live Test', icon: LiveTestIcon, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200', path: '/tests/live-test', isActive: false },
+  { id: 'create-test', title: 'Create Test', icon: CreateTestIcon, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200', path: '/tests/create-test', isActive: false },
 ];
 
 const SERVICES = [
-  { id: 'paid-ebooks', title: 'Paid E-Books', mobileIcon: PaidEbooksIcon, desktopIcon: Book, color: 'text-rose-500', bg: 'bg-rose-100', path: '/paid-ebooks' },
-  { id: 'free-ebooks', title: 'Free E-Books', mobileIcon: FreeEbooksIcon, desktopIcon: BookOpen, color: 'text-green-500', bg: 'bg-green-100', path: '/free-ebooks' },
-  { id: 'current-affairs', title: 'Current Affairs', mobileIcon: CurrentAffairsIcon, desktopIcon: Globe, color: 'text-blue-500', bg: 'bg-blue-100', path: '/current-affairs' },
-  { id: 'notes', title: 'Notes', mobileIcon: NotesIcon, desktopIcon: FileText, color: 'text-purple-500', bg: 'bg-purple-100', path: '/subjects' },
-  { id: 'syllabus', title: 'Exam Pattern & Syllabus', mobileIcon: SyllabusIcon, desktopIcon: Briefcase, color: 'text-amber-500', bg: 'bg-amber-100', path: '/syllabus' },
-  { id: 'study-resources', title: 'Study Resources', mobileIcon: StudyResourcesIcon, desktopIcon: Library, color: 'text-cyan-500', bg: 'bg-cyan-100', path: '/resources' },
+  { id: 'paid-ebooks', title: 'Paid E-Books', icon: PaidEbooksIcon, color: 'text-rose-500', bg: 'bg-rose-100', path: '/paid-ebooks', subtitle: 'Curated E-Books' },
+  { id: 'free-ebooks', title: 'Free E-Books', icon: FreeEbooksIcon, color: 'text-green-500', bg: 'bg-green-100', path: '/free-ebooks', subtitle: 'Free Digital PDFs' },
+  { id: 'current-affairs', title: 'Current Affairs', icon: CurrentAffairsIcon, color: 'text-blue-500', bg: 'bg-blue-100', path: '/current-affairs', subtitle: 'Daily & Monthly' },
+  { id: 'notes', title: 'Notes', icon: NotesIcon, color: 'text-purple-500', bg: 'bg-purple-100', path: '/subjects', subtitle: '12 Disciplines' },
+  { id: 'syllabus', title: 'Exam Pattern & Syllabus', icon: SyllabusIcon, color: 'text-amber-500', bg: 'bg-amber-100', path: '/syllabus', subtitle: 'Official Syllabus' },
+  { id: 'study-resources', title: 'Study Resources', icon: StudyResourcesIcon, color: 'text-cyan-500', bg: 'bg-cyan-100', path: '/resources', subtitle: 'Reference Material' },
 ];
 
-const TEST_CATEGORIES = [
-  { id: 'banking', title: 'Banking Exams', count: '120+ Tests', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-  { id: 'ssc', title: 'SSC Exams', count: '85+ Tests', icon: FileCheck2, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  { id: 'railways', title: 'Railway Exams', count: '60+ Tests', icon: MonitorPlay, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
-  { id: 'state-pcs', title: 'State PCS', count: '45+ Tests', icon: Book, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
-  { id: 'teaching', title: 'Teaching Exams', count: '90+ Tests', icon: GraduationCap, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-  { id: 'defense', title: 'Defense Exams', count: '55+ Tests', icon: ShieldCheck, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
+const DESKTOP_TEST_MODULES = [
+  {
+    id: 'sectional',
+    title: 'Sectional Tests',
+    hindiTitle: 'सेक्शनल टेस्ट',
+    icon: SectionalTestIcon,
+    isActive: true,
+    badge: 'Active',
+    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    description: 'Subject-wise comprehensive tests covering all 12 core competitive disciplines with timed countdown & full performance analysis.',
+    link: '/tests/sectional',
+    ctaText: 'Start Sectional Test',
+  },
+  {
+    id: 'daily-quiz',
+    title: 'Daily Quiz',
+    hindiTitle: 'दैनिक क्विज़',
+    icon: DailyQuizIcon,
+    isActive: false,
+    badge: 'Coming Soon',
+    badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',
+    description: 'Daily quick mock sets with instant timer and explanation for daily speed revision and concept sharpening.',
+    link: '#',
+    ctaText: 'Coming Soon',
+  },
+  {
+    id: 'chapter-wise',
+    title: 'Chapter Wise Test',
+    hindiTitle: 'अध्याय-वार टेस्ट',
+    icon: ChapterTestIcon,
+    isActive: false,
+    badge: 'Coming Soon',
+    badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',
+    description: 'Chapter & topic specific assessment tests for targeted practice, question drills, and conceptual mastery.',
+    link: '#',
+    ctaText: 'Coming Soon',
+  },
+  {
+    id: 'test-pass',
+    title: 'Test Pass',
+    hindiTitle: 'टेस्ट पास',
+    icon: TestPassIcon,
+    isActive: false,
+    badge: 'Coming Soon',
+    badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',
+    description: 'All-access pass unlocking complete mock test series, sectional tests & previous year papers across all examinations.',
+    link: '#',
+    ctaText: 'Coming Soon',
+  },
 ];
 
 interface HomeBannerItem {
@@ -220,7 +262,10 @@ const Carousel = ({
 };
 
 export const HomePage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'notes' | 'test'>('notes');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'notes' | 'test'>(tabParam === 'test' ? 'test' : 'notes');
+  const [comingSoonModal, setComingSoonModal] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>(
     INITIAL_CATEGORIES.map((c) => ({ id: c.id, name: c.name }))
   );
@@ -232,6 +277,14 @@ export const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   
   const navigate = useNavigate();
+ 
+  useEffect(() => {
+    if (tabParam === 'test') {
+      setActiveTab('test');
+    } else if (tabParam === 'notes') {
+      setActiveTab('notes');
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     let isMounted = true;
@@ -368,24 +421,63 @@ export const HomePage: React.FC = () => {
     </section>
   );
 
-  const renderServices = () => (
-    <section className="mb-10">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        {SERVICES.map((service) => (
+  // Mobile: 2-column dark navy service cards (restored from BEFORE design)
+  const renderMobileServices = () => (
+    <div className="grid grid-cols-2 gap-3 mb-6">
+      {SERVICES.map((service) => {
+        const Icon = service.icon;
+        return (
           <Link
             key={service.id}
             to={service.path}
-            className="flex sm:flex-col items-center gap-3 sm:gap-4 p-3 sm:p-5 bg-[#0C122A] lg:bg-white rounded-xl border border-[#1E2756] lg:border-slate-200/60 shadow-lg lg:shadow-xs shadow-[#0C122A]/30 lg:shadow-none hover:shadow-xl lg:hover:shadow-md hover:border-[#2D3870] lg:hover:border-blue-200 transition-all group"
+            className="flex items-center gap-3 p-3.5 bg-[#0C122A] rounded-2xl border border-[#1E2756] shadow-lg shadow-[#0C122A]/30 active:scale-98 transition-all group"
           >
-            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 ${service.bg} ${service.color} group-hover:scale-110 transition-transform`}>
-              <service.mobileIcon className="w-7 h-7 lg:hidden" />
-              <service.desktopIcon className="w-5 h-5 sm:w-6 sm:h-6 hidden lg:block" />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${service.bg} ${service.color}`}>
+              <Icon className="w-7 h-7" />
             </div>
-            <span className="text-xs sm:text-sm font-semibold text-white lg:text-slate-700 text-left sm:text-center leading-tight">
+            <span className="text-xs font-bold text-white leading-tight">
               {service.title}
             </span>
           </Link>
-        ))}
+        );
+      })}
+    </div>
+  );
+
+  // Desktop: Core Study Resources section with 6 columns
+  const renderDesktopServices = () => (
+    <section className="mb-12">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div>
+          <h2 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Core Study Resources
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Everything you need for comprehensive exam preparation in one place.
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5">
+        {SERVICES.map((service) => {
+          const Icon = service.icon;
+          return (
+            <Link
+              key={service.id}
+              to={service.path}
+              className="flex flex-col items-center text-center p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-200 group"
+            >
+              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-3.5 ${service.bg} ${service.color} group-hover:scale-110 transition-transform shadow-2xs`}>
+                <Icon className="w-8 h-8 sm:w-9 sm:h-9" />
+              </div>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-tight mb-1">
+                {service.title}
+              </h3>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium line-clamp-1">
+                {service.subtitle}
+              </p>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
@@ -464,44 +556,117 @@ export const HomePage: React.FC = () => {
   };
 
   const renderDesktopTests = () => (
-    <section className="mb-12">
-      <div className="mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">EC Test Series</h2>
-        <p className="text-sm text-slate-500 mt-1">Comprehensive mock tests for all major exams.</p>
+    <section id="ec-test" className="mb-14 pt-8 border-t border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-wider mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            <span>Online Examination Platform</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            EC Test Series
+          </h2>
+          <p className="text-sm text-slate-500 mt-1 max-w-xl">
+            Subject-wise sectional mock tests and practice assessments designed for competitive examination readiness.
+          </p>
+        </div>
+        <Link
+          to="/tests/sectional"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all shrink-0"
+        >
+          <span>View Sectional Tests</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
 
+      {/* EC Test Banner (Uses existing Carousel & published banners) */}
       {testBanners.length > 0 && (
-        <Carousel banners={testBanners} fallbackVariant="test" className="mb-6" autoPlayInterval={5000} />
+        <Carousel banners={testBanners} fallbackVariant="test" className="mb-8" autoPlayInterval={5000} />
       )}
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
-        {TEST_CATEGORIES.map((test) => (
-          <Link
-            key={test.id}
-            to={`/tests/${test.id}`}
-            className={`flex flex-col items-center text-center p-4 sm:p-6 bg-white rounded-2xl border ${test.border} shadow-2xs hover:shadow-md transition-all group hover:-translate-y-1`}
-          >
-            <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 ${test.bg} ${test.color} group-hover:scale-110 transition-transform`}>
-              <test.icon className="w-6 h-6 sm:w-8 sm:h-8" />
+
+      {/* 4 Test Modules Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+        {DESKTOP_TEST_MODULES.map((module) => {
+          const Icon = module.icon;
+          return (
+            <div
+              key={module.id}
+              className={`flex flex-col justify-between p-6 bg-white rounded-3xl border transition-all duration-200 ${
+                module.isActive
+                  ? 'border-purple-200/90 shadow-2xs hover:shadow-xl hover:border-purple-400 hover:-translate-y-1'
+                  : 'border-slate-200/70 opacity-90 shadow-2xs'
+              }`}
+            >
+              <div>
+                <div className="flex items-start justify-between mb-4">
+                  <div
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xs ${
+                      module.isActive ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    <Icon className="w-8 h-8" />
+                  </div>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border ${module.badgeColor}`}
+                  >
+                    {module.badge}
+                  </span>
+                </div>
+
+                <div className="mb-2">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                    {module.title}
+                  </h3>
+                  <span className="text-xs font-semibold text-purple-700">
+                    {module.hindiTitle}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-500 leading-relaxed mb-6">
+                  {module.description}
+                </p>
+              </div>
+
+              <div>
+                {module.isActive ? (
+                  <Link
+                    to={module.link}
+                    className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all group"
+                  >
+                    <span>{module.ctaText}</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full py-3 px-4 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed border border-slate-200/60"
+                  >
+                    {module.ctaText}
+                  </button>
+                )}
+              </div>
             </div>
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-1">{test.title}</h3>
-            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-slate-100 text-slate-600`}>
-              {test.count}
-            </span>
-          </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
 
   const renderMobileTests = () => (
     <section className="mb-8">
-      {/* Row 1 */}
+      {/* Row 1 - 3-column test module layout */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {MOBILE_TEST_CATEGORIES_ROW1.map((test) => (
           <Link
             key={test.id}
-            to={`/tests/${test.id}`}
+            to={test.isActive ? test.path : '#'}
+            onClick={(e) => {
+              if (!test.isActive) {
+                e.preventDefault();
+                setComingSoonModal(test.title);
+              }
+            }}
             className="flex flex-col items-center justify-center text-center p-3 bg-[#0C122A] rounded-2xl border-[#1E2756] border shadow-lg shadow-[#0C122A]/30 active:scale-95 transition-transform"
           >
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${test.bg} ${test.color}`}>
@@ -515,12 +680,18 @@ export const HomePage: React.FC = () => {
       {/* EC TEST PROMO SLIDER (Live active banners from Supabase) */}
       <Carousel banners={testBanners} fallbackVariant="test" className="my-6" autoPlayInterval={5000} />
 
-      {/* Row 2 */}
+      {/* Row 2 - 3-column test module layout with Test Pass */}
       <div className="grid grid-cols-3 gap-3">
         {MOBILE_TEST_CATEGORIES_ROW2.map((test) => (
           <Link
             key={test.id}
-            to={`/tests/${test.id}`}
+            to={test.isActive ? test.path : '#'}
+            onClick={(e) => {
+              if (!test.isActive) {
+                e.preventDefault();
+                setComingSoonModal(test.title);
+              }
+            }}
             className="flex flex-col items-center justify-center text-center p-3 bg-[#0C122A] rounded-2xl border-[#1E2756] border shadow-lg shadow-[#0C122A]/30 active:scale-95 transition-transform"
           >
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${test.bg} ${test.color}`}>
@@ -556,11 +727,14 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="lg:bg-slate-50/50 min-h-screen pb-6" style={{ backgroundColor: '#F4F8FF' }}>
-      {/* Mobile Pill Switch (Sticky below navbar) */}
-      <div className="lg:hidden sticky top-14 z-30 bg-white/90 backdrop-blur-md border-b border-[#E2ECFF] lg:border-slate-200 px-4 py-3">
+      {/* Mobile Pill Switch (Normal page flow below navbar) */}
+      <div className="lg:hidden bg-white border-b border-[#E2ECFF] px-4 py-3">
         <div className="flex bg-[#EEF5FF] lg:bg-slate-100 p-1 rounded-xl">
           <button
-            onClick={() => setActiveTab('notes')}
+            onClick={() => {
+              setActiveTab('notes');
+              setSearchParams({}, { replace: true });
+            }}
             className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${
               activeTab === 'notes' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
@@ -568,7 +742,10 @@ export const HomePage: React.FC = () => {
             EC Notes
           </button>
           <button
-            onClick={() => setActiveTab('test')}
+            onClick={() => {
+              setActiveTab('test');
+              setSearchParams({ tab: 'test' }, { replace: true });
+            }}
             className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${
               activeTab === 'test' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
@@ -579,11 +756,11 @@ export const HomePage: React.FC = () => {
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Mobile View */}
-        <div className="lg:hidden space-y-8">
+        <div className="lg:hidden space-y-6">
           {activeTab === 'notes' ? (
             <>
               <Carousel banners={notesBanners} fallbackVariant="notes" />
-              {renderServices()}
+              {renderMobileServices()}
               {renderTopRecommendations()}
             </>
           ) : (
@@ -592,16 +769,37 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Desktop View */}
-        <div className="hidden lg:block space-y-8">
+        <div className="hidden lg:block space-y-10">
           <Carousel banners={notesBanners} fallbackVariant="notes" />
-          {renderServices()}
+          {renderDesktopServices()}
           {renderECNotes()}
-          {renderDesktopTests()}
           {renderTopRecommendations()}
+          {renderDesktopTests()}
         </div>
       </div>
       
       {renderFeatureBanner()}
+
+      {/* Coming Soon Modal for Pending Test Modules */}
+      {comingSoonModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl p-6 max-w-xs w-full shadow-2xl border border-slate-100 text-center animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-3">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 mb-1">{comingSoonModal}</h3>
+            <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+              This module is currently being finalized for competitive examination preparation and will be available soon. Sectional Tests are live now!
+            </p>
+            <button
+              onClick={() => setComingSoonModal(null)}
+              className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

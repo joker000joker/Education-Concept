@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+/* Fullscreen Exam Mode Safeguards */
+body.exam-mode-active {
+  overflow: hidden !important;
+}
+
+body.exam-mode-active .global-navbar-container,
+body.exam-mode-active .global-footer-container,
+body.exam-mode-active .global-bottomnav-container,
+body.exam-mode-active .env-notice-container {
+  display: none !important;
+}

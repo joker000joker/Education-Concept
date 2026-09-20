@@ -1,26 +1,74 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Book, BookOpen, GraduationCap, Star, MessageCircle, Newspaper, Layers, Library, Image as ImageIcon, FileText } from 'lucide-react';
+import {
+  Book,
+  BookOpen,
+  GraduationCap,
+  Star,
+  MessageCircle,
+  Newspaper,
+  Layers,
+  Library,
+  Image as ImageIcon,
+  FileText,
+  Grid,
+  CheckSquare,
+  FileQuestion,
+  Ticket
+} from 'lucide-react';
 import { BackButton } from '../../components/common/BackButton';
 
 export const AdminOverviewPage: React.FC = () => {
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Top Header & Quick Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="mb-4">
-            <BackButton fallbackTo="/" label="Back to Homepage" forceFallback={true} />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Admin Dashboard
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Education Concept repository management: manage modules, upload PDFs, and publish content.
-          </p>
+      {/* Top Header */}
+      <div>
+        <div className="mb-4">
+          <BackButton fallbackTo="/" label="Back to Homepage" forceFallback={true} />
         </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          Admin Dashboard
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          Education Concept repository management: manage modules, upload PDFs, create sectional tests, and publish content.
+        </p>
       </div>
 
+      {/* Test Modules Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Link
+          to="/admin/sectional-test"
+          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 transition-colors group"
+        >
+          <Grid className="w-5 h-5 text-purple-600 mb-1.5 group-hover:scale-110 transition-transform" />
+          <span className="text-xs font-bold text-purple-900 text-center">Sectional Tests</span>
+          <span className="text-[10px] text-purple-600 font-semibold mt-0.5">Active</span>
+        </Link>
+        <Link
+          to="/admin/daily-quiz"
+          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors group opacity-75"
+        >
+          <CheckSquare className="w-5 h-5 text-slate-500 mb-1.5" />
+          <span className="text-xs font-semibold text-slate-700 text-center">Daily Quiz</span>
+          <span className="text-[10px] text-slate-400 mt-0.5">Coming Soon</span>
+        </Link>
+        <Link
+          to="/admin/chapter-test"
+          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors group opacity-75"
+        >
+          <FileQuestion className="w-5 h-5 text-slate-500 mb-1.5" />
+          <span className="text-xs font-semibold text-slate-700 text-center">Chapter Wise</span>
+          <span className="text-[10px] text-slate-400 mt-0.5">Coming Soon</span>
+        </Link>
+        <Link
+          to="/admin/test-pass"
+          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors group opacity-75"
+        >
+          <Ticket className="w-5 h-5 text-slate-500 mb-1.5" />
+          <span className="text-xs font-semibold text-slate-700 text-center">Test Pass</span>
+          <span className="text-[10px] text-slate-400 mt-0.5">Coming Soon</span>
+        </Link>
+      </div>
       
       {/* EC Notes / Content Management Quick Links */}
       <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
