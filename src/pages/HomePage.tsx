@@ -66,34 +66,40 @@ const DESKTOP_TEST_MODULES = [
     title: 'Sectional Tests',
     hindiTitle: 'सेक्शनल टेस्ट',
     icon: SectionalTestIcon,
+    color: 'text-purple-500',
+    bg: 'bg-purple-100',
     isActive: true,
     badge: 'Active',
     badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    description: 'Subject-wise comprehensive tests covering all 12 core competitive disciplines with timed countdown & full performance analysis.',
+    description: 'Subject-wise comprehensive tests covering all 12 core competitive disciplines with timed countdown.',
     link: '/tests/sectional',
     ctaText: 'Start Sectional Test',
-  },
-  {
-    id: 'daily-quiz',
-    title: 'Daily Quiz',
-    hindiTitle: 'दैनिक क्विज़',
-    icon: DailyQuizIcon,
-    isActive: false,
-    badge: 'Coming Soon',
-    badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',
-    description: 'Daily quick mock sets with instant timer and explanation for daily speed revision and concept sharpening.',
-    link: '#',
-    ctaText: 'Coming Soon',
   },
   {
     id: 'chapter-wise',
     title: 'Chapter Wise Test',
     hindiTitle: 'अध्याय-वार टेस्ट',
     icon: ChapterTestIcon,
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-100',
     isActive: false,
     badge: 'Coming Soon',
     badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',
-    description: 'Chapter & topic specific assessment tests for targeted practice, question drills, and conceptual mastery.',
+    description: 'Chapter & topic specific assessment tests for targeted practice and conceptual drills.',
+    link: '#',
+    ctaText: 'Coming Soon',
+  },
+  {
+    id: 'daily-quiz',
+    title: 'Daily Quiz',
+    hindiTitle: 'दैनिक क्विज़',
+    icon: DailyQuizIcon,
+    color: 'text-blue-500',
+    bg: 'bg-blue-100',
+    isActive: false,
+    badge: 'Coming Soon',
+    badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',
+    description: 'Daily quick mock sets with instant timer and explanation for rapid concept revision.',
     link: '#',
     ctaText: 'Coming Soon',
   },
@@ -102,10 +108,40 @@ const DESKTOP_TEST_MODULES = [
     title: 'Test Pass',
     hindiTitle: 'टेस्ट पास',
     icon: TestPassIcon,
+    color: 'text-amber-500',
+    bg: 'bg-amber-100',
     isActive: false,
     badge: 'Coming Soon',
     badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',
-    description: 'All-access pass unlocking complete mock test series, sectional tests & previous year papers across all examinations.',
+    description: 'All-access pass unlocking complete mock test series and previous year papers.',
+    link: '#',
+    ctaText: 'Coming Soon',
+  },
+  {
+    id: 'live-test',
+    title: 'Live Test',
+    hindiTitle: 'लाइव टेस्ट',
+    icon: LiveTestIcon,
+    color: 'text-rose-500',
+    bg: 'bg-rose-100',
+    isActive: false,
+    badge: 'Coming Soon',
+    badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',
+    description: 'Real-time scheduled mock exams simulating examination hall pressure and percentile ranking.',
+    link: '#',
+    ctaText: 'Coming Soon',
+  },
+  {
+    id: 'create-test',
+    title: 'Create Test',
+    hindiTitle: 'कस्टम टेस्ट',
+    icon: CreateTestIcon,
+    color: 'text-cyan-500',
+    bg: 'bg-cyan-100',
+    isActive: false,
+    badge: 'Coming Soon',
+    badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',
+    description: 'Customize practice tests with self-selected questions, time limits, and subjects.',
     link: '#',
     ctaText: 'Coming Soon',
   },
@@ -114,24 +150,102 @@ const DESKTOP_TEST_MODULES = [
 interface HomeBannerItem {
   id: number;
   image: string;
+  imagePath?: string;
   alt: string;
   title?: string | null;
   link_url?: string | null;
+}
+
+// Session-level signed URL cache to avoid redundant roundtrips across navigation
+interface CachedBannerUrl {
+  url: string;
+  expiresAt: number; // Unix timestamp in ms
+}
+
+const SESSION_BANNER_CACHE_KEY = 'ec_banner_signed_urls_v1';
+const bannerUrlMemoryCache = new Map<string, CachedBannerUrl>();
+
+// Memory cache for parsed banner items to enable instant 0ms restoration on route returns
+let memoryCachedNotesBanners: HomeBannerItem[] | null = null;
+let memoryCachedTestBanners: HomeBannerItem[] | null = null;
+
+// Initialize memory cache from sessionStorage if available
+try {
+  const stored = sessionStorage.getItem(SESSION_BANNER_CACHE_KEY);
+  if (stored) {
+    const parsed: Record<string, CachedBannerUrl> = JSON.parse(stored);
+    const now = Date.now();
+    Object.entries(parsed).forEach(([key, val]) => {
+      if (val?.url && val.expiresAt > now + 60_000) {
+        bannerUrlMemoryCache.set(key, val);
+      }
+    });
+  }
+} catch {
+  // Gracefully ignore storage quota / sandbox restrictions
+}
+
+function getValidCachedBannerUrl(path: string): string | null {
+  const now = Date.now();
+  const cached = bannerUrlMemoryCache.get(path);
+  if (cached && cached.expiresAt > now + 60_000) {
+    return cached.url;
+  }
+  return null;
+}
+
+function setCachedBannerUrl(path: string, url: string, expiresInSeconds = 3600) {
+  const expiresAt = Date.now() + (expiresInSeconds - 60) * 1000;
+  const item: CachedBannerUrl = { url, expiresAt };
+  bannerUrlMemoryCache.set(path, item);
+
+  try {
+    const raw = sessionStorage.getItem(SESSION_BANNER_CACHE_KEY);
+    const map: Record<string, CachedBannerUrl> = raw ? JSON.parse(raw) : {};
+    map[path] = item;
+    sessionStorage.setItem(SESSION_BANNER_CACHE_KEY, JSON.stringify(map));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function invalidateCachedBannerUrl(path: string) {
+  bannerUrlMemoryCache.delete(path);
+  try {
+    const raw = sessionStorage.getItem(SESSION_BANNER_CACHE_KEY);
+    if (raw) {
+      const map: Record<string, CachedBannerUrl> = JSON.parse(raw);
+      delete map[path];
+      sessionStorage.setItem(SESSION_BANNER_CACHE_KEY, JSON.stringify(map));
+    }
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 const Carousel = ({
   banners,
   fallbackVariant = 'notes',
   className = "mb-6",
-  autoPlayInterval = 4000
+  autoPlayInterval = 4000,
+  onImageError,
 }: {
   banners: HomeBannerItem[];
   fallbackVariant?: 'notes' | 'test';
   className?: string;
   autoPlayInterval?: number;
+  onImageError?: (bannerId: number, imagePath?: string) => void;
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [firstImageLoaded, setFirstImageLoaded] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  // Safety fallback: allow off-screen slides to load after 2.5s even if onLoad hasn't fired
+  useEffect(() => {
+    const timer = setTimeout(() => setFirstImageLoaded(true), 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (banners.length <= 1) return;
@@ -152,6 +266,7 @@ const Carousel = ({
   }, [banners.length, autoPlayInterval]);
 
   const scrollToSlide = (index: number) => {
+    setHasInteracted(true);
     if (scrollContainerRef.current) {
       const clientWidth = scrollContainerRef.current.clientWidth;
       scrollContainerRef.current.scrollTo({
@@ -162,6 +277,7 @@ const Carousel = ({
   };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setHasInteracted(true);
     const scrollLeft = e.currentTarget.scrollLeft;
     const clientWidth = e.currentTarget.clientWidth;
     const index = Math.round(scrollLeft / clientWidth);
@@ -200,17 +316,33 @@ const Carousel = ({
       <div 
         ref={scrollContainerRef}
         onScroll={handleScroll}
+        onTouchStart={() => setHasInteracted(true)}
         className="flex w-full overflow-x-auto snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       >
-        {banners.map((banner) => {
+        {banners.map((banner, index) => {
+          const isFirst = index === 0;
+          // First banner renders and downloads immediately. Subsequent banners
+          // wait until first banner finishes loading or user swipes/interacts.
+          const shouldLoad = isFirst || firstImageLoaded || hasInteracted || currentSlide > 0;
+
           const content = (
             <div className="w-full h-full relative">
-              <img
-                src={banner.image}
-                alt={banner.alt}
-                className="w-full h-full object-cover block rounded-2xl"
-                loading="lazy"
-              />
+              {shouldLoad ? (
+                <img
+                  src={banner.image}
+                  alt={banner.alt}
+                  className="w-full h-full object-cover block rounded-2xl"
+                  loading={isFirst ? "eager" : "lazy"}
+                  {...(isFirst ? { fetchPriority: "high" } : {})}
+                  onLoad={isFirst ? () => setFirstImageLoaded(true) : undefined}
+                  onError={() => {
+                    if (isFirst) setFirstImageLoaded(true);
+                    onImageError?.(banner.id, banner.imagePath);
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-slate-900 rounded-2xl" />
+              )}
               {banner.title && (
                 <>
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent rounded-2xl pointer-events-none" />
@@ -272,12 +404,31 @@ export const HomePage: React.FC = () => {
   const [latestNotes, setLatestNotes] = useState<Note[]>([]);
   const [categoryCounts, setCategoryCounts] = useState<Record<number, number>>({});
   const [topRecommendations, setTopRecommendations] = useState<TopRecommendation[]>([]);
-  const [notesBanners, setNotesBanners] = useState<HomeBannerItem[]>([]);
-  const [testBanners, setTestBanners] = useState<HomeBannerItem[]>([]);
+  const [notesBanners, setNotesBanners] = useState<HomeBannerItem[]>(() => memoryCachedNotesBanners || []);
+  const [testBanners, setTestBanners] = useState<HomeBannerItem[]>(() => memoryCachedTestBanners || []);
   const [loading, setLoading] = useState(true);
   
   const navigate = useNavigate();
- 
+
+  const handleBannerImageError = async (bannerId: number, imagePath?: string) => {
+    if (!imagePath) return;
+    invalidateCachedBannerUrl(imagePath);
+    try {
+      const freshUrl = await getSecurePdfUrl(imagePath, 3600);
+      if (freshUrl) {
+        setCachedBannerUrl(imagePath, freshUrl, 3600);
+        setNotesBanners((prev) =>
+          prev.map((b) => (b.id === bannerId ? { ...b, image: freshUrl } : b))
+        );
+        setTestBanners((prev) =>
+          prev.map((b) => (b.id === bannerId ? { ...b, image: freshUrl } : b))
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to refresh banner signed URL:', err);
+    }
+  };
+
   useEffect(() => {
     if (tabParam === 'test') {
       setActiveTab('test');
@@ -289,22 +440,89 @@ export const HomePage: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
 
+    // 1. Decoupled, independent banner fetch & URL resolution
+    // Runs immediately without waiting for categories, notes, or recommendations
+    const loadBanners = async () => {
+      try {
+        const bannerRes = await supabase
+          .from('banners')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true })
+          .order('created_at', { ascending: false });
+
+        if (!isMounted) return;
+
+        const rawBanners = (bannerRes as any)?.data || [];
+        const rawNotes = rawBanners.filter((b: any) => {
+          const sec = (b.section || '').trim().toLowerCase();
+          return sec === 'ec notes' || sec === 'home' || sec === 'notes';
+        });
+        const rawTest = rawBanners.filter((b: any) => {
+          const sec = (b.section || '').trim().toLowerCase();
+          return sec === 'ec test' || sec === 'test';
+        });
+
+        const resolveBannerItems = async (list: any[]): Promise<HomeBannerItem[]> => {
+          const items = await Promise.all(
+            list.map(async (b: any): Promise<HomeBannerItem | null> => {
+              if (!b.image_path) return null;
+              let imgUrl = '';
+              if (b.image_path.startsWith('http://') || b.image_path.startsWith('https://')) {
+                imgUrl = b.image_path;
+              } else {
+                // Reuse valid session cache or request fresh 1-hour signed URL
+                const cached = getValidCachedBannerUrl(b.image_path);
+                if (cached) {
+                  imgUrl = cached;
+                } else {
+                  const fresh = await getSecurePdfUrl(b.image_path, 3600);
+                  if (fresh) {
+                    setCachedBannerUrl(b.image_path, fresh, 3600);
+                    imgUrl = fresh;
+                  }
+                }
+              }
+              if (!imgUrl) return null;
+              return {
+                id: b.id,
+                image: imgUrl,
+                imagePath: b.image_path,
+                alt: b.title || 'Education Concept Banner',
+                title: b.title || undefined,
+                link_url: b.link_url,
+              };
+            })
+          );
+          return items.filter((item): item is HomeBannerItem => item !== null);
+        };
+
+        const [resolvedNotes, resolvedTest] = await Promise.all([
+          resolveBannerItems(rawNotes),
+          resolveBannerItems(rawTest),
+        ]);
+
+        if (isMounted) {
+          memoryCachedNotesBanners = resolvedNotes;
+          memoryCachedTestBanners = resolvedTest;
+          setNotesBanners(resolvedNotes);
+          setTestBanners(resolvedTest);
+        }
+      } catch (err) {
+        console.warn('Error loading homepage banners:', err);
+      }
+    };
+
+    // 2. Original Home data loading (categories, notes, recommendations)
     const loadHomeData = async () => {
       try {
         setLoading(true);
-        // Load categories, notes, live active banners, and published recommendations in parallel
-        const [catData, notesResult, bannerRes, recommendationsData] = await Promise.all([
+        const [catData, notesResult, recommendationsData] = await Promise.all([
           getCategories().catch(() => []),
           fetchNotes({ publishedOnly: true, limit: 6, sortBy: 'newest' }).catch(() => ({
             notes: [],
             count: 0,
           })),
-          supabase
-            .from('banners')
-            .select('*')
-            .eq('is_active', true)
-            .order('display_order', { ascending: true })
-            .order('created_at', { ascending: false }),
           fetchPublicRecommendations().catch(() => []),
         ]);
 
@@ -323,51 +541,6 @@ export const HomePage: React.FC = () => {
             }
           });
           setCategoryCounts(counts);
-
-          // Separate and resolve live active banners
-          const rawBanners = (bannerRes as any)?.data || [];
-          // Load only published/active banners belonging to the EC Notes section
-          const rawNotes = rawBanners.filter((b: any) => {
-            const sec = (b.section || '').trim().toLowerCase();
-            return sec === 'ec notes' || sec === 'home' || sec === 'notes';
-          });
-          const rawTest = rawBanners.filter((b: any) => {
-            const sec = (b.section || '').trim().toLowerCase();
-            return sec === 'ec test' || sec === 'test';
-          });
-
-          const resolveBannerItems = async (list: any[]): Promise<HomeBannerItem[]> => {
-            const items = await Promise.all(
-              list.map(async (b: any): Promise<HomeBannerItem | null> => {
-                if (!b.image_path) return null;
-                let imgUrl = '';
-                if (b.image_path.startsWith('http://') || b.image_path.startsWith('https://')) {
-                  imgUrl = b.image_path;
-                } else {
-                  imgUrl = (await getSecurePdfUrl(b.image_path, 3600)) || '';
-                }
-                if (!imgUrl) return null;
-                return {
-                  id: b.id,
-                  image: imgUrl,
-                  alt: b.title || 'Education Concept Banner',
-                  title: b.title || undefined,
-                  link_url: b.link_url,
-                };
-              })
-            );
-            return items.filter((item): item is HomeBannerItem => item !== null);
-          };
-
-          const [resolvedNotes, resolvedTest] = await Promise.all([
-            resolveBannerItems(rawNotes),
-            resolveBannerItems(rawTest),
-          ]);
-
-          if (isMounted) {
-            setNotesBanners(resolvedNotes);
-            setTestBanners(resolvedTest);
-          }
         }
       } catch (err) {
         console.error('Error loading homepage data:', err);
@@ -378,6 +551,7 @@ export const HomePage: React.FC = () => {
       }
     };
 
+    loadBanners();
     loadHomeData();
 
     return () => {
@@ -444,17 +618,14 @@ export const HomePage: React.FC = () => {
     </div>
   );
 
-  // Desktop: Core Study Resources section with 6 columns
+  // Desktop: EC Notes section with 6 service cards
   const renderDesktopServices = () => (
     <section className="mb-12">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
           <h2 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
-            Core Study Resources
+            EC Notes
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Everything you need for comprehensive exam preparation in one place.
-          </p>
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5">
@@ -556,97 +727,75 @@ export const HomePage: React.FC = () => {
   };
 
   const renderDesktopTests = () => (
-    <section id="ec-test" className="mb-14 pt-8 border-t border-slate-200/80">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+    <section id="ec-test" className="mb-12 pt-6 border-t border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-            <span>Online Examination Platform</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             EC Test Series
           </h2>
-          <p className="text-sm text-slate-500 mt-1 max-w-xl">
-            Subject-wise sectional mock tests and practice assessments designed for competitive examination readiness.
-          </p>
         </div>
-        <Link
-          to="/tests/sectional"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all shrink-0"
-        >
-          <span>View Sectional Tests</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
       </div>
 
-      {/* EC Test Banner (Uses existing Carousel & published banners) */}
-      {testBanners.length > 0 && (
-        <Carousel banners={testBanners} fallbackVariant="test" className="mb-8" autoPlayInterval={5000} />
-      )}
-
-      {/* 4 Test Modules Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+      {/* Compact 6 Test Modules Grid matching EC Notes service-card layout */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5">
         {DESKTOP_TEST_MODULES.map((module) => {
           const Icon = module.icon;
-          return (
-            <div
-              key={module.id}
-              className={`flex flex-col justify-between p-6 bg-white rounded-3xl border transition-all duration-200 ${
-                module.isActive
-                  ? 'border-purple-200/90 shadow-2xs hover:shadow-xl hover:border-purple-400 hover:-translate-y-1'
-                  : 'border-slate-200/70 opacity-90 shadow-2xs'
-              }`}
-            >
-              <div>
-                <div className="flex items-start justify-between mb-4">
-                  <div
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xs ${
-                      module.isActive ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    <Icon className="w-8 h-8" />
-                  </div>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border ${module.badgeColor}`}
-                  >
-                    {module.badge}
-                  </span>
-                </div>
-
-                <div className="mb-2">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
-                    {module.title}
-                  </h3>
-                  <span className="text-xs font-semibold text-purple-700">
-                    {module.hindiTitle}
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                  {module.description}
-                </p>
-              </div>
-
-              <div>
-                {module.isActive ? (
-                  <Link
-                    to={module.link}
-                    className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all group"
-                  >
-                    <span>{module.ctaText}</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full py-3 px-4 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed border border-slate-200/60"
-                  >
-                    {module.ctaText}
-                  </button>
+          const cardContent = (
+            <>
+              {/* Status State Badge */}
+              <span
+                className={`absolute top-2.5 right-2.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${module.badgeColor}`}
+              >
+                {module.isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse" />
                 )}
+                {module.badge}
+              </span>
+
+              {/* Icon Container matching EC Notes dimensions & hover */}
+              <div
+                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-3.5 ${module.bg} ${module.color} group-hover:scale-110 transition-transform shadow-2xs`}
+              >
+                <Icon className="w-8 h-8 sm:w-9 sm:h-9" />
               </div>
-            </div>
+
+              {/* Title */}
+              <h3
+                className={`text-xs sm:text-sm font-bold text-slate-800 ${
+                  module.isActive ? 'group-hover:text-purple-600' : 'group-hover:text-slate-900'
+                } transition-colors leading-tight mb-1`}
+              >
+                {module.title}
+              </h3>
+
+              {/* Subtitle / Hindi Title matching EC Notes typography */}
+              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium line-clamp-1">
+                {module.hindiTitle}
+              </p>
+            </>
+          );
+
+          if (module.isActive) {
+            return (
+              <Link
+                key={module.id}
+                to={module.link}
+                className="relative flex flex-col items-center text-center p-4 sm:p-5 bg-white rounded-2xl border border-purple-200/90 shadow-2xs hover:shadow-xl hover:border-purple-400 hover:-translate-y-1 transition-all duration-200 group cursor-pointer w-full"
+              >
+                {cardContent}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={module.id}
+              type="button"
+              onClick={() => setComingSoonModal(module.title)}
+              className="relative flex flex-col items-center text-center p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-200 group cursor-pointer w-full text-slate-800"
+            >
+              {cardContent}
+            </button>
           );
         })}
       </div>
@@ -678,7 +827,13 @@ export const HomePage: React.FC = () => {
       </div>
 
       {/* EC TEST PROMO SLIDER (Live active banners from Supabase) */}
-      <Carousel banners={testBanners} fallbackVariant="test" className="my-6" autoPlayInterval={5000} />
+      <Carousel
+        banners={testBanners}
+        fallbackVariant="test"
+        className="my-6"
+        autoPlayInterval={5000}
+        onImageError={handleBannerImageError}
+      />
 
       {/* Row 2 - 3-column test module layout with Test Pass */}
       <div className="grid grid-cols-3 gap-3">
@@ -705,7 +860,7 @@ export const HomePage: React.FC = () => {
   );
 
   const renderFeatureBanner = () => (
-    <section className="mt-8 mb-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="lg:hidden mt-8 mb-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-xl">
         <div className="relative z-10 max-w-2xl space-y-3 sm:space-y-4">
           <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 rounded-full text-[10px] font-semibold bg-blue-500/20 text-blue-300 border border-blue-400/30">
@@ -759,7 +914,11 @@ export const HomePage: React.FC = () => {
         <div className="lg:hidden space-y-6">
           {activeTab === 'notes' ? (
             <>
-              <Carousel banners={notesBanners} fallbackVariant="notes" />
+              <Carousel
+                banners={notesBanners}
+                fallbackVariant="notes"
+                onImageError={handleBannerImageError}
+              />
               {renderMobileServices()}
               {renderTopRecommendations()}
             </>
@@ -770,10 +929,7 @@ export const HomePage: React.FC = () => {
 
         {/* Desktop View */}
         <div className="hidden lg:block space-y-10">
-          <Carousel banners={notesBanners} fallbackVariant="notes" />
           {renderDesktopServices()}
-          {renderECNotes()}
-          {renderTopRecommendations()}
           {renderDesktopTests()}
         </div>
       </div>

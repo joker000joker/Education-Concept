@@ -37,6 +37,16 @@ export const SectionalSubjectTestsPage: React.FC = () => {
       return;
     }
     loadTests();
+
+    const onFocus = () => {
+      loadTests();
+    };
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('visibilitychange', onFocus);
+    };
   }, [subjectMeta?.name]);
 
   useEffect(() => {
@@ -179,7 +189,7 @@ export const SectionalSubjectTestsPage: React.FC = () => {
           </div>
         ) : tests.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {tests.map((test, index) => {
+            {tests.map((test) => {
               const userResult = user ? userResults[test.id] : null;
 
               return (
@@ -190,9 +200,6 @@ export const SectionalSubjectTestsPage: React.FC = () => {
                   <div>
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
-                          Mock #{index + 1}
-                        </span>
                         {userResult && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />

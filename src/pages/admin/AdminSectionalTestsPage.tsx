@@ -6,6 +6,8 @@ import {
   saveSectionalTest,
   deleteSectionalTest,
   togglePublishSectionalTest,
+  reorderSectionalTests,
+  syncLocalTestsWithServer,
   SECTIONAL_SUBJECTS
 } from '../../services/sectionalTestService';
 import { SectionalTest, SectionalQuestion, SectionalSubject } from '../../types';
@@ -32,7 +34,9 @@ import {
   BookOpen,
   ArrowRight,
   Database,
-  Filter
+  Filter,
+  RefreshCw,
+  GripVertical
 } from 'lucide-react';
 
 export const AdminSectionalTestsPage: React.FC = () => {
@@ -40,6 +44,12 @@ export const AdminSectionalTestsPage: React.FC = () => {
 
   const [tests, setTests] = useState<SectionalTest[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Drag-and-drop reordering state
+  const [draggedTestId, setDraggedTestId] = useState<number | null>(null);
+  const [dragOverTestId, setDragOverTestId] = useState<number | null>(null);
+  const [dropPosition, setDropPosition] = useState<'above' | 'below' | null>(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,13 +86,37 @@ export const AdminSectionalTestsPage: React.FC = () => {
 
   // SQL snippet dialog
   const [showSqlNotice, setShowSqlNotice] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     loadTests();
+    const onFocus = () => {
+      loadTests();
+    };
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('visibilitychange', onFocus);
+    };
   }, []);
+
+  const handleRefreshSync = async () => {
+    setRefreshing(true);
+    try {
+      await syncLocalTestsWithServer();
+      const data = await fetchSectionalTests();
+      setTests(data);
+      toast.showToast('Sectional tests synchronized successfully!', 'success');
+    } catch {
+      toast.showToast('Failed to sync sectional tests', 'error');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Listen to navigation with ?action=new or ?create=true
   useEffect(() => {
@@ -309,17 +343,170 @@ export const AdminSectionalTestsPage: React.FC = () => {
     }
   };
 
+  // Drag and drop reordering handlers
+  const executeReorder = async (sourceId: number, targetId: number, position: 'above' | 'below') => {
+    if (sourceId === targetId) {
+      setDraggedTestId(null);
+      setDragOverTestId(null);
+      setDropPosition(null);
+      return;
+    }
+
+    const sourceIdx = tests.findIndex((t) => t.id === sourceId);
+    const targetIdx = tests.findIndex((t) => t.id === targetId);
+
+    if (sourceIdx === -1 || targetIdx === -1) {
+      setDraggedTestId(null);
+      setDragOverTestId(null);
+      setDropPosition(null);
+      return;
+    }
+
+    // Clone array and move item
+    const updated = [...tests];
+    const [movedItem] = updated.splice(sourceIdx, 1);
+    let insertIdx = updated.findIndex((t) => t.id === targetId);
+    if (position === 'below') {
+      insertIdx += 1;
+    }
+    updated.splice(insertIdx, 0, movedItem);
+
+    // Immediate optimistic state update
+    setTests(updated);
+    setDraggedTestId(null);
+    setDragOverTestId(null);
+    setDropPosition(null);
+    setIsSavingOrder(true);
+
+    try {
+      const orderedIds = updated.map((t) => t.id);
+      const res = await reorderSectionalTests(orderedIds);
+      if (res.success) {
+        if (res.tests && Array.isArray(res.tests)) {
+          setTests(res.tests);
+        }
+        toast.showToast('Test order updated successfully!', 'success');
+      } else {
+        toast.showToast(res.error || 'Failed to save test order', 'error');
+        loadTests();
+      }
+    } catch {
+      toast.showToast('Failed to save test order', 'error');
+      loadTests();
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+    e.dataTransfer.setData('text/plain', String(id));
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedTestId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedTestId === null || draggedTestId === id) {
+      if (dragOverTestId === id) {
+        setDragOverTestId(null);
+        setDropPosition(null);
+      }
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relY = e.clientY - rect.top;
+    const isBelow = relY > rect.height / 2;
+    setDragOverTestId(id);
+    setDropPosition(isBelow ? 'below' : 'above');
+  };
+
+  const handleDragLeave = (e: React.DragEvent, id: number) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      if (dragOverTestId === id) {
+        setDragOverTestId(null);
+        setDropPosition(null);
+      }
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: number) => {
+    e.preventDefault();
+    if (draggedTestId !== null && draggedTestId !== targetId && dropPosition) {
+      executeReorder(draggedTestId, targetId, dropPosition);
+    } else {
+      setDraggedTestId(null);
+      setDragOverTestId(null);
+      setDropPosition(null);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTestId(null);
+    setDragOverTestId(null);
+    setDropPosition(null);
+  };
+
+  // Touch event handlers for mobile devices
+  const handleTouchStart = (e: React.TouchEvent, id: number) => {
+    setDraggedTestId(id);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(25);
+      } catch {}
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (draggedTestId === null) return;
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const rowEl = el?.closest('tr[data-test-id]');
+    if (rowEl) {
+      const targetId = Number(rowEl.getAttribute('data-test-id'));
+      if (targetId && targetId !== draggedTestId) {
+        const rect = rowEl.getBoundingClientRect();
+        const isBelow = touch.clientY > rect.top + rect.height / 2;
+        setDragOverTestId(targetId);
+        setDropPosition(isBelow ? 'below' : 'above');
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (draggedTestId !== null && dragOverTestId !== null && dropPosition !== null) {
+      executeReorder(draggedTestId, dragOverTestId, dropPosition);
+    } else {
+      setDraggedTestId(null);
+      setDragOverTestId(null);
+      setDropPosition(null);
+    }
+  };
+
+  const handleTouchCancel = () => {
+    setDraggedTestId(null);
+    setDragOverTestId(null);
+    setDropPosition(null);
+  };
+
   // Filtered tests list
   const filteredTests = useMemo(() => {
     return tests.filter((t) => {
-      const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesSubject = selectedSubject === 'All' || t.subject.toLowerCase() === selectedSubject.toLowerCase();
+      const title = (t.title || '').toLowerCase().trim();
+      const subject = (t.subject || '').toLowerCase().trim();
+      const query = searchTerm.toLowerCase().trim();
+      const matchesSearch = !query || title.includes(query);
+      const matchesSubject =
+        selectedSubject === 'All' ||
+        subject === selectedSubject.toLowerCase().trim();
+      const isPublished = Boolean(t.published);
       const matchesStatus =
         statusFilter === 'all'
           ? true
           : statusFilter === 'published'
-          ? t.published
-          : !t.published;
+          ? isPublished
+          : !isPublished;
       return matchesSearch && matchesSubject && matchesStatus;
     });
   }, [tests, searchTerm, selectedSubject, statusFilter]);
@@ -341,7 +528,18 @@ export const AdminSectionalTestsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleRefreshSync}
+            disabled={refreshing}
+            className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-60"
+            title="Sync & refresh sectional tests across devices"
+          >
+            <RefreshCw className={`w-4 h-4 text-purple-600 ${refreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Sync & Refresh</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setShowSqlNotice(!showSqlNotice)}
@@ -388,15 +586,26 @@ export const AdminSectionalTestsPage: React.FC = () => {
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search test by title..."
-            className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
+        <div className="relative flex-1 w-full flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search test by title..."
+              className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+          <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">
+            {tests.length} Tests Total
+          </span>
+          {isSavingOrder && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300 animate-pulse whitespace-nowrap">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+              <span>Saving order...</span>
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -439,6 +648,10 @@ export const AdminSectionalTestsPage: React.FC = () => {
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
                 <tr>
+                  <th className="py-3.5 px-3 w-10 text-center" title="Drag to reorder tests">
+                    <span className="sr-only">Reorder</span>
+                    <GripVertical className="w-4 h-4 text-slate-300 mx-auto" />
+                  </th>
                   <th className="py-3.5 px-4">Test Title</th>
                   <th className="py-3.5 px-4">Subject</th>
                   <th className="py-3.5 px-4 text-center">Questions</th>
@@ -450,72 +663,117 @@ export const AdminSectionalTestsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredTests.map((t) => (
-                  <tr key={t.id} className="hover:bg-purple-50/30 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-900 max-w-xs truncate">
-                      {t.title}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                        {t.subject}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-center font-bold text-slate-700">
-                      {t.total_questions}
-                    </td>
-                    <td className="py-3.5 px-4 text-center text-slate-700 font-semibold">
-                      {t.total_marks}
-                    </td>
-                    <td className="py-3.5 px-4 text-center text-slate-600">
-                      {t.duration_minutes}m
-                    </td>
-                    <td className="py-3.5 px-4 text-center text-rose-600 font-semibold">
-                      -{t.negative_marking}
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePublish(t)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${
-                          t.published
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                            : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${t.published ? 'bg-emerald-600' : 'bg-slate-400'}`}></span>
-                        {t.published ? 'Published' : 'Draft'}
-                      </button>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                {filteredTests.map((t) => {
+                  const isBeingDragged = draggedTestId === t.id;
+                  const isTarget = dragOverTestId === t.id && !isBeingDragged;
+
+                  let dragClasses = '';
+                  if (isBeingDragged) {
+                    dragClasses = 'opacity-35 bg-purple-50/80 border-2 border-dashed border-purple-400 select-none scale-[0.99]';
+                  } else if (isTarget && dropPosition === 'above') {
+                    dragClasses = 'border-t-2 border-t-purple-600 bg-purple-50/40 shadow-xs';
+                  } else if (isTarget && dropPosition === 'below') {
+                    dragClasses = 'border-b-2 border-b-purple-600 bg-purple-50/40 shadow-xs';
+                  }
+
+                  return (
+                    <tr
+                      key={t.id}
+                      data-test-id={t.id}
+                      draggable={!isSavingOrder}
+                      onDragStart={(e) => handleDragStart(e, t.id)}
+                      onDragOver={(e) => handleDragOver(e, t.id)}
+                      onDragLeave={(e) => handleDragLeave(e, t.id)}
+                      onDrop={(e) => handleDrop(e, t.id)}
+                      onDragEnd={handleDragEnd}
+                      className={`hover:bg-purple-50/30 transition-all ${dragClasses}`}
+                    >
+                      <td className="py-3.5 px-3 text-center">
+                        <div
+                          onTouchStart={(e) => handleTouchStart(e, t.id)}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={handleTouchEnd}
+                          onTouchCancel={handleTouchCancel}
+                          className="p-1.5 rounded-md text-slate-400 hover:text-purple-600 active:text-purple-700 cursor-grab active:cursor-grabbing hover:bg-purple-100/60 inline-flex items-center justify-center touch-none select-none transition-colors"
+                          title="Click and drag to reorder test"
+                          aria-label={`Drag to reorder ${t.title}`}
+                        >
+                          <GripVertical className="w-4 h-4 pointer-events-none" />
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-slate-900 max-w-xs truncate cursor-grab active:cursor-grabbing">
+                        {t.title}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                          {t.subject}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-center font-bold text-slate-700">
+                        {t.total_questions}
+                      </td>
+                      <td className="py-3.5 px-4 text-center text-slate-700 font-semibold">
+                        {t.total_marks}
+                      </td>
+                      <td className="py-3.5 px-4 text-center text-slate-600">
+                        {t.duration_minutes}m
+                      </td>
+                      <td className="py-3.5 px-4 text-center text-rose-600 font-semibold">
+                        -{t.negative_marking}
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
                         <button
                           type="button"
-                          onClick={() => handleOpenPreview(t)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-50 transition-colors"
-                          title="Preview Questions"
+                          draggable={false}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={() => handleTogglePublish(t)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${
+                            t.published
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                              : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+                          }`}
                         >
-                          <Eye className="w-4 h-4" />
+                          <span className={`w-1.5 h-1.5 rounded-full ${t.published ? 'bg-emerald-600' : 'bg-slate-400'}`}></span>
+                          {t.published ? 'Published' : 'Draft'}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditModal(t)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                          title="Edit Test"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeletingTest(t)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                          title="Delete Test"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            draggable={false}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={() => handleOpenPreview(t)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                            title="Preview Questions"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            draggable={false}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={() => handleOpenEditModal(t)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            title="Edit Test"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            draggable={false}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={() => setDeletingTest(t)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            title="Delete Test"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -526,14 +784,16 @@ export const AdminSectionalTestsPage: React.FC = () => {
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
               No sectional tests match the current filter or search criteria.
             </p>
-            <button
-              type="button"
-              onClick={handleOpenCreateModal}
-              className="mt-4 px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-700 flex items-center gap-1.5 mx-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Add New Test</span>
-            </button>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleOpenCreateModal}
+                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Add Manual Test</span>
+              </button>
+            </div>
           </div>
         )}
       </div>

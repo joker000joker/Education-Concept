@@ -15,7 +15,11 @@ export const AdminLayout: React.FC = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  if (loading || roleLoading) {
+  // If the admin is already authenticated and verified, never unmount <Outlet /> or interrupt active work
+  // Only display the full-screen verification spinner if admin status is genuinely unresolved on initial boot
+  const isVerifying = (!user && loading) || (!isAdmin && (loading || roleLoading));
+
+  if (isVerifying) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
         <div className="inline-block animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-3" />

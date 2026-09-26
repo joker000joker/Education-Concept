@@ -277,40 +277,79 @@ export async function resolveRecommendations(rawRecs: any[]): Promise<TopRecomme
 
 // Fetch all recommendations for Admin Panel
 export async function fetchAdminRecommendations(): Promise<TopRecommendation[]> {
-  const { data, error } = await supabase
-    .from('top_recommendations')
-    .select('*')
-    .order('display_order', { ascending: true })
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('top_recommendations')
+      .select('*')
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching admin top_recommendations:', error);
-    throw error;
+    if (error) {
+      if (error.code === 'PGRST303' || String(error.message).includes('JWT issued at future')) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const retryRes = await supabase
+          .from('top_recommendations')
+          .select('*')
+          .order('display_order', { ascending: true })
+          .order('created_at', { ascending: false });
+        if (!retryRes.error && retryRes.data) {
+          return resolveRecommendations(retryRes.data);
+        }
+      }
+      console.warn('Notice: error fetching admin top_recommendations:', error.message || error);
+      return [];
+    }
+
+    return resolveRecommendations(data || []);
+  } catch (err) {
+    console.warn('Notice: exception in fetchAdminRecommendations:', err);
+    return [];
   }
-
-  return resolveRecommendations(data || []);
 }
 
 // Fetch only active published recommendations for student Homepage
 export async function fetchPublicRecommendations(): Promise<TopRecommendation[]> {
-  const { data, error } = await supabase
-    .from('top_recommendations')
-    .select('*')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('top_recommendations')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching public top_recommendations:', error);
+    if (error) {
+      // If a transient clock skew (PGRST303) occurs, wait a second and retry once
+      if (error.code === 'PGRST303' || String(error.message).includes('JWT issued at future')) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const retryRes = await supabase
+          .from('top_recommendations')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true })
+          .order('created_at', { ascending: false });
+
+        if (!retryRes.error && retryRes.data) {
+          const resolved = await resolveRecommendations(retryRes.data);
+          return resolved.filter(
+            (r) => r.resolved_item && r.resolved_item.published !== false
+          );
+        }
+      }
+
+      console.warn('Notice: could not load public top_recommendations:', error.message || error);
+      return [];
+    }
+
+    const resolved = await resolveRecommendations(data || []);
+
+    // Filter out missing items or items whose original content is not published
+    return resolved.filter(
+      (r) => r.resolved_item && r.resolved_item.published !== false
+    );
+  } catch (err) {
+    console.warn('Notice: exception in fetchPublicRecommendations:', err);
     return [];
   }
-
-  const resolved = await resolveRecommendations(data || []);
-
-  // Filter out missing items or items whose original content is not published
-  return resolved.filter(
-    (r) => r.resolved_item && r.resolved_item.published !== false
-  );
 }
 
 // Fetch existing uploaded content from the original table for Admin selection

@@ -1,6 +1,8 @@
 import React from 'react';
 import {
   MathIcon,
+  ReasoningIcon,
+  EnglishIcon,
   HistoryIcon,
   GeographyIcon,
   PolityIcon,
@@ -11,7 +13,6 @@ import {
   CurrentAffairsSubjectIcon,
   HindiIcon
 } from '../components/icons/PremiumSubjectIcons';
-import { Brain, BookOpen } from 'lucide-react';
 import { SectionalSubject } from '../types';
 
 export interface SubjectMeta {
@@ -40,7 +41,7 @@ export const SECTIONAL_SUBJECTS_LIST: SubjectMeta[] = [
     name: 'Reasoning',
     slug: 'reasoning',
     hindiName: 'तर्कशक्ति',
-    icon: Brain,
+    icon: ReasoningIcon,
     color: 'text-indigo-600',
     bg: 'bg-indigo-50',
     border: 'border-indigo-200',
@@ -50,7 +51,7 @@ export const SECTIONAL_SUBJECTS_LIST: SubjectMeta[] = [
     name: 'English',
     slug: 'english',
     hindiName: 'अंग्रेज़ी',
-    icon: BookOpen,
+    icon: EnglishIcon,
     color: 'text-emerald-600',
     bg: 'bg-emerald-50',
     border: 'border-emerald-200',

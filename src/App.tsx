@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { syncLocalTestsWithServer } from './services/sectionalTestService';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { Navbar } from './components/layout/Navbar';
@@ -60,6 +61,20 @@ import { AdminSectionalTestsPage } from './pages/admin/AdminSectionalTestsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 
 export default function App() {
+  useEffect(() => {
+    // Automatically synchronize any local sectional tests with the shared backend
+    syncLocalTestsWithServer().catch(() => {});
+    const onFocus = () => {
+      syncLocalTestsWithServer().catch(() => {});
+    };
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('visibilitychange', onFocus);
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <ScrollToTop />
@@ -102,7 +117,7 @@ export default function App() {
                 <Route path="/study-resources/:category" element={<StudyResourcesListingPage />} />
                 
                 {/* EC Test Routes */}
-                <Route path="/tests" element={<TestsLandingPage />} />
+                <Route path="/tests" element={<Navigate to="/?tab=test" replace />} />
                 <Route path="/tests/sectional" element={<SectionalSubjectsPage />} />
                 <Route path="/tests/sectional/:subject" element={<SectionalSubjectTestsPage />} />
                 <Route path="/tests/sectional/test/:testId" element={<SectionalTestTakePage />} />

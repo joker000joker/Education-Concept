@@ -13,6 +13,15 @@ export const SectionalSubjectsPage: React.FC = () => {
 
   useEffect(() => {
     loadTestCounts();
+    const onFocus = () => {
+      loadTestCounts();
+    };
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('visibilitychange', onFocus);
+    };
   }, []);
 
   const loadTestCounts = async () => {
@@ -68,12 +77,8 @@ export const SectionalSubjectsPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <BackButton to="/tests" forceFallback label="EC Test" />
+              <BackButton to="/?tab=test" forceFallback label="EC Test" />
               <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-wider mb-1">
-                  <Sparkles className="w-3 h-3 text-purple-600" />
-                  Subject-Wise Sectional Test
-                </div>
                 <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                   Sectional Tests
                 </h1>
@@ -141,8 +146,8 @@ export const SectionalSubjectsPage: React.FC = () => {
           })}
         </div>
 
-        {/* Desktop: Grid of 12 Subjects (Unchanged) */}
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        {/* Desktop: Grid of 12 Subjects (EC-Style Dark Navy Rounded Cards - 3 Column Layout) */}
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto">
           {filteredSubjects.map((subject) => {
             const Icon = subject.icon;
             const count = testCounts[subject.name.toLowerCase()] || 0;
@@ -151,38 +156,31 @@ export const SectionalSubjectsPage: React.FC = () => {
               <Link
                 key={subject.slug}
                 to={`/tests/sectional/${subject.slug}`}
-                className="group flex flex-col justify-between bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:shadow-xl hover:border-purple-300 transition-all duration-200 hover:-translate-y-1"
+                className="flex items-center justify-between p-5 bg-[#0C122A] rounded-2xl border border-[#1E2756] shadow-xl shadow-[#0C122A]/20 hover:border-blue-500/50 hover:shadow-blue-900/30 hover:-translate-y-1 transition-all group"
               >
-                <div>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-14 h-14 rounded-2xl ${subject.bg} ${subject.color} flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs`}>
-                      <Icon className="w-8 h-8" />
-                    </div>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                        count > 0
-                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                          : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      {loading ? '...' : count > 0 ? `${count} ${count === 1 ? 'Test' : 'Tests'}` : 'New Tests Soon'}
-                    </span>
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${subject.bg} ${subject.color} shadow-sm group-hover:scale-105 transition-transform`}>
+                    <Icon className="w-8 h-8" />
                   </div>
-
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-purple-700 transition-colors">
-                    {subject.name}
-                  </h3>
-                  <p className="text-xs font-semibold text-purple-600/80 mt-0.5">
-                    {subject.hindiName}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
-                    {subject.description}
-                  </p>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-white tracking-wide leading-tight truncate group-hover:text-blue-300 transition-colors">
+                      {subject.name}
+                    </h3>
+                    <p className="text-xs font-medium text-slate-400 mt-1">
+                      Sectional Test
+                    </p>
+                    {count > 0 && (
+                      <span className="inline-block text-[10px] font-bold px-2 py-0.5 mt-1.5 rounded-full bg-blue-900/60 text-blue-300 border border-blue-700/50">
+                        {count} {count === 1 ? 'Test' : 'Tests'} available
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-600 group-hover:text-purple-700 transition-colors">
-                  <span>View Tests</span>
-                  <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform text-purple-600" />
+                <div className="flex items-center shrink-0 pl-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#151D42] flex items-center justify-center text-slate-400 group-hover:text-white group-hover:bg-blue-600 transition-all shadow-sm">
+                    <ArrowRight className="w-5 h-5" />
+                  </div>
                 </div>
               </Link>
             );

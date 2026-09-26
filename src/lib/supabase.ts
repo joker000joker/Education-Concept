@@ -11,22 +11,50 @@ export const isSupabaseConfigured = Boolean(
   !SUPABASE_URL.includes('your-project')
 );
 
-// Resilient fetch wrapper with automatic retry for transient network hiccups
+// Resilient fetch wrapper with automatic retry for transient network hiccups,
+// clock-skew errors (PGRST303: JWT issued at future), and temporary gateway 502/503/504 errors
 const resilientFetch: typeof fetch = async (input, init) => {
-  const maxRetries = 2;
+  const maxRetries = 3;
   let attempt = 0;
   while (attempt <= maxRetries) {
     try {
-      return await fetch(input, init);
+      const response = await fetch(input, init);
+
+      // Handle PGRST303 clock-skew error ("JWT issued at future")
+      // This happens intermittently when Supabase edge gateway's clock is slightly ahead of the PostgREST server clock
+      if (response.status === 401 && attempt < maxRetries) {
+        try {
+          const clone = response.clone();
+          const text = await clone.text();
+          if (text.includes('PGRST303') || text.includes('JWT issued at future')) {
+            attempt++;
+            // Backoff allowing clock skew (typically 500ms - 1500ms) to synchronize
+            await new Promise((resolve) => setTimeout(resolve, attempt * 800));
+            continue;
+          }
+        } catch {
+          // Ignore clone/read errors and return original response
+        }
+      }
+
+      // Handle temporary gateway / proxy hiccups (502, 503, 504)
+      if ((response.status === 502 || response.status === 503 || response.status === 504) && attempt < maxRetries) {
+        attempt++;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+        continue;
+      }
+
+      return response;
     } catch (err: any) {
       const isTransient =
         attempt < maxRetries &&
         (err?.name === 'TypeError' ||
           String(err?.message || err).toLowerCase().includes('failed to fetch') ||
-          String(err?.message || err).toLowerCase().includes('network'));
+          String(err?.message || err).toLowerCase().includes('network') ||
+          String(err?.message || err).toLowerCase().includes('aborted'));
       if (isTransient) {
         attempt++;
-        await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
         continue;
       }
       throw err;

@@ -209,6 +209,7 @@ export interface SectionalTest {
   duration_minutes: number;
   negative_marking: number;
   published: boolean;
+  sort_order?: number;
   created_by?: string | null;
   created_at?: string;
   updated_at?: string;

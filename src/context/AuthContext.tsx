@@ -35,112 +35,190 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [roleLoading, setRoleLoading] = useState<boolean>(true);
 
+  // 30-minute admin verification window constants & cache
+  const ADMIN_VERIFY_WINDOW_MS = 30 * 60 * 1000;
+  const ADMIN_VERIFIED_STORAGE_KEY = 'ec_admin_verified_window';
+
+  // In-memory cache ref for instantaneous synchronous validation without storage latency
+  const adminVerifiedRef = useRef<{ userId: string; verifiedUntil: number } | null>(null);
+
+  // Helper: check if a user has a valid unexpired 30-minute verification window
+  const getCachedAdminVerified = useCallback((userId: string): boolean => {
+    const now = Date.now();
+    // 1. Fast in-memory check
+    if (
+      adminVerifiedRef.current &&
+      adminVerifiedRef.current.userId === userId &&
+      now < adminVerifiedRef.current.verifiedUntil
+    ) {
+      return true;
+    }
+    // 2. Tab session-storage fallback
+    try {
+      const raw = sessionStorage.getItem(ADMIN_VERIFIED_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (
+          parsed &&
+          parsed.userId === userId &&
+          typeof parsed.verifiedUntil === 'number' &&
+          now < parsed.verifiedUntil
+        ) {
+          adminVerifiedRef.current = parsed;
+          return true;
+        }
+      }
+    } catch {
+      // Ignore sessionStorage parsing or quota errors
+    }
+    return false;
+  }, []);
+
+  // Helper: record a successful admin verification for 30 minutes
+  const setCachedAdminVerified = useCallback((userId: string) => {
+    const data = {
+      userId,
+      verifiedUntil: Date.now() + ADMIN_VERIFY_WINDOW_MS,
+    };
+    adminVerifiedRef.current = data;
+    try {
+      sessionStorage.setItem(ADMIN_VERIFIED_STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      // Ignore sessionStorage errors
+    }
+  }, []);
+
+  // Helper: immediately clear verification cache on sign-out or account switch
+  const clearCachedAdminVerified = useCallback(() => {
+    adminVerifiedRef.current = null;
+    try {
+      sessionStorage.removeItem(ADMIN_VERIFIED_STORAGE_KEY);
+    } catch {
+      // Ignore sessionStorage errors
+    }
+  }, []);
+
   // Prevent stale async state updates
   const activeUserIdRef = useRef<string | null>(null);
 
   /**
    * Use the existing Supabase public.is_admin() RPC/function as the source of truth for admin detection.
-   * After authentication/session restore, call supabase.rpc('is_admin').
-   * If it returns true, set the user's role to admin and isAdmin to true; otherwise use user and false.
-   * Remove any incorrect fallback that automatically sets the role to user when the profile query fails.
+   * Supports an optional silent option to verify in background without setting roleLoading=true.
    */
-  const syncRoleFromDatabase = useCallback(async (userId: string, authFullName?: string): Promise<{ profile: Profile | null; isAdmin: boolean }> => {
-    try {
-      setRoleLoading(true);
-
-      // 1. Call supabase.rpc('is_admin') as the source of truth for admin detection
-      let isRpcAdmin = false;
+  const syncRoleFromDatabase = useCallback(
+    async (
+      userId: string,
+      authFullName?: string,
+      options?: { silent?: boolean }
+    ): Promise<{ profile: Profile | null; isAdmin: boolean }> => {
+      const isSilent = Boolean(options?.silent);
       try {
-        const { data: rpcData, error: rpcError } = await supabase.rpc('is_admin');
-        if (rpcError) {
-          console.warn('[AuthContext] supabase.rpc("is_admin") error:', rpcError.message);
-        } else {
-          isRpcAdmin = rpcData === true || String(rpcData).toLowerCase() === 'true';
+        if (!isSilent) {
+          setRoleLoading(true);
         }
-      } catch (rpcErr) {
-        console.error('[AuthContext] Error calling supabase.rpc("is_admin"):', rpcErr);
-      }
 
-      // If it returns true, set the user's role to admin and isAdmin to true; otherwise use user and false
-      const isAdminUser = isRpcAdmin;
-      const role: 'admin' | 'user' = isAdminUser ? 'admin' : 'user';
+        // 1. Call supabase.rpc('is_admin') as the source of truth for admin detection
+        let isRpcAdmin = false;
+        try {
+          const { data: rpcData, error: rpcError } = await supabase.rpc('is_admin');
+          if (rpcError) {
+            console.warn('[AuthContext] supabase.rpc("is_admin") error:', rpcError.message);
+          } else {
+            isRpcAdmin = rpcData === true || String(rpcData).toLowerCase() === 'true';
+          }
+        } catch (rpcErr) {
+          console.error('[AuthContext] Error calling supabase.rpc("is_admin"):', rpcErr);
+        }
 
-      // 2. Fetch user's profile from public.profiles without letting any failure override admin status
-      let profileResult: Profile | null = null;
-      try {
-        const { data: profileRow, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
+        // If it returns true, set the user's role to admin and isAdmin to true; otherwise use user and false
+        const isAdminUser = isRpcAdmin;
+        const role: 'admin' | 'user' = isAdminUser ? 'admin' : 'user';
 
-        if (profileError) {
-          console.warn('[AuthContext] Profile query failed (admin detection preserved via is_admin):', profileError.message);
-        } else if (profileRow) {
-          profileResult = profileRow as Profile;
-          
-          // 3. Sync full_name if available in auth metadata but missing in profile
-          if (authFullName && (!profileResult.full_name || profileResult.full_name.trim() === '')) {
-            try {
-              const { error: updateError } = await supabase
-                .from('profiles')
-                .update({ full_name: authFullName.trim() })
-                .eq('id', userId);
-                
-              if (!updateError) {
-                profileResult.full_name = authFullName.trim();
+        // Update or invalidate the 30-minute verification cache based on the source-of-truth result
+        if (isAdminUser) {
+          setCachedAdminVerified(userId);
+        } else {
+          clearCachedAdminVerified();
+        }
+
+        // 2. Fetch user's profile from public.profiles without letting any failure override admin status
+        let profileResult: Profile | null = null;
+        try {
+          const { data: profileRow, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (profileError) {
+            console.warn('[AuthContext] Profile query failed (admin detection preserved via is_admin):', profileError.message);
+          } else if (profileRow) {
+            profileResult = profileRow as Profile;
+            
+            // 3. Sync full_name if available in auth metadata but missing in profile
+            if (authFullName && (!profileResult.full_name || profileResult.full_name.trim() === '')) {
+              try {
+                const { error: updateError } = await supabase
+                  .from('profiles')
+                  .update({ full_name: authFullName.trim() })
+                  .eq('id', userId);
+                  
+                if (!updateError) {
+                  profileResult.full_name = authFullName.trim();
+                }
+              } catch (updateErr) {
+                console.warn('[AuthContext] Non-fatal: could not auto-sync full_name to profile', updateErr);
               }
-            } catch (updateErr) {
-              console.warn('[AuthContext] Non-fatal: could not auto-sync full_name to profile', updateErr);
+            }
+          } else if (!profileRow && authFullName) {
+            // If profile doesn't exist at all, try inserting it
+            try {
+              await supabase.from('profiles').insert({
+                id: userId,
+                role: 'user',
+                full_name: authFullName.trim(),
+              });
+              profileResult = { id: userId, role: 'user', full_name: authFullName.trim(), mobile: null };
+            } catch (insertErr) {
+              console.warn('[AuthContext] Non-fatal: could not auto-insert profile with full_name', insertErr);
             }
           }
-        } else if (!profileRow && authFullName) {
-          // If profile doesn't exist at all, try inserting it
-          try {
-            await supabase.from('profiles').insert({
-              id: userId,
-              role: 'user',
-              full_name: authFullName.trim(),
-            });
-            profileResult = { id: userId, role: 'user', full_name: authFullName.trim(), mobile: null };
-          } catch (insertErr) {
-            console.warn('[AuthContext] Non-fatal: could not auto-insert profile with full_name', insertErr);
-          }
+        } catch (profileErr) {
+          console.warn('[AuthContext] Profile fetch error (admin detection preserved via is_admin):', profileErr);
         }
-      } catch (profileErr) {
-        console.warn('[AuthContext] Profile fetch error (admin detection preserved via is_admin):', profileErr);
-      }
 
-      // Build final profile ensuring role matches the source of truth
-      const finalProfile: Profile = profileResult
-        ? {
-            ...profileResult,
-            role: isAdminUser ? 'admin' : (profileResult.role === 'admin' ? 'admin' : 'user'),
-          }
-        : {
-            id: userId,
-            mobile: null,
-            full_name: authFullName || null,
-            role,
-          };
+        // Build final profile ensuring role matches the source of truth
+        const finalProfile: Profile = profileResult
+          ? {
+              ...profileResult,
+              role: isAdminUser ? 'admin' : (profileResult.role === 'admin' ? 'admin' : 'user'),
+            }
+          : {
+              id: userId,
+              mobile: null,
+              full_name: authFullName || null,
+              role,
+            };
 
-      // Only apply if this is still the active user
-      if (activeUserIdRef.current === userId) {
-        setProfile(finalProfile);
-        setIsAdmin(isAdminUser);
-        console.log(`[AuthContext] is_admin RPC resolved: ${isRpcAdmin} -> role: "${role}" (isAdmin: ${isAdminUser})`);
-      }
+        // Only apply if this is still the active user
+        if (activeUserIdRef.current === userId) {
+          setProfile(finalProfile);
+          setIsAdmin(isAdminUser);
+          console.log(`[AuthContext] is_admin RPC resolved: ${isRpcAdmin} -> role: "${role}" (isAdmin: ${isAdminUser})`);
+        }
 
-      return { profile: finalProfile, isAdmin: isAdminUser };
-    } catch (err) {
-      console.error('[AuthContext] Error in syncRoleFromDatabase:', err);
-      return { profile: null, isAdmin: false };
-    } finally {
-      if (activeUserIdRef.current === userId) {
-        setRoleLoading(false);
+        return { profile: finalProfile, isAdmin: isAdminUser };
+      } catch (err) {
+        console.error('[AuthContext] Error in syncRoleFromDatabase:', err);
+        return { profile: null, isAdmin: false };
+      } finally {
+        if (!isSilent && activeUserIdRef.current === userId) {
+          setRoleLoading(false);
+        }
       }
-    }
-  }, []);
+    },
+    [setCachedAdminVerified, clearCachedAdminVerified]
+  );
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -154,8 +232,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 1. After session restoration, get current authenticated user using Supabase Auth
     const restoreSessionAndRole = async () => {
       try {
-        setRoleLoading(true);
-
         // Fetch authenticated user directly via Supabase Auth
         const { data: userData, error: userError } = await supabase.auth.getUser();
         const currentAuthUser = userData?.user ?? null;
@@ -167,6 +243,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (!fallbackUser) {
             if (isMounted) {
+              clearCachedAdminVerified();
               activeUserIdRef.current = null;
               setUser(null);
               setSession(null);
@@ -182,8 +259,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             activeUserIdRef.current = fallbackUser.id;
             setUser(fallbackUser);
             setSession(sessionData?.session ?? null);
-            // 2. Fetch that user's row from public.profiles where profiles.id = auth.uid()
-            await syncRoleFromDatabase(fallbackUser.id, fallbackUser.user_metadata?.full_name);
+
+            // Check if 30-minute verification window is still valid
+            const isVerifiedWithinWindow = getCachedAdminVerified(fallbackUser.id);
+            if (isVerifiedWithinWindow) {
+              setIsAdmin(true);
+              setRoleLoading(false);
+              setLoading(false);
+              // Run silent background verification to refresh profile without blocking UI
+              syncRoleFromDatabase(fallbackUser.id, fallbackUser.user_metadata?.full_name, { silent: true }).catch(() => {});
+            } else {
+              setRoleLoading(true);
+              // 2. Fetch that user's row from public.profiles where profiles.id = auth.uid()
+              await syncRoleFromDatabase(fallbackUser.id, fallbackUser.user_metadata?.full_name, { silent: false });
+            }
           }
           return;
         }
@@ -194,13 +283,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { data: sessionData } = await supabase.auth.getSession();
           setSession(sessionData?.session ?? null);
 
-          // 2. Fetch user's row from public.profiles where profiles.id = auth.uid()
-          // 3. Read role column as single source of truth
-          await syncRoleFromDatabase(currentAuthUser.id, currentAuthUser.user_metadata?.full_name);
+          // Check if 30-minute verification window is still valid
+          const isVerifiedWithinWindow = getCachedAdminVerified(currentAuthUser.id);
+          if (isVerifiedWithinWindow) {
+            setIsAdmin(true);
+            setRoleLoading(false);
+            setLoading(false);
+            // Run silent background verification to refresh profile without blocking UI
+            syncRoleFromDatabase(currentAuthUser.id, currentAuthUser.user_metadata?.full_name, { silent: true }).catch(() => {});
+          } else {
+            setRoleLoading(true);
+            // 2. Fetch user's row from public.profiles where profiles.id = auth.uid()
+            // 3. Read role column as single source of truth
+            await syncRoleFromDatabase(currentAuthUser.id, currentAuthUser.user_metadata?.full_name, { silent: false });
+          }
         }
       } catch (err) {
         console.error('[AuthContext] Failed to restore session and role:', err);
         if (isMounted) {
+          clearCachedAdminVerified();
           activeUserIdRef.current = null;
           setUser(null);
           setSession(null);
@@ -225,6 +326,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log(`[AuthContext] onAuthStateChange event: ${event}`);
 
         if (event === 'SIGNED_OUT' || !currentSession?.user) {
+          clearCachedAdminVerified();
           activeUserIdRef.current = null;
           setUser(null);
           setSession(null);
@@ -236,14 +338,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const authUser = currentSession.user;
+
+        // Invalidate cached verification if a different user account signs in
+        if (activeUserIdRef.current && activeUserIdRef.current !== authUser.id) {
+          clearCachedAdminVerified();
+        }
+
         activeUserIdRef.current = authUser.id;
         setUser(authUser);
         setSession(currentSession);
 
-        // Fetch fresh role on auth state updates
-        await syncRoleFromDatabase(authUser.id, authUser.user_metadata?.full_name);
-        setRoleLoading(false);
-        setLoading(false);
+        // Check if 30-minute verification window is still valid for this user
+        const isVerifiedWithinWindow = getCachedAdminVerified(authUser.id);
+
+        if (isVerifiedWithinWindow) {
+          // Keep admin status active, never block the UI with roleLoading
+          setIsAdmin(true);
+          setRoleLoading(false);
+          setLoading(false);
+          // Perform silent verification in background to sync profile without interrupting active admin work
+          syncRoleFromDatabase(authUser.id, authUser.user_metadata?.full_name, { silent: true }).catch(() => {});
+        } else {
+          // Verification window expired or cold start: perform standard verification
+          await syncRoleFromDatabase(authUser.id, authUser.user_metadata?.full_name, { silent: false });
+          setRoleLoading(false);
+          setLoading(false);
+        }
       }
     );
 
@@ -251,7 +371,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [syncRoleFromDatabase]);
+  }, [syncRoleFromDatabase, getCachedAdminVerified, clearCachedAdminVerified]);
 
   const signIn = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {
@@ -337,6 +457,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    clearCachedAdminVerified();
     activeUserIdRef.current = null;
     setUser(null);
     setSession(null);
@@ -354,7 +475,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     if (user) {
-      await syncRoleFromDatabase(user.id, user.user_metadata?.full_name);
+      await syncRoleFromDatabase(user.id, user.user_metadata?.full_name, { silent: true });
     }
   };
 
