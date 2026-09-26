@@ -1,6 +1,48 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Suppress benign Vite HMR logs and errors in preview sandbox iframe -->
+    <script>
+      (function() {
+        var isViteMsg = function(arg) {
+          if (!arg) return false;
+          var str = typeof arg === 'string' ? arg : (arg.message || String(arg));
+          return (
+            str.indexOf('[vite]') !== -1 ||
+            str.indexOf('WebSocket') !== -1 ||
+            str.indexOf('vite-hmr') !== -1 ||
+            str.indexOf('vite-ping') !== -1 ||
+            str.indexOf('vite-plugin-pwa') !== -1 ||
+            str.indexOf('ws://') !== -1 ||
+            str.indexOf('wss://') !== -1
+          );
+        };
+        var origError = console.error;
+        console.error = function() {
+          for (var i = 0; i < arguments.length; i++) {
+            if (isViteMsg(arguments[i])) {
+              return;
+            }
+          }
+          origError.apply(console, arguments);
+        };
+        var origWarn = console.warn;
+        console.warn = function() {
+          for (var i = 0; i < arguments.length; i++) {
+            if (isViteMsg(arguments[i])) {
+              return;
+            }
+          }
+          origWarn.apply(console, arguments);
+        };
+        window.addEventListener('unhandledrejection', function(event) {
+          if (isViteMsg(event.reason)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0059e6" />

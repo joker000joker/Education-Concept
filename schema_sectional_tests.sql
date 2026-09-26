@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS sectional_tests (
   duration_minutes INTEGER NOT NULL DEFAULT 20,
   negative_marking NUMERIC NOT NULL DEFAULT 0.25,
   published BOOLEAN DEFAULT true,
+  sort_order INTEGER DEFAULT 0,
   created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS sectional_tests (
 
 CREATE INDEX IF NOT EXISTS idx_sec_tests_subj ON sectional_tests(subject);
 CREATE INDEX IF NOT EXISTS idx_sec_tests_pub ON sectional_tests(published);
+CREATE INDEX IF NOT EXISTS idx_sec_tests_sort ON sectional_tests(sort_order);
 
 -- 2. Create sectional_questions table
 CREATE TABLE IF NOT EXISTS sectional_questions (
