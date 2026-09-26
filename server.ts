@@ -98,9 +98,16 @@ function ensureDataFile(): DatabaseStructure {
 
 function saveDb(data: DatabaseStructure): void {
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    const tmpFile = `${DATA_FILE}.tmp.${Date.now()}`;
+    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tmpFile, DATA_FILE);
   } catch (err) {
-    console.error('[Server DB] Error saving sectional_tests.json', err);
+    console.error('[Server DB] Error saving sectional_tests.json atomically, trying direct write', err);
+    try {
+      fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    } catch (directErr) {
+      console.error('[Server DB] Direct write also failed', directErr);
+    }
   }
 }
 
@@ -112,7 +119,13 @@ async function startServer() {
 
   // Enable CORS for cross-origin requests from preview iframe, mobile, and desktop
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    } else {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     if (req.method === 'OPTIONS') {
@@ -127,7 +140,14 @@ async function startServer() {
   // ---------------------------------------------------------------------------
   // SECTIONAL TESTS API ROUTES
   // Shared single source of truth for both Mobile and Desktop
+  // Prevent any browser/proxy/CDN caching across devices
   // ---------------------------------------------------------------------------
+  app.use('/api/sectional-tests', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+  });
 
   // GET /api/sectional-tests
   app.get('/api/sectional-tests', (req: Request, res: Response) => {
