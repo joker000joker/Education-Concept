@@ -59,91 +59,49 @@ const POSSIBLE_QUESTION_KEYS = [
 
 function getLocalTests(): SectionalTest[] {
   try {
-    const testsMap = new Map<number | string, SectionalTest>();
+    const raw = localStorage.getItem(LOCAL_STORAGE_TESTS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => ({
+          id: Number(item.id),
+          title: String(item.title || ''),
+          subject: (item.subject || 'Mathematics') as SectionalSubject,
+          total_questions: Number(item.total_questions || 0),
+          total_marks: Number(item.total_marks || 50),
+          duration_minutes: Number(item.duration_minutes || 20),
+          negative_marking: Number(item.negative_marking ?? 0.25),
+          published: item.published !== undefined ? Boolean(item.published) : true,
+          sort_order: item.sort_order !== undefined && item.sort_order !== null ? Number(item.sort_order) : undefined,
+          created_at: item.created_at || new Date().toISOString(),
+          updated_at: item.updated_at || new Date().toISOString()
+        })).sort((a, b) => {
+          const orderA = a.sort_order !== undefined && a.sort_order !== null ? Number(a.sort_order) : Infinity;
+          const orderB = b.sort_order !== undefined && b.sort_order !== null ? Number(b.sort_order) : Infinity;
+          if (orderA !== orderB) return orderA - orderB;
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        });
+      }
+    }
 
-    // 1. Scan primary and all historical variant keys
+    // One-time fallback check for legacy keys if primary is empty
     for (const key of POSSIBLE_TEST_KEYS) {
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
+      if (key === LOCAL_STORAGE_TESTS_KEY) continue;
+      const legacyRaw = localStorage.getItem(key);
+      if (!legacyRaw) continue;
       try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item && item.title) {
-              const testId = Number(item.id) || Date.now();
-              if (!testsMap.has(testId)) {
-                testsMap.set(testId, {
-                  id: testId,
-                  title: String(item.title || ''),
-                  subject: (item.subject || 'Mathematics') as SectionalSubject,
-                  total_questions: Number(item.total_questions || 0),
-                  total_marks: Number(item.total_marks || 50),
-                  duration_minutes: Number(item.duration_minutes || 20),
-                  negative_marking: Number(item.negative_marking ?? 0.25),
-                  published: item.published !== undefined ? Boolean(item.published) : true,
-                  sort_order: item.sort_order !== undefined && item.sort_order !== null ? Number(item.sort_order) : undefined,
-                  created_at: item.created_at || new Date().toISOString(),
-                  updated_at: item.updated_at || new Date().toISOString()
-                });
-              }
-            }
+        const parsed = JSON.parse(legacyRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valid = parsed.filter((item) => item && item.title);
+          if (valid.length > 0) {
+            setLocalTests(valid as SectionalTest[]);
+            return valid as SectionalTest[];
           }
         }
       } catch {}
     }
 
-    // 2. Also scan any other key in localStorage that may contain tests
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (
-          k &&
-          (k.includes('sectional') || k.includes('test')) &&
-          !POSSIBLE_TEST_KEYS.includes(k) &&
-          !k.includes('question') &&
-          !k.includes('attempt') &&
-          !k.includes('result')
-        ) {
-          const raw = localStorage.getItem(k);
-          if (!raw) continue;
-          try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) {
-              for (const item of parsed) {
-                if (item && item.title && (item.subject || item.total_questions)) {
-                  const testId = Number(item.id) || Date.now();
-                  if (!testsMap.has(testId)) {
-                    testsMap.set(testId, {
-                      id: testId,
-                      title: String(item.title || ''),
-                      subject: (item.subject || 'Mathematics') as SectionalSubject,
-                      total_questions: Number(item.total_questions || 0),
-                      total_marks: Number(item.total_marks || 50),
-                      duration_minutes: Number(item.duration_minutes || 20),
-                      negative_marking: Number(item.negative_marking ?? 0.25),
-                      published: item.published !== undefined ? Boolean(item.published) : true,
-                      sort_order: item.sort_order !== undefined && item.sort_order !== null ? Number(item.sort_order) : undefined,
-                      created_at: item.created_at || new Date().toISOString(),
-                      updated_at: item.updated_at || new Date().toISOString()
-                    });
-                  }
-                }
-              }
-            }
-          } catch {}
-        }
-      }
-    } catch {}
-
-    // Empty test lists remain empty.
-    const list = Array.from(testsMap.values());
-    list.sort((a, b) => {
-      const orderA = a.sort_order !== undefined && a.sort_order !== null ? Number(a.sort_order) : Infinity;
-      const orderB = b.sort_order !== undefined && b.sort_order !== null ? Number(b.sort_order) : Infinity;
-      if (orderA !== orderB) return orderA - orderB;
-      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-    });
-    return list;
+    return [];
   } catch (err) {
     return [];
   }
@@ -153,9 +111,12 @@ function setLocalTests(tests: SectionalTest[]): void {
   try {
     const serialized = JSON.stringify(tests);
     localStorage.setItem(LOCAL_STORAGE_TESTS_KEY, serialized);
-    localStorage.setItem('ec_sectional_tests_v1', serialized);
-    localStorage.setItem('ec_sectional_tests_cache', serialized);
-    localStorage.setItem('sectional_tests', serialized);
+    // Clean up legacy variant keys so deleted tests are never resurrected
+    for (const key of POSSIBLE_TEST_KEYS) {
+      if (key !== LOCAL_STORAGE_TESTS_KEY) {
+        localStorage.removeItem(key);
+      }
+    }
   } catch (err) {
     console.warn('Failed to save tests to localStorage', err);
   }
@@ -164,26 +125,22 @@ function setLocalTests(tests: SectionalTest[]): void {
 function getLocalQuestions(testId: number): SectionalQuestion[] {
   try {
     const numId = Number(testId);
-    for (const key of POSSIBLE_QUESTION_KEYS) {
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-      try {
-        const map = JSON.parse(raw);
-        if (map && (map[numId] || map[String(numId)])) {
-          const list = map[numId] || map[String(numId)];
-          if (Array.isArray(list) && list.length > 0) {
-            return list;
-          }
+    const raw = localStorage.getItem(LOCAL_STORAGE_QUESTIONS_KEY);
+    if (raw) {
+      const map = JSON.parse(raw);
+      if (map && (map[numId] || map[String(numId)])) {
+        const list = map[numId] || map[String(numId)];
+        if (Array.isArray(list) && list.length > 0) {
+          return list;
         }
-      } catch {}
+      }
     }
-    // Also check individual question key: ec_sectional_questions_${testId}
+
+    // Check individual question key
     const singleRaw = localStorage.getItem(`ec_sectional_questions_${numId}`);
     if (singleRaw) {
-      try {
-        const list = JSON.parse(singleRaw);
-        if (Array.isArray(list) && list.length > 0) return list;
-      } catch {}
+      const list = JSON.parse(singleRaw);
+      if (Array.isArray(list) && list.length > 0) return list;
     }
 
     return INITIAL_DEMO_QUESTIONS[numId] || [];
@@ -201,29 +158,32 @@ function setLocalQuestions(testId: number, questions: SectionalQuestion[]): void
     const serialized = JSON.stringify(map);
     localStorage.setItem(LOCAL_STORAGE_QUESTIONS_KEY, serialized);
     localStorage.setItem(`ec_sectional_questions_${numId}`, JSON.stringify(questions));
-    localStorage.setItem('ec_sectional_questions_cache', serialized);
-    localStorage.setItem('sectional_questions', serialized);
   } catch (err) {
     console.warn('Failed to save questions to localStorage', err);
   }
 }
 
 function removeLocalTest(testId: number): void {
-  const tests = getLocalTests().filter((t) => t.id !== testId);
+  const tests = getLocalTests().filter((t) => Number(t.id) !== Number(testId));
   setLocalTests(tests);
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_QUESTIONS_KEY);
     if (raw) {
       const map = JSON.parse(raw);
       delete map[testId];
+      delete map[String(testId)];
       localStorage.setItem(LOCAL_STORAGE_QUESTIONS_KEY, JSON.stringify(map));
     }
     localStorage.removeItem(`ec_sectional_questions_${testId}`);
+    for (const key of POSSIBLE_QUESTION_KEYS) {
+      if (key !== LOCAL_STORAGE_QUESTIONS_KEY) {
+        localStorage.removeItem(key);
+      }
+    }
   } catch {}
 }
 
 let isSyncing = false;
-let hasSyncedOnce = false;
 
 /**
  * Safely merge server tests into local cache without wiping out other subjects
@@ -243,37 +203,24 @@ function mergeServerTestsIntoLocal(serverTests: SectionalTest[]): void {
 }
 
 /**
- * Automatically synchronizes any locally created tests (e.g. tests created from mobile)
- * to the shared server database so they immediately appear on desktop and all devices.
+ * Automatically synchronizes with shared server database:
+ * Refreshes local cache from the authoritative server so mobile and laptop stay 100% in sync.
  */
 export async function syncLocalTestsWithServer(): Promise<void> {
   if (isSyncing) return;
   isSyncing = true;
   try {
-    const local = getLocalTests();
-    const questionsMap: Record<string, SectionalQuestion[]> = {};
-
-    for (const t of local) {
-      const qList = getLocalQuestions(t.id);
-      if (qList && qList.length > 0) {
-        questionsMap[String(t.id)] = qList;
+    // 1. Fetch fresh authoritative tests from shared server
+    const res = await fetch(`/api/sectional-tests?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
+    if (res.ok) {
+      const serverTests = await res.json();
+      if (Array.isArray(serverTests)) {
+        setLocalTests(serverTests);
       }
     }
-
-    if (local.length > 0 || Object.keys(questionsMap).length > 0) {
-      const res = await fetch('/api/sectional-tests/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tests: local, questionsMap })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && Array.isArray(data.tests) && data.tests.length > 0) {
-          mergeServerTestsIntoLocal(data.tests);
-        }
-      }
-    }
-    hasSyncedOnce = true;
   } catch (err) {
     console.info('[SectionalTest] Background sync notice:', err);
   } finally {
@@ -282,28 +229,38 @@ export async function syncLocalTestsWithServer(): Promise<void> {
 }
 
 /**
- * Fetch sectional tests from the shared backend API with automatic two-way synchronization.
- * Both Mobile and Desktop use this same unified source of truth.
+ * Fetch sectional tests from the shared backend API with automatic cross-device freshness.
+ * Both Mobile and Desktop use this same unified authoritative source of truth.
  */
 export async function fetchSectionalTests(options?: {
   subject?: string;
   publishedOnly?: boolean;
 }): Promise<SectionalTest[]> {
-  // Sync any local tests from this device into the shared backend in background
-  syncLocalTestsWithServer().catch(() => {});
-
-  // 1. Primary: Fetch from Shared Server Backend API
+  // 1. Primary: Fetch from Shared Server Backend API (authoritative source)
   try {
     const params = new URLSearchParams();
     if (options?.publishedOnly) params.append('publishedOnly', 'true');
     if (options?.subject && options.subject !== 'All') params.append('subject', options.subject);
+    params.append('_t', String(Date.now())); // Bypass browser and intermediary cache
 
-    const queryStr = params.toString() ? `?${params.toString()}` : '';
-    const response = await fetch(`/api/sectional-tests${queryStr}`);
+    const response = await fetch(`/api/sectional-tests?${params.toString()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+
     if (response.ok) {
       const serverTests = await response.json();
       if (Array.isArray(serverTests)) {
-        setLocalTests(serverTests);
+        if (!options?.subject || options.subject === 'All') {
+          // If fetching without subject filter, authoritatively update local cache
+          setLocalTests(serverTests);
+        } else {
+          // If subject-filtered, merge into local cache rather than wiping out other subjects
+          mergeServerTestsIntoLocal(serverTests);
+        }
         return serverTests;
       }
     }
@@ -370,7 +327,10 @@ export async function fetchSectionalTestById(
 
   // 1. Primary: Server API
   try {
-    const res = await fetch(`/api/sectional-tests/${numId}`);
+    const res = await fetch(`/api/sectional-tests/${numId}?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
     if (res.ok) {
       const data = await res.json();
       if (data && data.id) return data as SectionalTest;
@@ -406,10 +366,13 @@ export async function fetchSectionalQuestions(
 
   // 1. Primary: Server API
   try {
-    const res = await fetch(`/api/sectional-tests/${numId}/questions`);
+    const res = await fetch(`/api/sectional-tests/${numId}/questions?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setLocalQuestions(numId, data);
         return data as SectionalQuestion[];
       }
@@ -437,13 +400,14 @@ export async function fetchSectionalQuestions(
 /**
  * Create or update a sectional test and its questions.
  * Immediately saves to the shared backend so Mobile and Desktop stay 100% in sync.
+ * Strict rule: A test must NEVER exist only in local browser cache and be considered saved.
  */
 export async function saveSectionalTest(
   testData: Partial<SectionalTest>,
   questions: SectionalQuestion[]
 ): Promise<{ success: boolean; testId: number; error?: string }> {
   const totalQuestions = questions.length;
-  const targetId = testData.id || Date.now();
+  const targetId = testData.id ? Number(testData.id) : Date.now();
 
   const payloadTest: SectionalTest = {
     id: targetId,
@@ -459,30 +423,42 @@ export async function saveSectionalTest(
     updated_at: new Date().toISOString()
   };
 
-  // 1. Primary: Save to Shared Server API
-  let serverSaved = false;
-  let savedId = targetId;
+  // 1. Primary: Save to Shared Server API (MANDATORY PERSISTENCE)
+  let savedTest: SectionalTest = payloadTest;
+  let savedQuestions: SectionalQuestion[] = questions;
 
-  try {
-    const res = await fetch('/api/sectional-tests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test: payloadTest, questions })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.success && data.test) {
-        savedId = data.test.id;
-        payloadTest.id = savedId;
-        serverSaved = true;
-      }
-    }
-  } catch (err) {
-    console.info('[SectionalTest] Server save notice, using local persistence:', err);
+  const res = await fetch('/api/sectional-tests', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    },
+    body: JSON.stringify({ test: payloadTest, questions })
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = `Server save failed (${res.status})`;
+    try {
+      const errJson = JSON.parse(errorText);
+      if (errJson.error) errorMessage = errJson.error;
+    } catch {}
+    throw new Error(errorMessage);
   }
 
-  // 2. Always update local cache on the current device
-  updateLocalTest(payloadTest, questions);
+  const data = await res.json();
+  if (!data || !data.success || !data.test) {
+    throw new Error(data?.error || 'Shared backend did not confirm test creation');
+  }
+
+  savedTest = data.test;
+  if (Array.isArray(data.questions)) {
+    savedQuestions = data.questions;
+  }
+
+  // 2. Authoritatively update local cache on the current device
+  updateLocalTest(savedTest, savedQuestions);
 
   // 3. Mirror to Supabase if configured and table exists
   if (isSupabaseConfigured) {
@@ -492,21 +468,21 @@ export async function saveSectionalTest(
         const { error: updateError } = await supabase
           .from('sectional_tests')
           .update({
-            title: payloadTest.title,
-            subject: payloadTest.subject,
+            title: savedTest.title,
+            subject: savedTest.subject,
             total_questions: totalQuestions,
-            total_marks: payloadTest.total_marks,
-            duration_minutes: payloadTest.duration_minutes,
-            negative_marking: payloadTest.negative_marking,
-            published: payloadTest.published,
+            total_marks: savedTest.total_marks,
+            duration_minutes: savedTest.duration_minutes,
+            negative_marking: savedTest.negative_marking,
+            published: savedTest.published,
             updated_at: new Date().toISOString()
           })
-          .eq('id', payloadTest.id);
+          .eq('id', savedTest.id);
 
         if (!updateError) {
-          await supabase.from('sectional_questions').delete().eq('test_id', payloadTest.id);
-          const questionsPayload = questions.map((q, idx) => ({
-            test_id: payloadTest.id,
+          await supabase.from('sectional_questions').delete().eq('test_id', savedTest.id);
+          const questionsPayload = savedQuestions.map((q, idx) => ({
+            test_id: savedTest.id,
             question_order: idx + 1,
             question_text: q.question_text,
             option_a: q.option_a,
@@ -522,20 +498,20 @@ export async function saveSectionalTest(
         const { data: inserted, error: insertError } = await supabase
           .from('sectional_tests')
           .insert({
-            title: payloadTest.title,
-            subject: payloadTest.subject,
+            title: savedTest.title,
+            subject: savedTest.subject,
             total_questions: totalQuestions,
-            total_marks: payloadTest.total_marks,
-            duration_minutes: payloadTest.duration_minutes,
-            negative_marking: payloadTest.negative_marking,
-            published: payloadTest.published
+            total_marks: savedTest.total_marks,
+            duration_minutes: savedTest.duration_minutes,
+            negative_marking: savedTest.negative_marking,
+            published: savedTest.published
           })
           .select()
           .single();
 
         if (!insertError && inserted) {
           const newId = inserted.id;
-          const questionsPayload = questions.map((q, idx) => ({
+          const questionsPayload = savedQuestions.map((q, idx) => ({
             test_id: newId,
             question_order: idx + 1,
             question_text: q.question_text,
@@ -552,7 +528,7 @@ export async function saveSectionalTest(
     } catch {}
   }
 
-  return { success: true, testId: savedId };
+  return { success: true, testId: savedTest.id };
 }
 
 function updateLocalTest(test: SectionalTest, questions: SectionalQuestion[]) {
@@ -568,13 +544,24 @@ function updateLocalTest(test: SectionalTest, questions: SectionalQuestion[]) {
 }
 
 /**
- * Delete a sectional test
+ * Delete a sectional test from the shared persistent backend and local cache.
  */
 export async function deleteSectionalTest(id: number): Promise<{ success: boolean; error?: string }> {
-  // 1. Primary: Server API
-  try {
-    await fetch(`/api/sectional-tests/${id}`, { method: 'DELETE' });
-  } catch {}
+  // 1. Primary: Server API (Authoritative)
+  const res = await fetch(`/api/sectional-tests/${id}`, {
+    method: 'DELETE',
+    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    let msg = `Failed to delete test from server (${res.status})`;
+    try {
+      const parsed = JSON.parse(errText);
+      if (parsed.error) msg = parsed.error;
+    } catch {}
+    throw new Error(msg);
+  }
 
   // 2. Cloud Fallback: Supabase
   if (isSupabaseConfigured) {
@@ -589,20 +576,32 @@ export async function deleteSectionalTest(id: number): Promise<{ success: boolea
 }
 
 /**
- * Toggle published state
+ * Toggle published state in the shared persistent backend and local cache.
  */
 export async function togglePublishSectionalTest(
   id: number,
   published: boolean
 ): Promise<{ success: boolean; error?: string }> {
-  // 1. Primary: Server API
-  try {
-    await fetch(`/api/sectional-tests/${id}/publish`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ published })
-    });
-  } catch {}
+  // 1. Primary: Server API (Authoritative)
+  const res = await fetch(`/api/sectional-tests/${id}/publish`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    },
+    body: JSON.stringify({ published })
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    let msg = `Failed to update status on server (${res.status})`;
+    try {
+      const parsed = JSON.parse(errText);
+      if (parsed.error) msg = parsed.error;
+    } catch {}
+    throw new Error(msg);
+  }
 
   // 2. Cloud Fallback: Supabase
   if (isSupabaseConfigured) {
@@ -615,7 +614,7 @@ export async function togglePublishSectionalTest(
   }
 
   // 3. Local Cache
-  const tests = getLocalTests().map((t) => (t.id === id ? { ...t, published } : t));
+  const tests = getLocalTests().map((t) => (Number(t.id) === Number(id) ? { ...t, published } : t));
   setLocalTests(tests);
   return { success: true };
 }
@@ -630,49 +629,30 @@ export async function reorderSectionalTests(
   let updatedTests: SectionalTest[] | null = null;
 
   // 1. Primary: Shared Backend Server API
-  try {
-    const res = await fetch('/api/sectional-tests/reorder', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ testIds: orderedIds })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.success && Array.isArray(data.tests)) {
-        updatedTests = data.tests;
-        setLocalTests(updatedTests);
-      }
-    }
-  } catch (err) {
-    console.warn('[SectionalTest] Reorder API notice, falling back to local persistence:', err);
+  const res = await fetch('/api/sectional-tests/reorder', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    },
+    body: JSON.stringify({ testIds: orderedIds })
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to save test order to server');
   }
 
-  // 2. Local Cache Update
-  const idMap = new Map(orderedIds.map((id, idx) => [Number(id), idx + 1]));
-  if (!updatedTests) {
-    const local = getLocalTests();
-    updatedTests = local.map((t) => {
-      if (idMap.has(Number(t.id))) {
-        return {
-          ...t,
-          sort_order: idMap.get(Number(t.id))!,
-          updated_at: new Date().toISOString()
-        };
-      }
-      return t;
-    });
-    updatedTests.sort((a, b) => {
-      const orderA = a.sort_order !== undefined && a.sort_order !== null ? Number(a.sort_order) : Infinity;
-      const orderB = b.sort_order !== undefined && b.sort_order !== null ? Number(b.sort_order) : Infinity;
-      if (orderA !== orderB) return orderA - orderB;
-      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-    });
+  const data = await res.json();
+  if (data && data.success && Array.isArray(data.tests)) {
+    updatedTests = data.tests;
     setLocalTests(updatedTests);
   }
 
-  // 3. Cloud Fallback: Supabase (if configured)
+  // 2. Cloud Fallback: Supabase (if configured)
   if (isSupabaseConfigured) {
     try {
+      const idMap = new Map(orderedIds.map((id, idx) => [Number(id), idx + 1]));
       for (const [id, order] of idMap.entries()) {
         await supabase
           .from('sectional_tests')
@@ -682,7 +662,7 @@ export async function reorderSectionalTests(
     } catch {}
   }
 
-  return { success: true, tests: updatedTests };
+  return { success: true, tests: updatedTests || undefined };
 }
 
 // =============================================================================

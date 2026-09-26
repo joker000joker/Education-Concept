@@ -288,7 +288,7 @@ export const AdminSectionalTestsPage: React.FC = () => {
           'success'
         );
         setIsModalOpen(false);
-        loadTests();
+        await loadTests();
       } else {
         toast.showToast(result.error || 'Failed to save test', 'error');
       }
@@ -310,8 +310,8 @@ export const AdminSectionalTestsPage: React.FC = () => {
         `Test ${nextStatus ? 'published' : 'unpublished'} successfully`,
         'success'
       );
-    } catch {
-      toast.showToast('Failed to update status', 'error');
+    } catch (err: any) {
+      toast.showToast(err?.message || 'Failed to update status', 'error');
     }
   };
 
@@ -322,9 +322,9 @@ export const AdminSectionalTestsPage: React.FC = () => {
       await deleteSectionalTest(deletingTest.id);
       toast.showToast('Sectional test deleted successfully', 'success');
       setDeletingTest(null);
-      loadTests();
-    } catch (err) {
-      toast.showToast('Failed to delete test', 'error');
+      await loadTests();
+    } catch (err: any) {
+      toast.showToast(err?.message || 'Failed to delete test', 'error');
     } finally {
       setIsDeleting(false);
     }
