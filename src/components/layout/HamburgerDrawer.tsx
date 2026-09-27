@@ -115,8 +115,8 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
           <div>
             <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs shadow-blue-500/20">
-                  <GraduationCap className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-full flex items-center justify-center shadow-xs overflow-hidden shrink-0 aspect-square">
+                  <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
                 </div>
                 <div>
                   <span className="text-sm font-extrabold tracking-tight text-slate-900 block leading-none">

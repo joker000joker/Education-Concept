@@ -61,10 +61,13 @@ export const Navbar: React.FC = () => {
             >
               <Menu className="w-6 h-6 text-white" />
             </button>
-            <Link to="/" className="flex items-center gap-2" onClick={() => setIsDrawerOpen(false)}>
-               <span className="text-lg font-bold tracking-tight text-white block leading-tight font-sans">
-                  Education Concept
-                </span>
+            <Link to="/" className="flex items-center gap-2.5" onClick={() => setIsDrawerOpen(false)}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shadow-xs overflow-hidden shrink-0 aspect-square">
+                <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
+              </div>
+              <span className="text-lg font-bold tracking-tight text-white block leading-tight font-sans">
+                Education Concept
+              </span>
             </Link>
           </div>
           <div className="flex items-center gap-3">
@@ -87,8 +90,8 @@ export const Navbar: React.FC = () => {
               className="flex items-center gap-3"
               onClick={() => setIsDrawerOpen(false)}
             >
-              <div className="w-10 h-10 rounded-xl bg-white text-blue-600 flex items-center justify-center shadow-sm shrink-0">
-                 <img src="/pwa-192x192.png" alt="Logo" className="w-8 h-8 object-contain" />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm shrink-0 overflow-hidden aspect-square">
+                <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
               </div>
               <div>
                 <span className="text-xl font-extrabold tracking-tight text-white block leading-tight font-sans">

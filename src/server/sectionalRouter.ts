@@ -422,3 +422,34 @@ const handleReorder = async (req: Request, res: Response) => {
 
 sectionalRouter.post('/reorder', handleReorder);
 sectionalRouter.put('/reorder', handleReorder);
+
+// -----------------------------------------------------------------------------
+// Vercel Serverless Function Application & Handler
+// -----------------------------------------------------------------------------
+export function createSectionalApiApp(): Express {
+  const app = express();
+  setupSectionalMiddleware(app);
+
+  // Mount at both full and short paths to ensure compatibility with Vercel rewrites and direct invocations
+  app.use('/api/sectional-tests', sectionalRouter);
+  app.use('/sectional-tests', sectionalRouter);
+
+  // Health check endpoints
+  app.get('/api/health', (_req: Request, res: Response) => res.json({ status: 'ok', service: 'education-concept-api' }));
+  app.get('/health', (_req: Request, res: Response) => res.json({ status: 'ok', service: 'education-concept-api' }));
+
+  return app;
+}
+
+const defaultSectionalApiApp = createSectionalApiApp();
+
+export function sectionalApiHandler(req: any, res: any) {
+  // If Vercel rewrote the path or passed it through a sub-route without prefix
+  if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/sectional-tests')) {
+    const cleanUrl = req.url.startsWith('/') ? req.url : '/' + req.url;
+    req.url = '/api/sectional-tests' + (cleanUrl === '/' ? '' : cleanUrl);
+  } else if (!req.url) {
+    req.url = '/api/sectional-tests';
+  }
+  return defaultSectionalApiApp(req, res);
+}

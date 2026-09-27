@@ -1,3 +1,3 @@
-import handler from './index';
+import { sectionalApiHandler } from '../src/server/sectionalRouter';
 
-export default handler;
+export default sectionalApiHandler;

@@ -105,8 +105,8 @@ export const ProfilePage: React.FC = () => {
       <div className="max-w-md mx-auto px-4 py-16 space-y-6 text-center">
         <BackButton fallbackTo="/" label="Back to Home" />
         <div className="bg-white rounded-3xl border border-slate-200 p-8 space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-            <User className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto shadow-xs overflow-hidden shrink-0 aspect-square">
+            <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
           </div>
           <h2 className="text-lg font-bold text-slate-900">Sign in Required</h2>
           <p className="text-xs text-slate-500">

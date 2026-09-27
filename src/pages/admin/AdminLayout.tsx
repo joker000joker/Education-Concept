@@ -87,7 +87,9 @@ export const AdminLayout: React.FC = () => {
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-blue-600" />
+            <div className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden shrink-0 aspect-square">
+              <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
+            </div>
             <span className="font-bold text-slate-900 text-sm">Admin Panel</span>
           </div>
         </div>
@@ -105,15 +107,23 @@ export const AdminLayout: React.FC = () => {
         `}
       >
         <div className="p-4 border-b border-slate-200">
-          <div className="flex items-center justify-between mb-4">
-            <BackButton fallbackTo="/" label="Exit" className="!px-2 !py-1 !text-xs" />
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="md:hidden p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-              aria-label="Close navigation menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden shrink-0 aspect-square">
+                <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
+              </div>
+              <span className="text-xs font-extrabold text-slate-900 tracking-tight">EDUCATION CONCEPT</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <BackButton fallbackTo="/" label="Exit" className="!px-2 !py-1 !text-xs" />
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="md:hidden p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                aria-label="Close navigation menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 border border-blue-100">
             <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />

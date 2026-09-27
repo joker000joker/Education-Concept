@@ -17,8 +17,8 @@ export const Footer: React.FC = () => {
           {/* Brand */}
           <div className="flex flex-col gap-1.5 shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                <GraduationCap className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shadow-xs overflow-hidden shrink-0 aspect-square">
+                <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
               </div>
               <span className="text-base font-extrabold text-white tracking-tight">
                 EDUCATION CONCEPT

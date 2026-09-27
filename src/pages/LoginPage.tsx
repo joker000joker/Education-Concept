@@ -80,8 +80,8 @@ export const LoginPage: React.FC = () => {
       <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-md">
         {/* Header Branding */}
         <div className="text-center space-y-2 mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-xs">
-            <GraduationCap className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto shadow-md overflow-hidden shrink-0 aspect-square">
+            <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Log in to Education Concept
