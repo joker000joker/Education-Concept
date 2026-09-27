@@ -44,8 +44,9 @@ export const FreeEbooksListingPage: React.FC = () => {
         
         const books = data as FreeEbook[];
         setEbooks(books);
+        setLoading(false);
         
-        // Fetch signed URLs for covers
+        // Fetch signed URLs for covers asynchronously in background
         const urls: Record<number, string> = {};
         await Promise.all(
           books.map(async (book) => {

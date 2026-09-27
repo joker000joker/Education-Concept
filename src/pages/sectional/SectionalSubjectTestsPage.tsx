@@ -21,6 +21,25 @@ import {
   RotateCcw
 } from 'lucide-react';
 
+/**
+ * Format test title to clean title case dynamically while preserving uppercase acronyms
+ */
+function formatTestTitle(title: string): string {
+  if (!title) return '';
+  return title
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      if (!word) return '';
+      // Preserve existing uppercase acronyms (e.g. SSC, UPSC, GK, GS, II, III)
+      if (word.length > 1 && word === word.toUpperCase() && /^[A-Z0-9]+$/.test(word)) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(' ');
+}
+
 export const SectionalSubjectTestsPage: React.FC = () => {
   const { subject: subjectSlug } = useParams<{ subject: string }>();
   const navigate = useNavigate();
@@ -38,8 +57,12 @@ export const SectionalSubjectTestsPage: React.FC = () => {
     }
     loadTests();
 
+    let lastFocus = Date.now();
     const onFocus = () => {
-      loadTests();
+      if (document.visibilityState === 'visible' && Date.now() - lastFocus > 10000) {
+        lastFocus = Date.now();
+        loadTests({ silent: true });
+      }
     };
     window.addEventListener('focus', onFocus);
     window.addEventListener('visibilitychange', onFocus);
@@ -57,20 +80,17 @@ export const SectionalSubjectTestsPage: React.FC = () => {
     }
   }, [user?.id]);
 
-  const loadTests = async () => {
+  const loadTests = async (options?: { silent?: boolean }) => {
     if (!subjectMeta) return;
-    setLoading(true);
+    if (!options?.silent && tests.length === 0) {
+      setLoading(true);
+    }
     try {
       const data = await fetchSectionalTests({
         subject: subjectMeta.name,
         publishedOnly: true
       });
       setTests(data);
-
-      if (user) {
-        const results = await fetchUserSectionalResults(user.id);
-        setUserResults(results);
-      }
     } catch (err) {
       console.warn('Failed to load tests for subject', err);
     } finally {
@@ -195,59 +215,78 @@ export const SectionalSubjectTestsPage: React.FC = () => {
               return (
                 <div
                   key={test.id}
-                  className="bg-white rounded-2xl border border-slate-200/80 hover:border-purple-300 p-6 shadow-2xs hover:shadow-xl transition-all duration-200 flex flex-col justify-between group"
+                  className="bg-white rounded-2xl border border-slate-200/90 hover:border-purple-300 p-4 sm:p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group"
                 >
                   <div>
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {userResult && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            Score: {userResult.score}/{userResult.total_marks}
-                          </span>
-                        )}
+                    {/* Header: Subject Icon + Title & Metadata + Duration Badge */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <div
+                          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${subjectMeta.bg} ${subjectMeta.color} border ${subjectMeta.border} flex items-center justify-center shrink-0 shadow-2xs mt-0.5`}
+                        >
+                          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-purple-700 transition-colors leading-snug line-clamp-2">
+                            {formatTestTitle(test.title)}
+                          </h3>
+                          <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 mt-0.5">
+                            <span>{subjectMeta.name}</span>
+                            <span className="text-slate-300">•</span>
+                            <span>Sectional Test</span>
+                          </div>
+                        </div>
                       </div>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 shrink-0">
-                        <Clock className="w-3 h-3" />
-                        {test.duration_minutes} Mins
+
+                      {/* Duration Badge */}
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-600 text-[11px] sm:text-xs font-semibold shrink-0">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{test.duration_minutes} Mins</span>
                       </span>
                     </div>
 
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-purple-700 transition-colors leading-snug mb-3">
-                      {test.title}
-                    </h3>
+                    {/* Previous Score Status Badge if Available */}
+                    {userResult && (
+                      <div className="mt-2.5">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Score: {userResult.score}/{userResult.total_marks}</span>
+                        </span>
+                      </div>
+                    )}
 
-                    {/* Test Specs Grid */}
-                    <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 my-4 text-center">
-                      <div className="p-2 rounded-xl bg-slate-50">
-                        <p className="text-[10px] uppercase font-semibold text-slate-400">Questions</p>
-                        <p className="text-sm font-extrabold text-slate-800 mt-0.5">{test.total_questions}</p>
+                    {/* Compact, Unified Stats Section */}
+                    <div className="grid grid-cols-3 gap-1 py-2 px-2.5 rounded-xl bg-slate-50/90 border border-slate-100 my-3.5 text-center">
+                      <div className="py-0.5">
+                        <p className="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Questions</p>
+                        <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5">{test.total_questions}</p>
                       </div>
-                      <div className="p-2 rounded-xl bg-slate-50">
-                        <p className="text-[10px] uppercase font-semibold text-slate-400">Marks</p>
-                        <p className="text-sm font-extrabold text-slate-800 mt-0.5">{test.total_marks}</p>
+                      <div className="py-0.5 border-x border-slate-200/60">
+                        <p className="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Marks</p>
+                        <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5">{test.total_marks}</p>
                       </div>
-                      <div className="p-2 rounded-xl bg-slate-50">
-                        <p className="text-[10px] uppercase font-semibold text-slate-400">Neg. Mark</p>
-                        <p className="text-sm font-extrabold text-rose-600 mt-0.5">-{test.negative_marking}</p>
+                      <div className="py-0.5">
+                        <p className="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Neg. Mark</p>
+                        <p className="text-xs sm:text-sm font-bold text-rose-600 mt-0.5">-{test.negative_marking}</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-2">
+                  {/* Action Area: Start Test / Analyse + Reattempt */}
+                  <div className="mt-1">
                     {userResult ? (
                       /* Logged in with completed test: Analyse + Reattempt */
                       <div className="grid grid-cols-2 gap-2">
                         <Link
                           to={`/tests/sectional/test/${test.id}?mode=analyse`}
-                          className="inline-flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-700 border border-purple-200 text-xs font-bold transition-all shadow-2xs hover:shadow-xs"
+                          className="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-700 border border-purple-200 text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-[0.99]"
                         >
                           <BarChart3 className="w-3.5 h-3.5" />
                           <span>Analyse</span>
                         </Link>
                         <Link
                           to={`/tests/sectional/test/${test.id}?reattempt=true`}
-                          className="inline-flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all group-hover:scale-[1.01]"
+                          className="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-[0.99]"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                           <span>Reattempt</span>
@@ -257,9 +296,9 @@ export const SectionalSubjectTestsPage: React.FC = () => {
                       /* First time / No result: Start Test */
                       <Link
                         to={`/tests/sectional/test/${test.id}`}
-                        className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all group-hover:scale-[1.01]"
+                        className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs sm:text-sm font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.99]"
                       >
-                        <Play className="w-4 h-4 fill-white" />
+                        <Play className="w-3.5 h-3.5 fill-white" />
                         <span>Start Test</span>
                       </Link>
                     )}

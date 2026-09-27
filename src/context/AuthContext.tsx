@@ -100,6 +100,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Prevent stale async state updates
   const activeUserIdRef = useRef<string | null>(null);
+  // Deduplicate in-flight role synchronization promises
+  const inFlightRoleSyncRef = useRef<{ [userId: string]: Promise<{ profile: Profile | null; isAdmin: boolean }> }>({});
 
   /**
    * Use the existing Supabase public.is_admin() RPC/function as the source of truth for admin detection.
@@ -111,13 +113,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authFullName?: string,
       options?: { silent?: boolean }
     ): Promise<{ profile: Profile | null; isAdmin: boolean }> => {
-      const isSilent = Boolean(options?.silent);
-      try {
-        if (!isSilent) {
-          setRoleLoading(true);
-        }
+      // Return existing in-flight promise to avoid duplicate concurrent RPC/profile requests
+      if (inFlightRoleSyncRef.current[userId]) {
+        return inFlightRoleSyncRef.current[userId];
+      }
 
-        // 1. Call supabase.rpc('is_admin') as the source of truth for admin detection
+      const isSilent = Boolean(options?.silent);
+      const executeSync = async (): Promise<{ profile: Profile | null; isAdmin: boolean }> => {
+        try {
+          if (!isSilent) {
+            setRoleLoading(true);
+          }
+
+          // 1. Call supabase.rpc('is_admin') as the source of truth for admin detection
         let isRpcAdmin = false;
         try {
           const { data: rpcData, error: rpcError } = await supabase.rpc('is_admin');
@@ -215,9 +223,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!isSilent && activeUserIdRef.current === userId) {
           setRoleLoading(false);
         }
+        delete inFlightRoleSyncRef.current[userId];
       }
-    },
-    [setCachedAdminVerified, clearCachedAdminVerified]
+    };
+
+    const task = executeSync();
+    inFlightRoleSyncRef.current[userId] = task;
+    return task;
+  },
+  [setCachedAdminVerified, clearCachedAdminVerified]
   );
 
   useEffect(() => {
@@ -324,6 +338,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!isMounted) return;
 
         console.log(`[AuthContext] onAuthStateChange event: ${event}`);
+
+        // Handled authoritatively by restoreSessionAndRole to prevent duplicate startup requests
+        if (event === 'INITIAL_SESSION') {
+          return;
+        }
 
         if (event === 'SIGNED_OUT' || !currentSession?.user) {
           clearCachedAdminVerified();

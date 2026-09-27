@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { syncLocalTestsWithServer } from './services/sectionalTestService';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { Navbar } from './components/layout/Navbar';
@@ -9,72 +8,62 @@ import { BottomNav } from './components/layout/BottomNav';
 import { EnvNotice } from './components/common/EnvNotice';
 import { ScrollToTop } from './components/common/ScrollToTop';
 
-// Pages
+// Immediate load for fastest Initial Page Paint
 import { HomePage } from './pages/HomePage';
-import { SubjectsPage } from './pages/SubjectsPage';
-import { CategoryNotesPage } from './pages/CategoryNotesPage';
-import { BrowseNotesPage } from './pages/BrowseNotesPage';
-import { PdfReaderPage } from './pages/PdfReaderPage';
-import { PaidEbooksPage } from './pages/PaidEbooksPage';
-import { FreeEbooksPage } from './pages/FreeEbooksPage';
-import { CurrentAffairsPage } from './pages/CurrentAffairsPage';
-import { SyllabusPage } from './pages/SyllabusPage';
-import { SyllabusCategoryPage } from './pages/SyllabusCategoryPage';
-import { SyllabusExamPage } from './pages/SyllabusExamPage';
-import { StudyResourcesPage } from './pages/StudyResourcesPage';
-import { PaidEbooksListingPage } from './pages/PaidEbooksListingPage';
-import { FreeEbooksListingPage } from './pages/FreeEbooksListingPage';
-import { StudyResourcesListingPage } from './pages/StudyResourcesListingPage';
-import { SyllabusContentPage } from './pages/SyllabusContentPage';
-import { LoginPage } from './pages/LoginPage';
-import { SignupPage } from './pages/SignupPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { SettingsPage } from './pages/SettingsPage';
 
-import { ComingSoonPage } from './pages/ComingSoonPage';
-import { TestsLandingPage } from './pages/TestsLandingPage';
-import { SectionalSubjectsPage } from './pages/sectional/SectionalSubjectsPage';
-import { SectionalSubjectTestsPage } from './pages/sectional/SectionalSubjectTestsPage';
-import { SectionalTestTakePage } from './pages/sectional/SectionalTestTakePage';
+// Lazy-loaded routes for code-splitting (splits heavy libraries like pdfjs-dist and admin modules)
+const SubjectsPage = React.lazy(() => import('./pages/SubjectsPage').then(m => ({ default: m.SubjectsPage })));
+const CategoryNotesPage = React.lazy(() => import('./pages/CategoryNotesPage').then(m => ({ default: m.CategoryNotesPage })));
+const BrowseNotesPage = React.lazy(() => import('./pages/BrowseNotesPage').then(m => ({ default: m.BrowseNotesPage })));
+const PdfReaderPage = React.lazy(() => import('./pages/PdfReaderPage').then(m => ({ default: m.PdfReaderPage })));
+const PaidEbooksPage = React.lazy(() => import('./pages/PaidEbooksPage').then(m => ({ default: m.PaidEbooksPage })));
+const FreeEbooksPage = React.lazy(() => import('./pages/FreeEbooksPage').then(m => ({ default: m.FreeEbooksPage })));
+const CurrentAffairsPage = React.lazy(() => import('./pages/CurrentAffairsPage').then(m => ({ default: m.CurrentAffairsPage })));
+const SyllabusPage = React.lazy(() => import('./pages/SyllabusPage').then(m => ({ default: m.SyllabusPage })));
+const SyllabusCategoryPage = React.lazy(() => import('./pages/SyllabusCategoryPage').then(m => ({ default: m.SyllabusCategoryPage })));
+const SyllabusExamPage = React.lazy(() => import('./pages/SyllabusExamPage').then(m => ({ default: m.SyllabusExamPage })));
+const StudyResourcesPage = React.lazy(() => import('./pages/StudyResourcesPage').then(m => ({ default: m.StudyResourcesPage })));
+const PaidEbooksListingPage = React.lazy(() => import('./pages/PaidEbooksListingPage').then(m => ({ default: m.PaidEbooksListingPage })));
+const FreeEbooksListingPage = React.lazy(() => import('./pages/FreeEbooksListingPage').then(m => ({ default: m.FreeEbooksListingPage })));
+const StudyResourcesListingPage = React.lazy(() => import('./pages/StudyResourcesListingPage').then(m => ({ default: m.StudyResourcesListingPage })));
+const SyllabusContentPage = React.lazy(() => import('./pages/SyllabusContentPage').then(m => ({ default: m.SyllabusContentPage })));
+const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const SignupPage = React.lazy(() => import('./pages/SignupPage').then(m => ({ default: m.SignupPage })));
+const ProfilePage = React.lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 
-// Admin Pages
-import { AdminLayout } from './pages/admin/AdminLayout';
-import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
-import { AdminNotesPage } from './pages/admin/AdminNotesPage';
-import { AdminUploadPage } from './pages/admin/AdminUploadPage';
+const ComingSoonPage = React.lazy(() => import('./pages/ComingSoonPage').then(m => ({ default: m.ComingSoonPage })));
+const SectionalSubjectsPage = React.lazy(() => import('./pages/sectional/SectionalSubjectsPage').then(m => ({ default: m.SectionalSubjectsPage })));
+const SectionalSubjectTestsPage = React.lazy(() => import('./pages/sectional/SectionalSubjectTestsPage').then(m => ({ default: m.SectionalSubjectTestsPage })));
+const SectionalTestTakePage = React.lazy(() => import('./pages/sectional/SectionalTestTakePage').then(m => ({ default: m.SectionalTestTakePage })));
 
-import { 
-  AdminFreeEbooksPage, 
-  AdminQuestionsPage,
-  AdminTestsPage, AdminTestPassPage
-} from './pages/admin/AdminDynamicPages';
-import { AdminRecommendationsPage } from './pages/admin/AdminRecommendationsPage';
-import { AdminBannersPage } from './pages/admin/AdminBannersPage';
-import { AdminStudyResourcesPage } from './pages/admin/AdminStudyResourcesPage';
-import { AdminCurrentAffairsPage } from './pages/admin/AdminCurrentAffairsPage';
-import { AdminExamPatternPage } from './pages/admin/AdminExamPatternPage';
-import { AdminWhatsAppPage } from './pages/admin/AdminWhatsAppPage';
-import { AdminPaidEbooksPage } from './pages/admin/AdminPaidEbooksPage';
-import { AdminComingSoonPage } from './pages/admin/AdminComingSoonPage';
-import { AdminSectionalTestsPage } from './pages/admin/AdminSectionalTestsPage';
+// Lazy-loaded Admin Pages
+const AdminLayout = React.lazy(() => import('./pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminOverviewPage = React.lazy(() => import('./pages/admin/AdminOverviewPage').then(m => ({ default: m.AdminOverviewPage })));
+const AdminNotesPage = React.lazy(() => import('./pages/admin/AdminNotesPage').then(m => ({ default: m.AdminNotesPage })));
+const AdminUploadPage = React.lazy(() => import('./pages/admin/AdminUploadPage').then(m => ({ default: m.AdminUploadPage })));
+const AdminFreeEbooksPage = React.lazy(() => import('./pages/admin/AdminDynamicPages').then(m => ({ default: m.AdminFreeEbooksPage })));
+const AdminQuestionsPage = React.lazy(() => import('./pages/admin/AdminDynamicPages').then(m => ({ default: m.AdminQuestionsPage })));
+const AdminTestsPage = React.lazy(() => import('./pages/admin/AdminDynamicPages').then(m => ({ default: m.AdminTestsPage })));
+const AdminTestPassPage = React.lazy(() => import('./pages/admin/AdminDynamicPages').then(m => ({ default: m.AdminTestPassPage })));
+const AdminRecommendationsPage = React.lazy(() => import('./pages/admin/AdminRecommendationsPage').then(m => ({ default: m.AdminRecommendationsPage })));
+const AdminBannersPage = React.lazy(() => import('./pages/admin/AdminBannersPage').then(m => ({ default: m.AdminBannersPage })));
+const AdminStudyResourcesPage = React.lazy(() => import('./pages/admin/AdminStudyResourcesPage').then(m => ({ default: m.AdminStudyResourcesPage })));
+const AdminCurrentAffairsPage = React.lazy(() => import('./pages/admin/AdminCurrentAffairsPage').then(m => ({ default: m.AdminCurrentAffairsPage })));
+const AdminExamPatternPage = React.lazy(() => import('./pages/admin/AdminExamPatternPage').then(m => ({ default: m.AdminExamPatternPage })));
+const AdminWhatsAppPage = React.lazy(() => import('./pages/admin/AdminWhatsAppPage').then(m => ({ default: m.AdminWhatsAppPage })));
+const AdminPaidEbooksPage = React.lazy(() => import('./pages/admin/AdminPaidEbooksPage').then(m => ({ default: m.AdminPaidEbooksPage })));
+const AdminComingSoonPage = React.lazy(() => import('./pages/admin/AdminComingSoonPage').then(m => ({ default: m.AdminComingSoonPage })));
+const AdminSectionalTestsPage = React.lazy(() => import('./pages/admin/AdminSectionalTestsPage').then(m => ({ default: m.AdminSectionalTestsPage })));
+const AdminUsersPage = React.lazy(() => import('./pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
 
-import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+const RouteLoadingFallback = () => (
+  <div className="flex-1 flex items-center justify-center min-h-[50vh]">
+    <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 export default function App() {
-  useEffect(() => {
-    // Automatically synchronize any local sectional tests with the shared backend
-    syncLocalTestsWithServer().catch(() => {});
-    const onFocus = () => {
-      syncLocalTestsWithServer().catch(() => {});
-    };
-    window.addEventListener('focus', onFocus);
-    window.addEventListener('visibilitychange', onFocus);
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      window.removeEventListener('visibilitychange', onFocus);
-    };
-  }, []);
-
   return (
     <BrowserRouter>
       <ScrollToTop />
@@ -91,80 +80,80 @@ export default function App() {
               <Navbar />
             </div>
 
-            {/* Main Application Routes */}
+            {/* Main Application Routes with Route-level Suspense */}
             <main className="flex-1">
-              <Routes>
-                {/* Public & Student Routes */}
-                <Route path="/" element={<HomePage />} />
-                <Route path="/subjects" element={<SubjectsPage />} />
-                <Route path="/subjects/:category" element={<CategoryNotesPage />} />
-                <Route path="/notes" element={<BrowseNotesPage />} />
-                <Route path="/notes/:id" element={<PdfReaderPage />} />
-                
-                {/* EC Notes Flow Routes */}
-                <Route path="/paid-ebooks" element={<PaidEbooksPage />} />
-                <Route path="/paid-ebooks/:category" element={<PaidEbooksListingPage />} />
-                <Route path="/free-ebooks" element={<FreeEbooksPage />} />
-                <Route path="/free-ebooks/:category" element={<FreeEbooksListingPage />} />
-                <Route path="/current-affairs" element={<CurrentAffairsPage />} />
-                <Route path="/syllabus" element={<SyllabusPage />} />
-                <Route path="/syllabus/:category" element={<SyllabusCategoryPage />} />
-                <Route path="/syllabus/:category/:exam" element={<SyllabusExamPage />} />
-                <Route path="/syllabus/:category/:exam/:type" element={<SyllabusContentPage />} />
-                <Route path="/resources" element={<StudyResourcesPage />} />
-                <Route path="/resources/:category" element={<StudyResourcesListingPage />} />
-                <Route path="/study-resources" element={<StudyResourcesPage />} />
-                <Route path="/study-resources/:category" element={<StudyResourcesListingPage />} />
-                
-                {/* EC Test Routes */}
-                <Route path="/tests" element={<Navigate to="/?tab=test" replace />} />
-                <Route path="/tests/sectional" element={<SectionalSubjectsPage />} />
-                <Route path="/tests/sectional/:subject" element={<SectionalSubjectTestsPage />} />
-                <Route path="/tests/sectional/test/:testId" element={<SectionalTestTakePage />} />
-                <Route path="/tests/*" element={<ComingSoonPage />} />
-                
-                {/* Authentication & User Account */}
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/settings" element={<SettingsPage />} />
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Routes>
+                  {/* Public & Student Routes */}
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/subjects" element={<SubjectsPage />} />
+                  <Route path="/subjects/:category" element={<CategoryNotesPage />} />
+                  <Route path="/notes" element={<BrowseNotesPage />} />
+                  <Route path="/notes/:id" element={<PdfReaderPage />} />
+                  
+                  {/* EC Notes Flow Routes */}
+                  <Route path="/paid-ebooks" element={<PaidEbooksPage />} />
+                  <Route path="/paid-ebooks/:category" element={<PaidEbooksListingPage />} />
+                  <Route path="/free-ebooks" element={<FreeEbooksPage />} />
+                  <Route path="/free-ebooks/:category" element={<FreeEbooksListingPage />} />
+                  <Route path="/current-affairs" element={<CurrentAffairsPage />} />
+                  <Route path="/syllabus" element={<SyllabusPage />} />
+                  <Route path="/syllabus/:category" element={<SyllabusCategoryPage />} />
+                  <Route path="/syllabus/:category/:exam" element={<SyllabusExamPage />} />
+                  <Route path="/syllabus/:category/:exam/:type" element={<SyllabusContentPage />} />
+                  <Route path="/resources" element={<StudyResourcesPage />} />
+                  <Route path="/resources/:category" element={<StudyResourcesListingPage />} />
+                  <Route path="/study-resources" element={<StudyResourcesPage />} />
+                  <Route path="/study-resources/:category" element={<StudyResourcesListingPage />} />
+                  
+                  {/* EC Test Routes */}
+                  <Route path="/tests" element={<Navigate to="/?tab=test" replace />} />
+                  <Route path="/tests/sectional" element={<SectionalSubjectsPage />} />
+                  <Route path="/tests/sectional/:subject" element={<SectionalSubjectTestsPage />} />
+                  <Route path="/tests/sectional/test/:testId" element={<SectionalTestTakePage />} />
+                  <Route path="/tests/*" element={<ComingSoonPage />} />
+                  
+                  {/* Authentication & User Account */}
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
 
-                {/* Protected Admin Routes (public.profiles.role = 'admin') */}
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<AdminOverviewPage />} />
-                  <Route path="notes" element={<AdminNotesPage />} />
-                  <Route path="upload" element={<AdminUploadPage />} />
-                {/* Admin Dynamic Content Routes */}
-                <Route path="paid-ebooks" element={<AdminPaidEbooksPage />} />
-                <Route path="free-ebooks" element={<AdminFreeEbooksPage />} />
-                <Route path="current-affairs" element={<AdminCurrentAffairsPage />} />
-                <Route path="exam-pattern" element={<AdminExamPatternPage />} />
-                <Route path="study-resources" element={<AdminStudyResourcesPage />} />
-                
-                {/* EC Test Routes */}
-                <Route path="test-dashboard" element={<AdminComingSoonPage moduleName="Test Dashboard Module" />} />
-                <Route path="question-bank" element={<AdminQuestionsPage />} />
-                <Route path="daily-quiz" element={<AdminTestsPage />} />
-                <Route path="chapter-test" element={<AdminTestsPage />} />
-                <Route path="sectional-test" element={<AdminSectionalTestsPage />} />
-                <Route path="test-pass" element={<AdminTestPassPage />} />
-                <Route path="live-test" element={<AdminTestsPage />} />
-                <Route path="create-test" element={<AdminTestsPage />} />
-                
-                {/* Other Admin Routes */}
-                <Route path="banners" element={<AdminBannersPage />} />
-                <Route path="recommendations" element={<AdminRecommendationsPage />} />
-                <Route path="orders" element={<AdminComingSoonPage moduleName="Orders / Purchases Module" />} />
-                <Route path="analytics" element={<AdminComingSoonPage moduleName="Test Analytics Module" />} />
-                <Route path="whatsapp" element={<AdminWhatsAppPage />} />
-                <Route path="settings" element={<AdminComingSoonPage moduleName="Website Settings" />} />
+                  {/* Protected Admin Routes (public.profiles.role = 'admin') */}
+                  <Route path="/admin" element={<AdminLayout />}>
+                    <Route index element={<AdminOverviewPage />} />
+                    <Route path="notes" element={<AdminNotesPage />} />
+                    <Route path="upload" element={<AdminUploadPage />} />
+                    <Route path="paid-ebooks" element={<AdminPaidEbooksPage />} />
+                    <Route path="free-ebooks" element={<AdminFreeEbooksPage />} />
+                    <Route path="current-affairs" element={<AdminCurrentAffairsPage />} />
+                    <Route path="exam-pattern" element={<AdminExamPatternPage />} />
+                    <Route path="study-resources" element={<AdminStudyResourcesPage />} />
+                    
+                    {/* EC Test Routes */}
+                    <Route path="test-dashboard" element={<AdminComingSoonPage moduleName="Test Dashboard Module" />} />
+                    <Route path="question-bank" element={<AdminQuestionsPage />} />
+                    <Route path="daily-quiz" element={<AdminTestsPage />} />
+                    <Route path="chapter-test" element={<AdminTestsPage />} />
+                    <Route path="sectional-test" element={<AdminSectionalTestsPage />} />
+                    <Route path="test-pass" element={<AdminTestPassPage />} />
+                    <Route path="live-test" element={<AdminTestsPage />} />
+                    <Route path="create-test" element={<AdminTestsPage />} />
+                    
+                    {/* Other Admin Routes */}
+                    <Route path="banners" element={<AdminBannersPage />} />
+                    <Route path="recommendations" element={<AdminRecommendationsPage />} />
+                    <Route path="orders" element={<AdminComingSoonPage moduleName="Orders / Purchases Module" />} />
+                    <Route path="analytics" element={<AdminComingSoonPage moduleName="Test Analytics Module" />} />
+                    <Route path="whatsapp" element={<AdminWhatsAppPage />} />
+                    <Route path="settings" element={<AdminComingSoonPage moduleName="Website Settings" />} />
+                    <Route path="users" element={<AdminUsersPage />} />
+                  </Route>
 
-                  <Route path="users" element={<AdminUsersPage />} />
-                </Route>
-
-                {/* Catch-all fallback redirect */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+                  {/* Catch-all fallback redirect */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
             </main>
 
             {/* Global Footer */}

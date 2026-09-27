@@ -93,8 +93,12 @@ export const AdminSectionalTestsPage: React.FC = () => {
 
   useEffect(() => {
     loadTests();
+    let lastFocus = Date.now();
     const onFocus = () => {
-      loadTests();
+      if (document.visibilityState === 'visible' && Date.now() - lastFocus > 10000) {
+        lastFocus = Date.now();
+        loadTests({ silent: true });
+      }
     };
     window.addEventListener('focus', onFocus);
     window.addEventListener('visibilitychange', onFocus);
@@ -134,13 +138,18 @@ export const AdminSectionalTestsPage: React.FC = () => {
     }
   }, [searchParams, location.hash]);
 
-  const loadTests = async () => {
-    setLoading(true);
+  const loadTests = async (options?: { silent?: boolean }) => {
+    // Only show full loading indicator on initial cold load when there are no tests displayed
+    if (!options?.silent && tests.length === 0) {
+      setLoading(true);
+    }
     try {
       const data = await fetchSectionalTests();
       setTests(data);
     } catch (err) {
-      toast.showToast('Failed to load sectional tests', 'error');
+      if (!options?.silent) {
+        toast.showToast('Failed to load sectional tests', 'error');
+      }
     } finally {
       setLoading(false);
     }

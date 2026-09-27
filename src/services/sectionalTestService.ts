@@ -203,6 +203,29 @@ function mergeServerTestsIntoLocal(serverTests: SectionalTest[]): void {
 }
 
 /**
+ * Helper to retrieve current user session auth headers for Supabase RLS enforcement.
+ */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache'
+  };
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.access_token) {
+      headers['Authorization'] = `Bearer ${data.session.access_token}`;
+    }
+  } catch {}
+  return headers;
+}
+
+async function getJsonAuthHeaders(): Promise<Record<string, string>> {
+  const headers = await getAuthHeaders();
+  headers['Content-Type'] = 'application/json';
+  return headers;
+}
+
+/**
  * Automatically synchronizes with shared server database:
  * Refreshes local cache from the authoritative server so mobile and laptop stay 100% in sync.
  */
@@ -210,10 +233,10 @@ export async function syncLocalTestsWithServer(): Promise<void> {
   if (isSyncing) return;
   isSyncing = true;
   try {
-    // 1. Fetch fresh authoritative tests from shared server
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(`/api/sectional-tests?_t=${Date.now()}`, {
       cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      headers: authHeaders
     });
     if (res.ok) {
       const serverTests = await res.json();
@@ -243,12 +266,10 @@ export async function fetchSectionalTests(options?: {
     if (options?.subject && options.subject !== 'All') params.append('subject', options.subject);
     params.append('_t', String(Date.now())); // Bypass browser and intermediary cache
 
+    const authHeaders = await getAuthHeaders();
     const response = await fetch(`/api/sectional-tests?${params.toString()}`, {
       cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
+      headers: authHeaders
     });
 
     if (response.ok) {
@@ -256,6 +277,7 @@ export async function fetchSectionalTests(options?: {
       if (Array.isArray(serverTests)) {
         if (!options?.subject || options.subject === 'All') {
           // If fetching without subject filter, authoritatively update local cache
+          // If empty array from Supabase, authoritatively clears local cache!
           setLocalTests(serverTests);
         } else {
           // If subject-filtered, merge into local cache rather than wiping out other subjects
@@ -268,9 +290,7 @@ export async function fetchSectionalTests(options?: {
     console.info('[SectionalTest] Server fetch notice, checking local cache:', err);
   }
 
-  // 2. Cloud Fallback: Check Supabase if configured and table exists
-  let supabaseTests: SectionalTest[] = [];
-  let fetchedFromSupabase = false;
+  // 2. Cloud Fallback: Check Supabase directly if configured and table exists
   if (isSupabaseConfigured) {
     try {
       let query = supabase.from('sectional_tests').select('*');
@@ -280,9 +300,12 @@ export async function fetchSectionalTests(options?: {
       if (options?.subject && options.subject !== 'All') {
         query = query.ilike('subject', options.subject);
       }
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (!error && Array.isArray(data) && data.length > 0) {
-        supabaseTests = data.map((row: any) => ({
+      const { data, error } = await query
+        .order('sort_order', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const supabaseTests: SectionalTest[] = data.map((row: any) => ({
           id: Number(row.id),
           title: String(row.title || ''),
           subject: (row.subject || 'General Knowledge') as SectionalSubject,
@@ -291,19 +314,19 @@ export async function fetchSectionalTests(options?: {
           duration_minutes: Number(row.duration_minutes || 20),
           negative_marking: Number(row.negative_marking ?? 0.25),
           published: Boolean(row.published),
+          sort_order: row.sort_order !== undefined && row.sort_order !== null ? Number(row.sort_order) : undefined,
           created_at: row.created_at,
           updated_at: row.updated_at
         }));
-        fetchedFromSupabase = true;
+        if (!options?.subject || options.subject === 'All') {
+          setLocalTests(supabaseTests);
+        }
+        return supabaseTests;
       }
     } catch {}
   }
 
-  if (fetchedFromSupabase && supabaseTests.length > 0) {
-    return supabaseTests;
-  }
-
-  // 3. Device Cache Fallback
+  // 3. Device Cache Fallback (Offline only)
   let local = getLocalTests();
   if (options?.publishedOnly) {
     local = local.filter((t) => t.published !== false);
@@ -327,13 +350,18 @@ export async function fetchSectionalTestById(
 
   // 1. Primary: Server API
   try {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(`/api/sectional-tests/${numId}?_t=${Date.now()}`, {
       cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      headers: authHeaders
     });
     if (res.ok) {
       const data = await res.json();
-      if (data && data.id) return data as SectionalTest;
+      if (data && data.id) {
+        return data as SectionalTest;
+      }
+    } else if (res.status === 404) {
+      return null;
     }
   } catch {}
 
@@ -344,16 +372,27 @@ export async function fetchSectionalTestById(
         .from('sectional_tests')
         .select('*')
         .eq('id', numId)
-        .single();
+        .maybeSingle();
       if (!error && data) {
-        return data as SectionalTest;
+        return {
+          id: Number(data.id),
+          title: String(data.title || ''),
+          subject: (data.subject || 'General Knowledge') as SectionalSubject,
+          total_questions: Number(data.total_questions || 0),
+          total_marks: Number(data.total_marks || 50),
+          duration_minutes: Number(data.duration_minutes || 20),
+          negative_marking: Number(data.negative_marking ?? 0.25),
+          published: Boolean(data.published),
+          sort_order: data.sort_order !== undefined && data.sort_order !== null ? Number(data.sort_order) : undefined,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        };
       }
     } catch {}
   }
 
-  // 3. Local Cache
-  const local = getLocalTests();
-  return local.find((t) => Number(t.id) === numId) || null;
+  // 3. Local Cache Fallback
+  return getLocalTests().find((t) => Number(t.id) === numId) || null;
 }
 
 /**
@@ -366,9 +405,10 @@ export async function fetchSectionalQuestions(
 
   // 1. Primary: Server API
   try {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(`/api/sectional-tests/${numId}/questions?_t=${Date.now()}`, {
       cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      headers: authHeaders
     });
     if (res.ok) {
       const data = await res.json();
@@ -387,19 +427,21 @@ export async function fetchSectionalQuestions(
         .select('*')
         .eq('test_id', numId)
         .order('question_order', { ascending: true });
-      if (!error && data && data.length > 0) {
-        return data as SectionalQuestion[];
+      if (!error && Array.isArray(data)) {
+        const qList = data as SectionalQuestion[];
+        setLocalQuestions(numId, qList);
+        return qList;
       }
     } catch {}
   }
 
-  // 3. Local Cache
+  // 3. Local Cache Fallback
   return getLocalQuestions(numId);
 }
 
 /**
  * Create or update a sectional test and its questions.
- * Immediately saves to the shared backend so Mobile and Desktop stay 100% in sync.
+ * Immediately saves to the shared backend backed by Supabase PostgreSQL.
  * Strict rule: A test must NEVER exist only in local browser cache and be considered saved.
  */
 export async function saveSectionalTest(
@@ -407,10 +449,9 @@ export async function saveSectionalTest(
   questions: SectionalQuestion[]
 ): Promise<{ success: boolean; testId: number; error?: string }> {
   const totalQuestions = questions.length;
-  const targetId = testData.id ? Number(testData.id) : Date.now();
+  const targetId = testData.id ? Number(testData.id) : undefined;
 
-  const payloadTest: SectionalTest = {
-    id: targetId,
+  const payloadTest: any = {
     title: String(testData.title || 'Untitled Test').trim(),
     subject: (testData.subject || 'Mathematics') as SectionalSubject,
     total_questions: totalQuestions,
@@ -423,17 +464,15 @@ export async function saveSectionalTest(
     updated_at: new Date().toISOString()
   };
 
-  // 1. Primary: Save to Shared Server API (MANDATORY PERSISTENCE)
-  let savedTest: SectionalTest = payloadTest;
-  let savedQuestions: SectionalQuestion[] = questions;
+  if (targetId) {
+    payloadTest.id = targetId;
+  }
 
+  // 1. Primary: Save to Shared Server API (MANDATORY PERSISTENCE)
+  const headers = await getJsonAuthHeaders();
   const res = await fetch('/api/sectional-tests', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    },
+    headers,
     body: JSON.stringify({ test: payloadTest, questions })
   });
 
@@ -444,6 +483,7 @@ export async function saveSectionalTest(
       const errJson = JSON.parse(errorText);
       if (errJson.error) errorMessage = errJson.error;
     } catch {}
+    // Strict rule: Do NOT save local-only test when server save fails!
     throw new Error(errorMessage);
   }
 
@@ -452,81 +492,11 @@ export async function saveSectionalTest(
     throw new Error(data?.error || 'Shared backend did not confirm test creation');
   }
 
-  savedTest = data.test;
-  if (Array.isArray(data.questions)) {
-    savedQuestions = data.questions;
-  }
+  const savedTest: SectionalTest = data.test;
+  const savedQuestions: SectionalQuestion[] = Array.isArray(data.questions) ? data.questions : questions;
 
-  // 2. Authoritatively update local cache on the current device
+  // 2. Authoritatively update local cache on the current device only after server confirmation
   updateLocalTest(savedTest, savedQuestions);
-
-  // 3. Mirror to Supabase if configured and table exists
-  if (isSupabaseConfigured) {
-    try {
-      const isEditing = Boolean(testData.id);
-      if (isEditing) {
-        const { error: updateError } = await supabase
-          .from('sectional_tests')
-          .update({
-            title: savedTest.title,
-            subject: savedTest.subject,
-            total_questions: totalQuestions,
-            total_marks: savedTest.total_marks,
-            duration_minutes: savedTest.duration_minutes,
-            negative_marking: savedTest.negative_marking,
-            published: savedTest.published,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', savedTest.id);
-
-        if (!updateError) {
-          await supabase.from('sectional_questions').delete().eq('test_id', savedTest.id);
-          const questionsPayload = savedQuestions.map((q, idx) => ({
-            test_id: savedTest.id,
-            question_order: idx + 1,
-            question_text: q.question_text,
-            option_a: q.option_a,
-            option_b: q.option_b,
-            option_c: q.option_c,
-            option_d: q.option_d,
-            correct_option: q.correct_option,
-            explanation: q.explanation || null
-          }));
-          await supabase.from('sectional_questions').insert(questionsPayload);
-        }
-      } else {
-        const { data: inserted, error: insertError } = await supabase
-          .from('sectional_tests')
-          .insert({
-            title: savedTest.title,
-            subject: savedTest.subject,
-            total_questions: totalQuestions,
-            total_marks: savedTest.total_marks,
-            duration_minutes: savedTest.duration_minutes,
-            negative_marking: savedTest.negative_marking,
-            published: savedTest.published
-          })
-          .select()
-          .single();
-
-        if (!insertError && inserted) {
-          const newId = inserted.id;
-          const questionsPayload = savedQuestions.map((q, idx) => ({
-            test_id: newId,
-            question_order: idx + 1,
-            question_text: q.question_text,
-            option_a: q.option_a,
-            option_b: q.option_b,
-            option_c: q.option_c,
-            option_d: q.option_d,
-            correct_option: q.correct_option,
-            explanation: q.explanation || null
-          }));
-          await supabase.from('sectional_questions').insert(questionsPayload);
-        }
-      }
-    } catch {}
-  }
 
   return { success: true, testId: savedTest.id };
 }
@@ -548,9 +518,10 @@ function updateLocalTest(test: SectionalTest, questions: SectionalQuestion[]) {
  */
 export async function deleteSectionalTest(id: number): Promise<{ success: boolean; error?: string }> {
   // 1. Primary: Server API (Authoritative)
+  const authHeaders = await getAuthHeaders();
   const res = await fetch(`/api/sectional-tests/${id}`, {
     method: 'DELETE',
-    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    headers: authHeaders
   });
 
   if (!res.ok) {
@@ -563,14 +534,7 @@ export async function deleteSectionalTest(id: number): Promise<{ success: boolea
     throw new Error(msg);
   }
 
-  // 2. Cloud Fallback: Supabase
-  if (isSupabaseConfigured) {
-    try {
-      await supabase.from('sectional_tests').delete().eq('id', id);
-    } catch {}
-  }
-
-  // 3. Local Cache
+  // 2. Local Cache
   removeLocalTest(id);
   return { success: true };
 }
@@ -583,13 +547,10 @@ export async function togglePublishSectionalTest(
   published: boolean
 ): Promise<{ success: boolean; error?: string }> {
   // 1. Primary: Server API (Authoritative)
+  const headers = await getJsonAuthHeaders();
   const res = await fetch(`/api/sectional-tests/${id}/publish`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    },
+    headers,
     body: JSON.stringify({ published })
   });
 
@@ -603,17 +564,7 @@ export async function togglePublishSectionalTest(
     throw new Error(msg);
   }
 
-  // 2. Cloud Fallback: Supabase
-  if (isSupabaseConfigured) {
-    try {
-      await supabase
-        .from('sectional_tests')
-        .update({ published, updated_at: new Date().toISOString() })
-        .eq('id', id);
-    } catch {}
-  }
-
-  // 3. Local Cache
+  // 2. Local Cache
   const tests = getLocalTests().map((t) => (Number(t.id) === Number(id) ? { ...t, published } : t));
   setLocalTests(tests);
   return { success: true };
@@ -629,37 +580,27 @@ export async function reorderSectionalTests(
   let updatedTests: SectionalTest[] | null = null;
 
   // 1. Primary: Shared Backend Server API
+  const headers = await getJsonAuthHeaders();
   const res = await fetch('/api/sectional-tests/reorder', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    },
+    headers,
     body: JSON.stringify({ testIds: orderedIds })
   });
 
   if (!res.ok) {
-    throw new Error('Failed to save test order to server');
+    const errText = await res.text();
+    let msg = 'Failed to save test order to server';
+    try {
+      const parsed = JSON.parse(errText);
+      if (parsed.error) msg = parsed.error;
+    } catch {}
+    throw new Error(msg);
   }
 
   const data = await res.json();
   if (data && data.success && Array.isArray(data.tests)) {
     updatedTests = data.tests;
     setLocalTests(updatedTests);
-  }
-
-  // 2. Cloud Fallback: Supabase (if configured)
-  if (isSupabaseConfigured) {
-    try {
-      const idMap = new Map(orderedIds.map((id, idx) => [Number(id), idx + 1]));
-      for (const [id, order] of idMap.entries()) {
-        await supabase
-          .from('sectional_tests')
-          .update({ sort_order: order, updated_at: new Date().toISOString() })
-          .eq('id', id);
-      }
-    } catch {}
   }
 
   return { success: true, tests: updatedTests || undefined };

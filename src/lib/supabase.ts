@@ -46,12 +46,19 @@ const resilientFetch: typeof fetch = async (input, init) => {
 
       return response;
     } catch (err: any) {
+      // Do not retry intentionally aborted requests
+      const isAbort =
+        err?.name === 'AbortError' ||
+        String(err?.message || err).toLowerCase().includes('aborted');
+      if (isAbort) {
+        throw err;
+      }
+
       const isTransient =
         attempt < maxRetries &&
         (err?.name === 'TypeError' ||
           String(err?.message || err).toLowerCase().includes('failed to fetch') ||
-          String(err?.message || err).toLowerCase().includes('network') ||
-          String(err?.message || err).toLowerCase().includes('aborted'));
+          String(err?.message || err).toLowerCase().includes('network'));
       if (isTransient) {
         attempt++;
         await new Promise((resolve) => setTimeout(resolve, attempt * 500));
