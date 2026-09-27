@@ -66,6 +66,7 @@ async function startServer() {
   // ---------------------------------------------------------------------------
   app.use('/api/sectional-tests', sectionalRouter);
   app.use('/sectional-tests', sectionalRouter);
+  app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'education-concept-api' }));
 
   // ---------------------------------------------------------------------------
   // VITE / STATIC FRONTEND SERVING
