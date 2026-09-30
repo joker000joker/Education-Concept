@@ -81,6 +81,7 @@ async function startServer() {
       appType: 'spa',
     });
 
+    app.use(express.static(path.resolve(process.cwd(), 'public')));
     app.use(vite.middlewares);
 
     app.use('*', async (req: Request, res: Response, next) => {

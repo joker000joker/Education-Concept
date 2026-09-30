@@ -223,7 +223,7 @@ DROP POLICY IF EXISTS "Public select app_settings" ON app_settings;
 DROP POLICY IF EXISTS "Admin insert app_settings" ON app_settings;
 DROP POLICY IF EXISTS "Admin update app_settings" ON app_settings;
 DROP POLICY IF EXISTS "Admin delete app_settings" ON app_settings;
-CREATE POLICY "Public select app_settings" ON app_settings FOR SELECT USING (key = 'whatsapp_number' OR public.is_admin());
+CREATE POLICY "Public select app_settings" ON app_settings FOR SELECT USING (key IN ('whatsapp_number', 'whatsapp_channel_url') OR public.is_admin());
 CREATE POLICY "Admin insert app_settings" ON app_settings FOR INSERT WITH CHECK (public.is_admin());
 CREATE POLICY "Admin update app_settings" ON app_settings FOR UPDATE USING (public.is_admin());
 CREATE POLICY "Admin delete app_settings" ON app_settings FOR DELETE USING (public.is_admin());
