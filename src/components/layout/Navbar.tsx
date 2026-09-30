@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { HamburgerDrawer } from './HamburgerDrawer';
@@ -11,18 +11,55 @@ import {
   Search,
   Bell,
   User,
-  GraduationCap
+  ChevronDown,
+  BookOpen,
+  GraduationCap,
+  Library,
+  ClipboardList
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { user, profile, isAdmin, signOut, roleLoading } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Desktop "More" dropdown state & ref
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Close "More" dropdown on route change
+  useEffect(() => {
+    setIsMoreOpen(false);
+  }, [location.pathname]);
+
+  // Close "More" dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setIsMoreOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMoreOpen(false);
+      }
+    };
+
+    if (isMoreOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMoreOpen]);
 
   const handleLogout = async () => {
     await signOut();
@@ -30,22 +67,51 @@ export const Navbar: React.FC = () => {
     setIsDrawerOpen(false);
   };
 
-  const isActive = (path: string) => {
+  // Direct desktop top navigation items
+  const directNavLinks = [
+    { name: 'HOME', path: '/' },
+    { name: 'PAID E-BOOKS', path: '/paid-ebooks' },
+    { name: 'FREE E-BOOKS', path: '/free-ebooks' },
+    { name: 'CURRENT AFFAIRS', path: '/current-affairs' },
+  ];
+
+  // Secondary items placed inside the "More" dropdown
+  const moreNavItems = [
+    {
+      name: 'Notes',
+      path: '/notes',
+      icon: BookOpen,
+      isActive: (pathname: string) =>
+        (pathname.startsWith('/notes') && !pathname.startsWith('/paid-ebooks')) ||
+        pathname.startsWith('/subjects'),
+    },
+    {
+      name: 'Exam Pattern & Syllabus',
+      path: '/syllabus',
+      icon: GraduationCap,
+      isActive: (pathname: string) => pathname.startsWith('/syllabus'),
+    },
+    {
+      name: 'Study Resources',
+      path: '/resources',
+      icon: Library,
+      isActive: (pathname: string) =>
+        pathname.startsWith('/resources') || pathname.startsWith('/study-resources'),
+    },
+    {
+      name: 'Sectional Test',
+      path: '/tests/sectional',
+      icon: ClipboardList,
+      isActive: (pathname: string) => pathname.startsWith('/tests'),
+    },
+  ];
+
+  const isDirectActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
     return location.pathname.startsWith(path);
   };
 
-  const navLinks = [
-    { name: 'HOME', path: '/' },
-    { name: 'PAID E-BOOKS', path: '/subjects' },
-    { name: 'FREE E-BOOKS', path: '/free-ebooks' },
-    { name: 'NOTES', path: '/notes' },
-    { name: 'CURRENT AFFAIRS', path: '/current-affairs' },
-    { name: 'EXAM PATTERN & SYLLABUS', path: '/syllabus' },
-    { name: 'STUDY RESOURCES', path: '/resources' },
-    { name: 'EC TEST', path: '/tests' },
-    { name: 'MORE', path: '/more' },
-  ];
+  const isMoreActive = moreNavItems.some((item) => item.isActive(location.pathname));
 
   return (
     <>
@@ -61,10 +127,7 @@ export const Navbar: React.FC = () => {
             >
               <Menu className="w-6 h-6 text-white" />
             </button>
-            <Link to="/" className="flex items-center gap-2.5" onClick={() => setIsDrawerOpen(false)}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center shadow-xs overflow-hidden shrink-0 aspect-square">
-                <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
-              </div>
+            <Link to="/" className="flex items-center" onClick={() => setIsDrawerOpen(false)}>
               <span className="text-lg font-bold tracking-tight text-white block leading-tight font-sans">
                 Education Concept
               </span>
@@ -134,20 +197,97 @@ export const Navbar: React.FC = () => {
           </div>
           
           {/* DESKTOP NAVBAR (Second Row) */}
-          <nav className="flex items-center justify-center gap-6 h-12 overflow-x-auto no-scrollbar whitespace-nowrap">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                to={link.path}
-                className={`text-[11px] font-bold tracking-wider hover:text-yellow-300 transition-colors pb-1 ${
-                  isActive(link.path) && link.path !== '/' || (link.path === '/' && location.pathname === '/')
-                    ? 'text-yellow-400 border-b-2 border-yellow-400' 
+          <nav className="flex items-center justify-center gap-8 h-12 whitespace-nowrap relative">
+            {directNavLinks.map((link) => {
+              const active = isDirectActive(link.path);
+              return (
+                <Link
+                  key={link.name}
+                  to={link.path}
+                  className={`text-[11px] font-bold tracking-wider hover:text-yellow-300 transition-colors pb-1 ${
+                    active
+                      ? 'text-yellow-400 border-b-2 border-yellow-400'
+                      : 'text-white/90 border-b-2 border-transparent'
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
+
+            {/* "MORE" DROPDOWN */}
+            <div className="relative" ref={moreMenuRef}>
+              <button
+                type="button"
+                id="desktop-more-menu-btn"
+                onClick={() => setIsMoreOpen((prev) => !prev)}
+                className={`flex items-center gap-1.5 text-[11px] font-bold tracking-wider hover:text-yellow-300 transition-colors pb-1 cursor-pointer select-none ${
+                  isMoreActive
+                    ? 'text-yellow-400 border-b-2 border-yellow-400'
+                    : isMoreOpen
+                    ? 'text-yellow-300 border-b-2 border-yellow-300/60'
                     : 'text-white/90 border-b-2 border-transparent'
                 }`}
+                aria-expanded={isMoreOpen}
+                aria-haspopup="true"
               >
-                {link.name}
-              </Link>
-            ))}
+                <span>MORE</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    isMoreOpen ? 'rotate-180 text-yellow-300' : 'text-white/80'
+                  }`}
+                />
+              </button>
+
+              {/* Dropdown Menu */}
+              {isMoreOpen && (
+                <div
+                  role="menu"
+                  aria-label="More navigation links"
+                  className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-200/80 py-2 z-50 transition-all duration-150 ease-out animate-in fade-in"
+                >
+                  <div className="px-3.5 py-1 mb-1 border-b border-slate-100">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                      More Categories
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5 px-1.5">
+                    {moreNavItems.map((item) => {
+                      const active = item.isActive(location.pathname);
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.name}
+                          to={item.path}
+                          onClick={() => setIsMoreOpen(false)}
+                          role="menuitem"
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all group ${
+                            active
+                              ? 'bg-blue-50 text-blue-600 font-bold'
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-blue-600'
+                          }`}
+                        >
+                          <div
+                            className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                              active
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600'
+                            }`}
+                          >
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="flex-1">{item.name}</span>
+                          {active && (
+                            <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
       </header>

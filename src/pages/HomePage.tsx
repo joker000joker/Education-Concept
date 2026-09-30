@@ -163,13 +163,21 @@ interface CachedBannerUrl {
 }
 
 const SESSION_BANNER_CACHE_KEY = 'ec_banner_signed_urls_v1';
+const SESSION_NOTES_BANNERS_KEY = 'ec_home_notes_banners_v1';
+const SESSION_TEST_BANNERS_KEY = 'ec_home_test_banners_v1';
+
+interface CachedBannerList {
+  items: HomeBannerItem[];
+  savedAt: number;
+}
+
 const bannerUrlMemoryCache = new Map<string, CachedBannerUrl>();
 
 // Memory cache for parsed banner items to enable instant 0ms restoration on route returns
 let memoryCachedNotesBanners: HomeBannerItem[] | null = null;
 let memoryCachedTestBanners: HomeBannerItem[] | null = null;
 
-// Initialize memory cache from sessionStorage if available
+// Initialize signed URL cache and resolved banner lists from sessionStorage for instant 0ms first paint
 try {
   const stored = sessionStorage.getItem(SESSION_BANNER_CACHE_KEY);
   if (stored) {
@@ -183,6 +191,35 @@ try {
   }
 } catch {
   // Gracefully ignore storage quota / sandbox restrictions
+}
+
+try {
+  const storedNotes = sessionStorage.getItem(SESSION_NOTES_BANNERS_KEY);
+  if (storedNotes) {
+    const parsed: CachedBannerList = JSON.parse(storedNotes);
+    if (parsed?.items && Array.isArray(parsed.items) && Date.now() - parsed.savedAt < 50 * 60 * 1000) {
+      memoryCachedNotesBanners = parsed.items;
+      // High-priority early browser cache preload of above-the-fold banner image
+      if (typeof window !== 'undefined' && parsed.items[0]?.image) {
+        const preloadImg = new Image();
+        preloadImg.src = parsed.items[0].image;
+      }
+    }
+  }
+} catch {
+  // Gracefully ignore storage errors
+}
+
+try {
+  const storedTest = sessionStorage.getItem(SESSION_TEST_BANNERS_KEY);
+  if (storedTest) {
+    const parsed: CachedBannerList = JSON.parse(storedTest);
+    if (parsed?.items && Array.isArray(parsed.items) && Date.now() - parsed.savedAt < 50 * 60 * 1000) {
+      memoryCachedTestBanners = parsed.items;
+    }
+  }
+} catch {
+  // Gracefully ignore storage errors
 }
 
 function getValidCachedBannerUrl(path: string): string | null {
@@ -229,12 +266,14 @@ const Carousel = ({
   className = "mb-6",
   autoPlayInterval = 4000,
   onImageError,
+  isLoading = false,
 }: {
   banners: HomeBannerItem[];
   fallbackVariant?: 'notes' | 'test';
   className?: string;
   autoPlayInterval?: number;
   onImageError?: (bannerId: number, imagePath?: string) => void;
+  isLoading?: boolean;
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -286,8 +325,32 @@ const Carousel = ({
     }
   };
 
-  // Clean, minimal fallbacks (16:9 ratio, no fake content)
+  // Reserve exact layout space immediately with a lightweight skeleton when loading
   if (banners.length === 0) {
+    if (isLoading) {
+      if (fallbackVariant === 'test') {
+        return (
+          <div
+            className={`w-full aspect-[16/9] rounded-2xl bg-gradient-to-r from-[#0C122A] via-[#151D42] to-[#1E2756] border border-[#1E2756] p-6 sm:p-8 flex flex-col justify-center text-white shadow-md relative overflow-hidden isolate animate-pulse ${className}`}
+            aria-label="Loading test banners..."
+          >
+            <div className="relative z-10 max-w-xl space-y-2.5">
+              <div className="h-5 w-24 bg-purple-500/20 rounded-full" />
+              <div className="h-7 w-3/4 bg-white/20 rounded-lg" />
+              <div className="h-4 w-1/2 bg-white/10 rounded-md" />
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div
+          className={`w-full aspect-[16/9] rounded-2xl bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-pulse relative overflow-hidden shadow-xs ${className}`}
+          aria-label="Loading banners..."
+        />
+      );
+    }
+
     if (fallbackVariant === 'test') {
       return (
         <div className={`w-full aspect-[16/9] rounded-2xl bg-gradient-to-r from-[#0C122A] via-[#151D42] to-[#1E2756] border border-[#1E2756] p-6 sm:p-8 flex flex-col justify-center text-white shadow-md relative overflow-hidden isolate ${className}`}>
@@ -406,6 +469,7 @@ export const HomePage: React.FC = () => {
   const [topRecommendations, setTopRecommendations] = useState<TopRecommendation[]>([]);
   const [notesBanners, setNotesBanners] = useState<HomeBannerItem[]>(() => memoryCachedNotesBanners || []);
   const [testBanners, setTestBanners] = useState<HomeBannerItem[]>(() => memoryCachedTestBanners || []);
+  const [bannersLoading, setBannersLoading] = useState<boolean>(() => !memoryCachedNotesBanners);
   const [loading, setLoading] = useState(true);
   
   const navigate = useNavigate();
@@ -413,6 +477,12 @@ export const HomePage: React.FC = () => {
   const handleBannerImageError = async (bannerId: number, imagePath?: string) => {
     if (!imagePath) return;
     invalidateCachedBannerUrl(imagePath);
+    try {
+      sessionStorage.removeItem(SESSION_NOTES_BANNERS_KEY);
+      sessionStorage.removeItem(SESSION_TEST_BANNERS_KEY);
+    } catch {
+      // Ignore
+    }
     try {
       const freshUrl = await getSecurePdfUrl(imagePath, 3600);
       if (freshUrl) {
@@ -440,7 +510,7 @@ export const HomePage: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
 
-    // 1. Decoupled, independent banner fetch & URL resolution
+    // 1. Decoupled, high-priority banner fetch & URL resolution
     // Runs immediately without waiting for categories, notes, or recommendations
     const loadBanners = async () => {
       try {
@@ -497,19 +567,48 @@ export const HomePage: React.FC = () => {
           return items.filter((item): item is HomeBannerItem => item !== null);
         };
 
-        const [resolvedNotes, resolvedTest] = await Promise.all([
-          resolveBannerItems(rawNotes),
-          resolveBannerItems(rawTest),
-        ]);
+        // Prioritize above-the-fold EC Notes banner resolution immediately
+        resolveBannerItems(rawNotes)
+          .then((resolvedNotes) => {
+            if (!isMounted) return;
+            memoryCachedNotesBanners = resolvedNotes;
+            setNotesBanners(resolvedNotes);
+            setBannersLoading(false);
+            try {
+              sessionStorage.setItem(
+                SESSION_NOTES_BANNERS_KEY,
+                JSON.stringify({ items: resolvedNotes, savedAt: Date.now() })
+              );
+            } catch {
+              // Ignore
+            }
+          })
+          .catch((err) => {
+            console.warn('Error resolving notes banners:', err);
+            if (isMounted) setBannersLoading(false);
+          });
 
-        if (isMounted) {
-          memoryCachedNotesBanners = resolvedNotes;
-          memoryCachedTestBanners = resolvedTest;
-          setNotesBanners(resolvedNotes);
-          setTestBanners(resolvedTest);
-        }
+        // Resolve test banners in parallel without blocking above-the-fold content
+        resolveBannerItems(rawTest)
+          .then((resolvedTest) => {
+            if (!isMounted) return;
+            memoryCachedTestBanners = resolvedTest;
+            setTestBanners(resolvedTest);
+            try {
+              sessionStorage.setItem(
+                SESSION_TEST_BANNERS_KEY,
+                JSON.stringify({ items: resolvedTest, savedAt: Date.now() })
+              );
+            } catch {
+              // Ignore
+            }
+          })
+          .catch((err) => {
+            console.warn('Error resolving test banners:', err);
+          });
       } catch (err) {
         console.warn('Error loading homepage banners:', err);
+        if (isMounted) setBannersLoading(false);
       }
     };
 
@@ -833,6 +932,7 @@ export const HomePage: React.FC = () => {
         className="my-6"
         autoPlayInterval={5000}
         onImageError={handleBannerImageError}
+        isLoading={bannersLoading && testBanners.length === 0}
       />
 
       {/* Row 2 - 3-column test module layout with Test Pass */}
@@ -918,6 +1018,7 @@ export const HomePage: React.FC = () => {
                 banners={notesBanners}
                 fallbackVariant="notes"
                 onImageError={handleBannerImageError}
+                isLoading={bannersLoading}
               />
               {renderMobileServices()}
               {renderTopRecommendations()}
