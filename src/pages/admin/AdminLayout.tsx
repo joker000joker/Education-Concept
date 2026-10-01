@@ -172,7 +172,7 @@ export const AdminLayout: React.FC = () => {
           </NavGroup>
 
           <NavGroup label="Analytics">
-            <NavItem to="/admin/analytics" icon={BarChart3} label="Test Analytics" />
+            <NavItem to="/admin/analytics" icon={BarChart3} label="Analyse Test" />
           </NavGroup>
 
           <NavGroup label="Settings">

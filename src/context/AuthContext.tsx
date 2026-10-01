@@ -98,10 +98,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Prevent stale async state updates
+// Prevent stale async state updates
   const activeUserIdRef = useRef<string | null>(null);
   // Deduplicate in-flight role synchronization promises
   const inFlightRoleSyncRef = useRef<{ [userId: string]: Promise<{ profile: Profile | null; isAdmin: boolean }> }>({});
+
+  const extractUserFullName = (u: any): string | undefined => {
+    if (!u) return undefined;
+    const name =
+      u.user_metadata?.full_name ||
+      u.user_metadata?.name ||
+      u.user_metadata?.fullName ||
+      u.user_metadata?.display_name ||
+      u.raw_user_meta_data?.full_name ||
+      u.raw_user_meta_data?.name;
+    return typeof name === 'string' && name.trim().length > 0 ? name.trim() : undefined;
+  };
 
   /**
    * Use the existing Supabase public.is_admin() RPC/function as the source of truth for admin detection.
@@ -151,6 +163,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // 2. Fetch user's profile from public.profiles without letting any failure override admin status
         let profileResult: Profile | null = null;
+        const cleanAuthFullName = authFullName?.trim() || undefined;
+
         try {
           const { data: profileRow, error: profileError } = await supabase
             .from('profiles')
@@ -162,33 +176,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.warn('[AuthContext] Profile query failed (admin detection preserved via is_admin):', profileError.message);
           } else if (profileRow) {
             profileResult = profileRow as Profile;
-            
-            // 3. Sync full_name if available in auth metadata but missing in profile
-            if (authFullName && (!profileResult.full_name || profileResult.full_name.trim() === '')) {
+          }
+
+          // 3. Authenticated Name Synchronization:
+          // When an authenticated user has a valid non-empty authFullName, ensure public.profiles.full_name is updated.
+          // Do NOT decide whether to UPDATE based solely on whether .select() returned profileRow,
+          // as the existing profile row is created by the database trigger and RLS may restrict SELECT.
+          if (cleanAuthFullName) {
+            if (!profileResult?.full_name || profileResult.full_name.trim() === '') {
               try {
                 const { error: updateError } = await supabase
                   .from('profiles')
-                  .update({ full_name: authFullName.trim() })
+                  .update({ full_name: cleanAuthFullName })
                   .eq('id', userId);
-                  
+
                 if (!updateError) {
-                  profileResult.full_name = authFullName.trim();
+                  if (profileResult) {
+                    profileResult.full_name = cleanAuthFullName;
+                  }
+                } else {
+                  console.warn('[AuthContext] Non-fatal: could not auto-sync full_name to profile', updateError.message);
                 }
               } catch (updateErr) {
-                console.warn('[AuthContext] Non-fatal: could not auto-sync full_name to profile', updateErr);
+                console.warn('[AuthContext] Non-fatal: exception auto-syncing full_name to profile', updateErr);
               }
-            }
-          } else if (!profileRow && authFullName) {
-            // If profile doesn't exist at all, try inserting it
-            try {
-              await supabase.from('profiles').insert({
-                id: userId,
-                role: 'user',
-                full_name: authFullName.trim(),
-              });
-              profileResult = { id: userId, role: 'user', full_name: authFullName.trim(), mobile: null };
-            } catch (insertErr) {
-              console.warn('[AuthContext] Non-fatal: could not auto-insert profile with full_name', insertErr);
             }
           }
         } catch (profileErr) {
@@ -199,12 +210,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const finalProfile: Profile = profileResult
           ? {
               ...profileResult,
+              full_name: profileResult.full_name?.trim() || cleanAuthFullName || null,
               role: isAdminUser ? 'admin' : (profileResult.role === 'admin' ? 'admin' : 'user'),
             }
           : {
               id: userId,
               mobile: null,
-              full_name: authFullName || null,
+              full_name: cleanAuthFullName || null,
               role,
             };
 
@@ -281,11 +293,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setRoleLoading(false);
               setLoading(false);
               // Run silent background verification to refresh profile without blocking UI
-              syncRoleFromDatabase(fallbackUser.id, fallbackUser.user_metadata?.full_name, { silent: true }).catch(() => {});
+              syncRoleFromDatabase(fallbackUser.id, extractUserFullName(fallbackUser), { silent: true }).catch(() => {});
             } else {
               setRoleLoading(true);
               // 2. Fetch that user's row from public.profiles where profiles.id = auth.uid()
-              await syncRoleFromDatabase(fallbackUser.id, fallbackUser.user_metadata?.full_name, { silent: false });
+              await syncRoleFromDatabase(fallbackUser.id, extractUserFullName(fallbackUser), { silent: false });
             }
           }
           return;
@@ -304,12 +316,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setRoleLoading(false);
             setLoading(false);
             // Run silent background verification to refresh profile without blocking UI
-            syncRoleFromDatabase(currentAuthUser.id, currentAuthUser.user_metadata?.full_name, { silent: true }).catch(() => {});
+            syncRoleFromDatabase(currentAuthUser.id, extractUserFullName(currentAuthUser), { silent: true }).catch(() => {});
           } else {
             setRoleLoading(true);
             // 2. Fetch user's row from public.profiles where profiles.id = auth.uid()
             // 3. Read role column as single source of truth
-            await syncRoleFromDatabase(currentAuthUser.id, currentAuthUser.user_metadata?.full_name, { silent: false });
+            await syncRoleFromDatabase(currentAuthUser.id, extractUserFullName(currentAuthUser), { silent: false });
           }
         }
       } catch (err) {
@@ -376,10 +388,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setRoleLoading(false);
           setLoading(false);
           // Perform silent verification in background to sync profile without interrupting active admin work
-          syncRoleFromDatabase(authUser.id, authUser.user_metadata?.full_name, { silent: true }).catch(() => {});
+          syncRoleFromDatabase(authUser.id, extractUserFullName(authUser), { silent: true }).catch(() => {});
         } else {
           // Verification window expired or cold start: perform standard verification
-          await syncRoleFromDatabase(authUser.id, authUser.user_metadata?.full_name, { silent: false });
+          await syncRoleFromDatabase(authUser.id, extractUserFullName(authUser), { silent: false });
           setRoleLoading(false);
           setLoading(false);
         }
@@ -420,7 +432,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // 2. Fetch that user's row from public.profiles where profiles.id = auth.uid()
         // 3. Read role column from the database and use it as the single source of truth
-        const roleResult = await syncRoleFromDatabase(verifiedUser.id, verifiedUser.user_metadata?.full_name);
+        const roleResult = await syncRoleFromDatabase(verifiedUser.id, extractUserFullName(verifiedUser));
         setRoleLoading(false);
         setLoading(false);
 
@@ -441,12 +453,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      const trimmedName = fullName.trim();
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
           data: {
-            full_name: fullName.trim(),
+            full_name: trimmedName,
+            name: trimmedName,
+            fullName: trimmedName,
+            display_name: trimmedName,
           },
         },
       });
@@ -455,18 +471,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
 
-      // Automatically update public.profiles if the trigger didn't handle it yet
-      // or to ensure full_name is correctly saved right away
-      if (data.user) {
+      // Attempt immediate update only if an authenticated session was returned right away (e.g. auto-confirm enabled).
+      // If email confirmation is required, data.session is null and client is unauthenticated (anon).
+      // The authenticated syncRoleFromDatabase() path will reliably synchronize the name once the session is established.
+      if (data.user && data.session) {
         try {
-          await supabase.from('profiles').upsert({
-            id: data.user.id,
-            full_name: fullName.trim(),
-            role: 'user', // Default role for new signups
-          }, { onConflict: 'id' });
+          await supabase
+            .from('profiles')
+            .update({ full_name: trimmedName })
+            .eq('id', data.user.id);
         } catch (profileError) {
-          console.warn('[Supabase] Non-fatal: could not immediately upsert profile full_name', profileError);
+          console.warn('[Supabase] Non-fatal: could not immediately update profile full_name', profileError);
         }
+
+        // Sync state in AuthContext with active session
+        await syncRoleFromDatabase(data.user.id, trimmedName, { silent: true }).catch(() => {});
       }
 
       return { error: null, user: data.user };
@@ -494,7 +513,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     if (user) {
-      await syncRoleFromDatabase(user.id, user.user_metadata?.full_name, { silent: true });
+      await syncRoleFromDatabase(user.id, extractUserFullName(user), { silent: true });
     }
   };
 

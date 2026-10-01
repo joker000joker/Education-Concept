@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams, Link } from 'react-router-dom';
 import {
   fetchSectionalTests,
   fetchSectionalQuestions,
@@ -36,7 +36,8 @@ import {
   Database,
   Filter,
   RefreshCw,
-  GripVertical
+  GripVertical,
+  BarChart3
 } from 'lucide-react';
 
 export const AdminSectionalTestsPage: React.FC = () => {
@@ -748,6 +749,15 @@ export const AdminSectionalTestsPage: React.FC = () => {
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <Link
+                            to={`/admin/analytics?testId=${t.id}`}
+                            draggable={false}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-50 transition-colors inline-flex items-center justify-center"
+                            title="Analyse Test (All Students)"
+                          >
+                            <BarChart3 className="w-4 h-4 text-purple-600" />
+                          </Link>
                           <button
                             type="button"
                             draggable={false}

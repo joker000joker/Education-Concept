@@ -4,16 +4,22 @@ import { BackButton } from '../../components/common/BackButton';
 import { useToast } from '../../context/ToastContext';
 import { Users, Search, ShieldCheck, User, RefreshCw, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { getRegisteredStudentName } from './AdminAnalyseTestPage';
 
 interface RegisteredUser {
   id: string;
   full_name: string | null;
+  name?: string | null;
+  display_name?: string | null;
+  username?: string | null;
+  student_name?: string | null;
   role: string;
   created_at: string;
+  [key: string]: any;
 }
 
 export const AdminUsersPage: React.FC = () => {
-  const { session } = useAuth();
+  const { user: currentUser, profile: currentProfile } = useAuth();
   const toast = useToast();
   const [users, setUsers] = useState<RegisteredUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,27 +35,14 @@ export const AdminUsersPage: React.FC = () => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      // Fetch directly from public.profiles
+      // Fetch directly from public.profiles with all existing stored profile data
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, role, created_at')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
-      }
-      
-      // RLS Detection logic:
-      // If the admin can't even see their own profile, or only sees themselves, RLS is filtering it.
-      // We know there are multiple users, so if length <= 1, RLS is almost certainly blocking us.
-      if (!data || data.length <= 1) {
-        setErrorMsg(
-          "Query blocked or filtered by Row Level Security (RLS).\n" +
-          "To securely allow admins to view this list, please run this exact SQL in your Supabase SQL Editor:\n\n" +
-          "CREATE POLICY \"Admins can view all profiles\"\n" +
-          "ON public.profiles FOR SELECT\n" +
-          "USING ( public.is_admin() );\n"
-        );
       }
 
       setUsers(data || []);
@@ -68,8 +61,8 @@ export const AdminUsersPage: React.FC = () => {
   };
 
   const filteredUsers = users.filter((u) => {
-    const name = u.full_name || 'Anonymous User';
-    const searchMatch = name.toLowerCase().includes(searchTerm.toLowerCase());
+    const studentDisplayName = getRegisteredStudentName(u, currentUser, currentProfile);
+    const searchMatch = studentDisplayName.toLowerCase().includes(searchTerm.toLowerCase());
     const roleMatch = roleFilter === 'all' || String(u.role).toLowerCase() === roleFilter;
     return searchMatch && roleMatch;
   });
@@ -211,7 +204,7 @@ export const AdminUsersPage: React.FC = () => {
                           {String(user.role).toLowerCase() === 'admin' ? <ShieldCheck className="w-4 h-4" /> : <User className="w-4 h-4" />}
                         </div>
                         <span className="text-sm font-semibold text-slate-900 truncate">
-                          {user.full_name || 'Anonymous User'}
+                          {getRegisteredStudentName(user, currentUser, currentProfile)}
                         </span>
                       </div>
                     </td>

@@ -7,6 +7,7 @@ import { Footer } from './components/layout/Footer';
 import { BottomNav } from './components/layout/BottomNav';
 import { EnvNotice } from './components/common/EnvNotice';
 import { ScrollToTop } from './components/common/ScrollToTop';
+import { ConnectionStatusBanner } from './components/common/ConnectionStatusBanner';
 
 // Immediate load for fastest Initial Page Paint
 import { HomePage } from './pages/HomePage';
@@ -56,6 +57,7 @@ const AdminPaidEbooksPage = React.lazy(() => import('./pages/admin/AdminPaidEboo
 const AdminComingSoonPage = React.lazy(() => import('./pages/admin/AdminComingSoonPage').then(m => ({ default: m.AdminComingSoonPage })));
 const AdminSectionalTestsPage = React.lazy(() => import('./pages/admin/AdminSectionalTestsPage').then(m => ({ default: m.AdminSectionalTestsPage })));
 const AdminUsersPage = React.lazy(() => import('./pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
+const AdminAnalyseTestPage = React.lazy(() => import('./pages/admin/AdminAnalyseTestPage').then(m => ({ default: m.AdminAnalyseTestPage })));
 
 const RouteLoadingFallback = () => (
   <div className="flex-1 flex items-center justify-center min-h-[50vh]">
@@ -70,6 +72,9 @@ export default function App() {
       <AuthProvider>
         <ToastProvider>
           <div className="min-h-screen flex flex-col bg-[#F4F8FF] md:bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white">
+            {/* Global Online / Offline Status Indicator */}
+            <ConnectionStatusBanner />
+
             {/* Status notice if environment secrets are pending */}
             <div className="env-notice-container">
               <EnvNotice />
@@ -144,7 +149,8 @@ export default function App() {
                     <Route path="banners" element={<AdminBannersPage />} />
                     <Route path="recommendations" element={<AdminRecommendationsPage />} />
                     <Route path="orders" element={<AdminComingSoonPage moduleName="Orders / Purchases Module" />} />
-                    <Route path="analytics" element={<AdminComingSoonPage moduleName="Test Analytics Module" />} />
+                    <Route path="analytics" element={<AdminAnalyseTestPage />} />
+                    <Route path="analyse-test" element={<AdminAnalyseTestPage />} />
                     <Route path="whatsapp" element={<AdminWhatsAppPage />} />
                     <Route path="settings" element={<AdminComingSoonPage moduleName="Website Settings" />} />
                     <Route path="users" element={<AdminUsersPage />} />
