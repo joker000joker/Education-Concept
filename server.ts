@@ -36,6 +36,7 @@ if (hostIdx !== -1) {
 }
 
 import { sectionalRouter, setupSectionalMiddleware } from './src/server/sectionalRouter';
+import { chapterRouter } from './src/server/chapterRouter';
 
 async function startServer() {
   const app = express();
@@ -61,11 +62,12 @@ async function startServer() {
   });
 
   // ---------------------------------------------------------------------------
-  // SECTIONAL TESTS API ROUTES
-  // Mounted directly from sectionalRouter for unified logic
+  // SECTIONAL TESTS & CHAPTER WISE TESTS API ROUTES
   // ---------------------------------------------------------------------------
   app.use('/api/sectional-tests', sectionalRouter);
   app.use('/sectional-tests', sectionalRouter);
+  app.use('/api/chapter-tests', chapterRouter);
+  app.use('/chapter-tests', chapterRouter);
   app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'education-concept-api' }));
 
   // ---------------------------------------------------------------------------
