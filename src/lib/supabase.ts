@@ -356,22 +356,38 @@ function sanitizeFilePath(filePath: string): string {
   return cleanPath;
 }
 
-export async function getSecurePdfUrl(filePath: string, expiresIn = 3600): Promise<string | null> {
+export async function getSecurePdfUrl(filePath: string, expiresIn = 3600, timeoutMs = 10000): Promise<string | null> {
   if (!isSupabaseConfigured || !filePath) return null;
   try {
     const cleanPath = sanitizeFilePath(filePath);
     
-    // Ensure the auth session is fully loaded from local storage before making the request
-    // This prevents race conditions on page load where the request might fire as 'anon'
-    // before the user's session is fully restored.
-    await supabase.auth.getSession();
-    
-    const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .createSignedUrl(cleanPath, expiresIn);
+    // Safety timeout: prevent storage signing request from waiting indefinitely
+    const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error('STORAGE_TIMEOUT'));
+      }, timeoutMs);
+      if (typeof (timer as any)?.unref === 'function') {
+        (timer as any).unref();
+      }
+    });
+
+    const requestPromise = (async () => {
+      // Ensure the auth session is fully loaded from local storage before making the request
+      try {
+        await supabase.auth.getSession();
+      } catch (sessionErr) {
+        console.warn('Session check warning before signed URL:', sessionErr);
+      }
+      return await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(cleanPath, expiresIn);
+    })();
+
+    const result = await Promise.race([requestPromise, timeoutPromise]);
+    const { data, error } = result;
 
     if (error) {
-      if (error.message.includes('Object not found')) {
+      if (error.message && error.message.includes('Object not found')) {
         console.warn(`File not found in storage: ${cleanPath}`);
       } else {
         console.error('Error creating signed URL:', error.message);
@@ -380,8 +396,12 @@ export async function getSecurePdfUrl(filePath: string, expiresIn = 3600): Promi
     }
 
     return data?.signedUrl || null;
-  } catch (err) {
-    console.error('getSecurePdfUrl error:', err);
+  } catch (err: any) {
+    if (err?.message === 'STORAGE_TIMEOUT') {
+      console.warn(`getSecurePdfUrl timed out after ${timeoutMs}ms for ${filePath}`);
+    } else {
+      console.error('getSecurePdfUrl error:', err);
+    }
     return null;
   }
 }

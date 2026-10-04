@@ -14,6 +14,7 @@ import { SectionalTest, SectionalQuestion, SectionalSubject } from '../../types'
 import { parseBulkQuestions, SAMPLE_QUESTIONS_TEMPLATE, ParsedQuestion } from '../../lib/questionParser';
 import { useToast } from '../../context/ToastContext';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
+import { BackButton } from '../../components/common/BackButton';
 import {
   Search,
   Plus,
@@ -523,6 +524,10 @@ export const AdminSectionalTestsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <div className="mb-2">
+        <BackButton fallbackTo="/admin" label="Back to Dashboard" forceFallback={true} />
+      </div>
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div>

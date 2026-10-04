@@ -10,8 +10,10 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 
-// Set up pdf.js worker using unpkg CDN to avoid bundler issues
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Set up pdf.js worker using same-origin local asset to avoid cross-origin / fake worker resolution errors
+if (typeof window !== 'undefined') {
+  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+}
 
 import {
   FileText,
@@ -98,34 +100,74 @@ export const PdfReaderPage: React.FC = () => {
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [documentLoaded, setDocumentLoaded] = useState<boolean>(false);
   const toast = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+
+  const documentFile = React.useMemo(() => {
+    if (!signedUrl) return null;
+    return { url: signedUrl };
+  }, [signedUrl]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     setPageNumber(1);
     setDocumentLoaded(true);
+    setLoading(false);
   };
 
-  
+  const onDocumentLoadError = (err: any) => {
+    // If worker task was canceled during a re-render or component teardown, do not fail
+    if (err?.message && (err.message.includes('Worker task was terminated') || err.message.includes('terminated'))) {
+      console.warn('PDF.js worker task was terminated (ignoring):', err.message);
+      return;
+    }
+    console.error('PDF document load error:', err);
+    setError('Failed to display PDF document. Please try downloading the file.');
+    setLoading(false);
+  };
 
-  
+  const loadedIdRef = React.useRef<string | null>(null);
+  const activeRequestIdRef = React.useRef<number>(0);
 
   useEffect(() => {
-    let isMounted = true;
+    // 1. Wait for Supabase / AuthContext session restoration to finish
+    if (authLoading) {
+      return;
+    }
+
+    // If this note is already successfully loaded, do not re-fetch or restart loading
+    if (loadedIdRef.current === id && signedUrl && note) {
+      return;
+    }
+
+    const currentRequestId = ++activeRequestIdRef.current;
+    let isCancelled = false;
+
+    // Safety timeout: Ensure the loading screen exits within 12 seconds under all circumstances
+    const timeoutTimer = setTimeout(() => {
+      if (activeRequestIdRef.current === currentRequestId && !isCancelled) {
+        console.warn('PDF reader request timed out.');
+        setError('Loading timed out. Please check your connection or try again.');
+        setLoading(false);
+      }
+    }, 12000);
 
     const loadNoteAndPdf = async () => {
       if (!id) {
-        setError('Note ID is required.');
-        setLoading(false);
+        if (activeRequestIdRef.current === currentRequestId) {
+          setError('Note ID is required.');
+          setLoading(false);
+        }
         return;
       }
 
       try {
-        setLoading(true);
+        if (loadedIdRef.current !== id) {
+          setLoading(true);
+        }
         setError(null);
 
         // Fetch note metadata
-        let noteData;
+        let noteData: any = null;
         if (type === 'current-affairs') {
           noteData = await fetchCurrentAffairById(id);
           if (noteData) noteData.category = { name: 'Current Affairs' };
@@ -135,42 +177,51 @@ export const PdfReaderPage: React.FC = () => {
         } else {
           noteData = await fetchNoteById(id);
         }
+
+        if (activeRequestIdRef.current !== currentRequestId || isCancelled) return;
+
         if (!noteData) {
-          if (isMounted) {
-            setError('Note not found or has been removed.');
-            setLoading(false);
-          }
+          setError('Note not found or has been removed.');
+          setLoading(false);
           return;
         }
 
-        if (isMounted) {
-          setNote(noteData);
+        setNote(noteData);
+
+        // 2. If student is not logged in, private bucket 'pdf-notes' will deny access
+        // Directly display the existing 'Sign in to Access' screen
+        if (!user) {
+          setError('Please sign in to access this PDF note.');
+          setLoading(false);
+          return;
         }
 
-        // Fetch temporary signed URL for authorized access from private Supabase Storage bucket 'pdf-notes'
+        // 3. Authenticated session is ready: generate temporary signed URL from private Supabase Storage bucket 'pdf-notes'
         if (noteData.file_path) {
           const url = await getSecurePdfUrl(noteData.file_path, 3600); // 1 hour expiration
-          if (isMounted) {
+          if (activeRequestIdRef.current !== currentRequestId || isCancelled) return;
+          if (url) {
+            loadedIdRef.current = id;
             setSignedUrl(url);
-            if (!url) {
-              setError('Could not generate secure view token for this PDF.');
-            }
+            setError(null);
+          } else {
+            setError('Could not generate secure view token for this PDF. Please check your permissions or try again.');
           }
         } else {
-          if (isMounted) setError('No associated PDF file found for this note.');
+          setError('No associated PDF file found for this note.');
         }
       } catch (err: any) {
+        if (activeRequestIdRef.current !== currentRequestId || isCancelled) return;
         if (err.message === 'FILE_NOT_FOUND' || (err.message && err.message.includes('Object not found'))) {
           console.warn('Note reader warning: File not found in storage.');
-          if (isMounted) setError('This PDF file could not be found. It may have been deleted.');
+          setError('This PDF file could not be found. It may have been deleted.');
         } else {
           console.error('Error loading note reader:', err);
-          if (isMounted) {
-            setError(err.message || 'Unable to load PDF note.');
-          }
+          setError(err.message || 'Unable to load PDF note.');
         }
       } finally {
-        if (isMounted) {
+        clearTimeout(timeoutTimer);
+        if (activeRequestIdRef.current === currentRequestId && !isCancelled) {
           setLoading(false);
         }
       }
@@ -179,9 +230,10 @@ export const PdfReaderPage: React.FC = () => {
     loadNoteAndPdf();
 
     return () => {
-      isMounted = false;
+      isCancelled = true;
+      clearTimeout(timeoutTimer);
     };
-  }, [id]);
+  }, [id, type, authLoading, user?.id]);
 
   const handleDownload = async () => {
     if (!note || !note.file_path) return;
@@ -407,8 +459,9 @@ export const PdfReaderPage: React.FC = () => {
         <div className="flex flex-col items-center max-w-full mx-auto">
           {signedUrl ? (
             <Document
-              file={signedUrl}
+              file={documentFile}
               onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={onDocumentLoadError}
               loading={
                 <div className="flex flex-col items-center justify-center p-20 space-y-4">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -440,9 +493,11 @@ export const PdfReaderPage: React.FC = () => {
                 >
                   <Page
                     pageNumber={index + 1}
-                    renderTextLayer={true}
-                    renderAnnotationLayer={true}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
                     width={pageWidth}
+                    onGetTextError={(e) => console.warn('Non-fatal text layer error:', e)}
+                    onRenderTextLayerError={(e) => console.warn('Non-fatal render text layer error:', e)}
                     loading={
                       <div className="flex items-center justify-center bg-slate-50 w-full h-full text-slate-300">
                         <Loader2 className="w-6 h-6 animate-spin" />

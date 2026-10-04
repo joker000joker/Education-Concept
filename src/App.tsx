@@ -38,6 +38,12 @@ const SectionalSubjectsPage = React.lazy(() => import('./pages/sectional/Section
 const SectionalSubjectTestsPage = React.lazy(() => import('./pages/sectional/SectionalSubjectTestsPage').then(m => ({ default: m.SectionalSubjectTestsPage })));
 const SectionalTestTakePage = React.lazy(() => import('./pages/sectional/SectionalTestTakePage').then(m => ({ default: m.SectionalTestTakePage })));
 
+// Chapter Wise Test Pages
+const ChapterSubjectsPage = React.lazy(() => import('./pages/chapter/ChapterSubjectsPage').then(m => ({ default: m.ChapterSubjectsPage })));
+const ChapterListPage = React.lazy(() => import('./pages/chapter/ChapterListPage').then(m => ({ default: m.ChapterListPage })));
+const ChapterTestsPage = React.lazy(() => import('./pages/chapter/ChapterTestsPage').then(m => ({ default: m.ChapterTestsPage })));
+const ChapterTestTakePage = React.lazy(() => import('./pages/chapter/ChapterTestTakePage').then(m => ({ default: m.ChapterTestTakePage })));
+
 // Lazy-loaded Admin Pages
 const AdminLayout = React.lazy(() => import('./pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
 const AdminOverviewPage = React.lazy(() => import('./pages/admin/AdminOverviewPage').then(m => ({ default: m.AdminOverviewPage })));
@@ -56,6 +62,7 @@ const AdminWhatsAppPage = React.lazy(() => import('./pages/admin/AdminWhatsAppPa
 const AdminPaidEbooksPage = React.lazy(() => import('./pages/admin/AdminPaidEbooksPage').then(m => ({ default: m.AdminPaidEbooksPage })));
 const AdminComingSoonPage = React.lazy(() => import('./pages/admin/AdminComingSoonPage').then(m => ({ default: m.AdminComingSoonPage })));
 const AdminSectionalTestsPage = React.lazy(() => import('./pages/admin/AdminSectionalTestsPage').then(m => ({ default: m.AdminSectionalTestsPage })));
+const AdminChapterWiseTestsPage = React.lazy(() => import('./pages/admin/AdminChapterWiseTestsPage').then(m => ({ default: m.AdminChapterWiseTestsPage })));
 const AdminUsersPage = React.lazy(() => import('./pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
 const AdminAnalyseTestPage = React.lazy(() => import('./pages/admin/AdminAnalyseTestPage').then(m => ({ default: m.AdminAnalyseTestPage })));
 
@@ -116,6 +123,11 @@ export default function App() {
                   <Route path="/tests/sectional" element={<SectionalSubjectsPage />} />
                   <Route path="/tests/sectional/:subject" element={<SectionalSubjectTestsPage />} />
                   <Route path="/tests/sectional/test/:testId" element={<SectionalTestTakePage />} />
+                  <Route path="/tests/chapter-wise" element={<ChapterSubjectsPage />} />
+                  <Route path="/tests/chapter-wise/:subject" element={<ChapterListPage />} />
+                  <Route path="/tests/chapter-wise/:subject/sub/:subCategory" element={<ChapterListPage />} />
+                  <Route path="/tests/chapter-wise/:subject/:chapterId" element={<ChapterTestsPage />} />
+                  <Route path="/tests/chapter-wise/test/:testId" element={<ChapterTestTakePage />} />
                   <Route path="/tests/*" element={<ComingSoonPage />} />
                   
                   {/* Authentication & User Account */}
@@ -139,7 +151,7 @@ export default function App() {
                     <Route path="test-dashboard" element={<AdminComingSoonPage moduleName="Test Dashboard Module" />} />
                     <Route path="question-bank" element={<AdminQuestionsPage />} />
                     <Route path="daily-quiz" element={<AdminTestsPage />} />
-                    <Route path="chapter-test" element={<AdminTestsPage />} />
+                    <Route path="chapter-test" element={<AdminChapterWiseTestsPage />} />
                     <Route path="sectional-test" element={<AdminSectionalTestsPage />} />
                     <Route path="test-pass" element={<AdminTestPassPage />} />
                     <Route path="live-test" element={<AdminTestsPage />} />

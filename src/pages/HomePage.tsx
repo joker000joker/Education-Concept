@@ -40,9 +40,9 @@ import {
 } from '../components/icons/PremiumServiceIcons';
 
 const MOBILE_TEST_CATEGORIES_ROW1 = [
-  { id: 'daily-quiz', title: 'Daily Quiz', icon: DailyQuizIcon, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', path: '/tests/daily-quiz', isActive: false },
-  { id: 'chapter-wise', title: 'Chapter Wise Test', icon: ChapterTestIcon, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', path: '/tests/chapter-wise', isActive: false },
   { id: 'sectional', title: 'Sectional Test', icon: SectionalTestIcon, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', path: '/tests/sectional', isActive: true },
+  { id: 'chapter-wise', title: 'Chapter Wise Test', icon: ChapterTestIcon, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', path: '/tests/chapter-wise', isActive: true },
+  { id: 'daily-quiz', title: 'Daily Quiz', icon: DailyQuizIcon, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', path: '/tests/daily-quiz', isActive: false },
 ];
 
 const MOBILE_TEST_CATEGORIES_ROW2 = [
@@ -82,12 +82,12 @@ const DESKTOP_TEST_MODULES = [
     icon: ChapterTestIcon,
     color: 'text-emerald-500',
     bg: 'bg-emerald-100',
-    isActive: false,
-    badge: 'Coming Soon',
-    badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',
+    isActive: true,
+    badge: 'Active',
+    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     description: 'Chapter & topic specific assessment tests for targeted practice and conceptual drills.',
-    link: '#',
-    ctaText: 'Coming Soon',
+    link: '/tests/chapter-wise',
+    ctaText: 'Start Chapter Test',
   },
   {
     id: 'daily-quiz',

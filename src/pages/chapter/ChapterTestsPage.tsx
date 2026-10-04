@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getSubjectBySlug, SECTIONAL_SUBJECTS_LIST } from '../../data/sectionalSubjects';
-import { fetchSectionalTests, fetchUserSectionalResults } from '../../services/sectionalTestService';
-import { SectionalTest, SectionalTestResult } from '../../types';
+import { getSubjectBySlug } from '../../data/sectionalSubjects';
+import { fetchChapters, fetchChapterTests, fetchUserChapterResults } from '../../services/chapterTestService';
+import { Chapter, ChapterTest, ChapterTestResult } from '../../types';
 import { BackButton } from '../../components/common/BackButton';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -18,12 +18,11 @@ import {
   CheckCircle2,
   Calendar,
   BarChart3,
-  RotateCcw
+  RotateCcw,
+  FileQuestion,
+  ChevronRight
 } from 'lucide-react';
 
-/**
- * Format test title to clean title case dynamically while preserving uppercase acronyms
- */
 function formatTestTitle(title: string): string {
   if (!title) return '';
   return title
@@ -31,7 +30,6 @@ function formatTestTitle(title: string): string {
     .split(/\s+/)
     .map((word) => {
       if (!word) return '';
-      // Preserve existing uppercase acronyms (e.g. SSC, UPSC, GK, GS, II, III)
       if (word.length > 1 && word === word.toUpperCase() && /^[A-Z0-9]+$/.test(word)) {
         return word;
       }
@@ -40,28 +38,28 @@ function formatTestTitle(title: string): string {
     .join(' ');
 }
 
-export const SectionalSubjectTestsPage: React.FC = () => {
-  const { subject: subjectSlug } = useParams<{ subject: string }>();
+export const ChapterTestsPage: React.FC = () => {
+  const { subject: subjectSlug, chapterId } = useParams<{ subject: string; chapterId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [tests, setTests] = useState<SectionalTest[]>([]);
-  const [userResults, setUserResults] = useState<Record<number, SectionalTestResult>>({});
+  const [chapter, setChapter] = useState<Chapter | null>(null);
+  const [tests, setTests] = useState<ChapterTest[]>([]);
+  const [userResults, setUserResults] = useState<Record<number, ChapterTestResult>>({});
   const [loading, setLoading] = useState(true);
 
   const subjectMeta = getSubjectBySlug(subjectSlug || '');
+  const chapIdNum = Number(chapterId);
 
   useEffect(() => {
-    if (!subjectMeta) {
-      return;
-    }
-    loadTests();
+    if (!subjectMeta || !chapIdNum) return;
+    loadData();
 
     let lastFocus = Date.now();
     const onFocus = () => {
       if (document.visibilityState === 'visible' && Date.now() - lastFocus > 10000) {
         lastFocus = Date.now();
-        loadTests({ silent: true });
+        loadData({ silent: true });
       }
     };
     window.addEventListener('focus', onFocus);
@@ -70,29 +68,28 @@ export const SectionalSubjectTestsPage: React.FC = () => {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('visibilitychange', onFocus);
     };
-  }, [subjectMeta?.name]);
+  }, [subjectMeta?.name, chapIdNum]);
 
   useEffect(() => {
     if (user) {
-      fetchUserSectionalResults(user.id).then(setUserResults);
+      fetchUserChapterResults(user.id).then(setUserResults);
     } else {
       setUserResults({});
     }
   }, [user?.id]);
 
-  const loadTests = async (options?: { silent?: boolean }) => {
-    if (!subjectMeta) return;
-    if (!options?.silent && tests.length === 0) {
-      setLoading(true);
-    }
+  const loadData = async (options?: { silent?: boolean }) => {
+    if (!options?.silent && tests.length === 0) setLoading(true);
     try {
-      const data = await fetchSectionalTests({
-        subject: subjectMeta.name,
-        publishedOnly: true
-      });
-      setTests(data);
+      const [allChapters, chapterTests] = await Promise.all([
+        fetchChapters(subjectMeta?.name),
+        fetchChapterTests({ chapterId: chapIdNum, publishedOnly: true })
+      ]);
+      const currentChapter = allChapters.find((c) => c.id === chapIdNum) || null;
+      setChapter(currentChapter);
+      setTests(chapterTests);
     } catch (err) {
-      console.warn('Failed to load tests for subject', err);
+      console.warn('Failed to load chapter tests', err);
     } finally {
       setLoading(false);
     }
@@ -100,18 +97,11 @@ export const SectionalSubjectTestsPage: React.FC = () => {
 
   if (!subjectMeta) {
     return (
-      <div className="min-h-screen p-8 bg-[#F4F8FF] md:bg-slate-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-2xl max-w-md w-full text-center shadow-lg border border-slate-100">
-          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-slate-900">Subject Not Found</h2>
-          <p className="text-xs text-slate-500 mt-2 mb-6">
-            The requested subject does not match any of the 12 core sectional subjects.
-          </p>
-          <Link
-            to="/tests/sectional"
-            className="inline-flex items-center justify-center px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl"
-          >
-            Back to Subjects
+      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+        <div className="bg-white p-6 rounded-2xl max-w-sm w-full text-center border border-slate-200">
+          <p className="text-sm font-bold text-slate-800">Subject Not Found</p>
+          <Link to="/tests/chapter-wise" className="mt-4 inline-block text-xs text-emerald-600 font-bold">
+            Back to Chapter Wise Tests
           </Link>
         </div>
       </div>
@@ -120,24 +110,28 @@ export const SectionalSubjectTestsPage: React.FC = () => {
 
   const Icon = subjectMeta.icon;
 
+  const backUrl = chapter?.sub_category
+    ? `/tests/chapter-wise/${subjectMeta.slug}?sub=${encodeURIComponent(chapter.sub_category)}`
+    : `/tests/chapter-wise/${subjectMeta.slug}`;
+
   return (
     <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50">
       {/* Mobile Compact Header (md:hidden) */}
       <div className="md:hidden bg-white border-b border-slate-200/80 px-4 py-3 shadow-2xs">
         <div className="flex items-center gap-3">
           <Link
-            to="/tests/sectional"
-            className="p-1 -ml-1 rounded-lg text-slate-700 hover:text-purple-600 active:scale-95 transition-all shrink-0"
-            aria-label="Back to Subjects"
+            to={backUrl}
+            className="p-1 -ml-1 rounded-lg text-slate-700 hover:text-emerald-600 active:scale-95 transition-all shrink-0"
+            aria-label="Back to Chapters"
           >
             <ArrowLeft className="w-5 h-5 text-slate-700" />
           </Link>
           <div className="min-w-0 flex-1">
             <h1 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight truncate">
-              {subjectMeta.name}
+              {chapter?.name || 'Chapter Tests'}
             </h1>
             <p className="text-[11px] font-medium text-slate-500 leading-none mt-0.5 truncate">
-              {subjectMeta.hindiName ? `${subjectMeta.hindiName} • ` : ''}{tests.length} {tests.length === 1 ? 'Test' : 'Tests'}
+              {subjectMeta.name} {chapter?.sub_category ? `• ${chapter.sub_category}` : ''} • {tests.length} {tests.length === 1 ? 'Test' : 'Tests'}
             </p>
           </div>
         </div>
@@ -145,26 +139,45 @@ export const SectionalSubjectTestsPage: React.FC = () => {
 
       {/* Desktop Header (hidden md:block) */}
       <div className="hidden md:block bg-white border-b border-[#E2ECFF] md:border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <BackButton fallbackTo="/tests/sectional" forceFallback label="Subjects" />
+              <BackButton
+                to={backUrl}
+                forceFallback
+                label={chapter?.sub_category ? `${chapter.sub_category}` : 'All Chapters'}
+              />
               <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-xl ${subjectMeta.bg} ${subjectMeta.color} flex items-center justify-center shrink-0 shadow-2xs`}>
-                  <Icon className="w-7 h-7" />
+                <div className={`w-10 h-10 rounded-xl ${subjectMeta.bg} ${subjectMeta.color} flex items-center justify-center shrink-0`}>
+                  <Icon className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                      {subjectMeta.name}
-                    </h1>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                      {subjectMeta.hindiName}
-                    </span>
+                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-0.5">
+                    <Link to="/tests/chapter-wise" className="hover:text-emerald-600">Chapter Wise</Link>
+                    <span>/</span>
+                    <Link to={`/tests/chapter-wise/${subjectMeta.slug}`} className="hover:text-emerald-600">{subjectMeta.name}</Link>
+                    {chapter?.sub_category && (
+                      <>
+                        <span>/</span>
+                        <Link
+                          to={`/tests/chapter-wise/${subjectMeta.slug}?sub=${encodeURIComponent(chapter.sub_category)}`}
+                          className="hover:text-emerald-600"
+                        >
+                          {chapter.sub_category}
+                        </Link>
+                      </>
+                    )}
+                    <span>/</span>
+                    <span className="text-slate-600">{chapter?.name || 'Chapter'}</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 max-w-xl">
-                    {subjectMeta.description}
-                  </p>
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                    {chapter?.name || 'Chapter Tests'}
+                    {chapter?.hindi_name && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {chapter.hindi_name}
+                      </span>
+                    )}
+                  </h1>
                 </div>
               </div>
             </div>
@@ -177,7 +190,7 @@ export const SectionalSubjectTestsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tests Content */}
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {/* Mobile Section Title: Available Tests */}
         <div className="md:hidden mb-3">
@@ -185,6 +198,8 @@ export const SectionalSubjectTestsPage: React.FC = () => {
             Available Tests
           </h2>
         </div>
+
+        {/* Loading Spinner / Skeletons */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[1, 2, 3].map((n) => (
@@ -199,6 +214,7 @@ export const SectionalSubjectTestsPage: React.FC = () => {
             ))}
           </div>
         ) : tests.length > 0 ? (
+          /* Tests Grid - Exactly matching Sectional Test Card UI */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {tests.map((test) => {
               const userResult = user ? userResults[test.id] : null;
@@ -224,7 +240,7 @@ export const SectionalSubjectTestsPage: React.FC = () => {
                           <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 mt-0.5">
                             <span>{subjectMeta.name}</span>
                             <span className="text-slate-300">•</span>
-                            <span>Sectional Test</span>
+                            <span>{chapter?.name || 'Chapter Wise Test'}</span>
                           </div>
                         </div>
                       </div>
@@ -269,14 +285,14 @@ export const SectionalSubjectTestsPage: React.FC = () => {
                       /* Logged in with completed test: Analyse + Reattempt */
                       <div className="grid grid-cols-2 gap-2">
                         <Link
-                          to={`/tests/sectional/test/${test.id}?mode=analyse`}
+                          to={`/tests/chapter-wise/test/${test.id}?mode=analyse`}
                           className="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-700 border border-purple-200 text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-[0.99]"
                         >
                           <BarChart3 className="w-3.5 h-3.5" />
                           <span>Analyse</span>
                         </Link>
                         <Link
-                          to={`/tests/sectional/test/${test.id}?reattempt=true`}
+                          to={`/tests/chapter-wise/test/${test.id}?reattempt=true`}
                           className="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-[0.99]"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
@@ -286,7 +302,7 @@ export const SectionalSubjectTestsPage: React.FC = () => {
                     ) : (
                       /* First time / No result: Start Test */
                       <Link
-                        to={`/tests/sectional/test/${test.id}`}
+                        to={`/tests/chapter-wise/test/${test.id}`}
                         className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs sm:text-sm font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.99]"
                       >
                         <Play className="w-3.5 h-3.5 fill-white" />
@@ -305,17 +321,17 @@ export const SectionalSubjectTestsPage: React.FC = () => {
               <Icon className="w-8 h-8" />
             </div>
             <h3 className="text-lg font-bold text-slate-900">
-              No Sectional Tests Available
+              No Chapter Tests Available
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
-              Mock tests for <strong>{subjectMeta.name}</strong> ({subjectMeta.hindiName}) will be uploaded by the faculty shortly.
+              Assessment tests for <strong>{chapter?.name || subjectMeta.name}</strong> will be uploaded by the faculty shortly.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
-                to="/tests/sectional"
+                to={backUrl}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors"
               >
-                Browse Other Subjects
+                Browse Other Chapters
               </Link>
             </div>
           </div>

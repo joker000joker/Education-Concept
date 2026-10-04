@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { BackButton } from '../../components/common/BackButton';
 import {
   ShieldCheck, LayoutDashboard, Users, FileText, Book, BookOpen, 
   Newspaper, GraduationCap, Library, ClipboardList, Database, 
@@ -93,7 +92,6 @@ export const AdminLayout: React.FC = () => {
             <span className="font-bold text-slate-900 text-sm">Admin Panel</span>
           </div>
         </div>
-        <BackButton fallbackTo="/" label="Exit" className="!px-2.5 !py-1 !text-xs" />
       </div>
 
       {/* Sidebar / Left Navigation Drawer on Mobile */}
@@ -115,7 +113,6 @@ export const AdminLayout: React.FC = () => {
               <span className="text-xs font-extrabold text-slate-900 tracking-tight">EDUCATION CONCEPT</span>
             </div>
             <div className="flex items-center gap-1">
-              <BackButton fallbackTo="/" label="Exit" className="!px-2 !py-1 !text-xs" />
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="md:hidden p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
@@ -159,7 +156,7 @@ export const AdminLayout: React.FC = () => {
             <NavItem to="/admin/test-dashboard" icon={ClipboardList} label="Test Dashboard" />
             <NavItem to="/admin/question-bank" icon={Database} label="Question Bank" />
             <NavItem to="/admin/daily-quiz" icon={CheckSquare} label="Daily Quiz" />
-            <NavItem to="/admin/chapter-test" icon={FileQuestion} label="Chapter Wise Test" />
+            <NavItem to="/admin/chapter-test" icon={FileQuestion} label="Chapter Wise Test" badge="Active" />
             <NavItem to="/admin/test-pass" icon={Ticket} label="Test Pass" />
             <NavItem to="/admin/live-test" icon={Radio} label="Live Test" />
             <NavItem to="/admin/create-test" icon={Edit3} label="Create Test" />

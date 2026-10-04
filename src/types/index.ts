@@ -291,3 +291,81 @@ export interface SectionalTestResult {
   percentage?: number;
 }
 
+// =============================================================================
+// CHAPTER WISE TEST TYPES
+// =============================================================================
+
+export interface Chapter {
+  id: number;
+  subject: SectionalSubject | string;
+  sub_category?: string;
+  name: string;
+  hindi_name?: string;
+  description?: string;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+  test_count?: number;
+}
+
+export interface ChapterTest {
+  id: number;
+  chapter_id: number;
+  title: string;
+  subject: SectionalSubject | string;
+  sub_category?: string;
+  chapter_name?: string;
+  total_questions: number;
+  total_marks: number;
+  duration_minutes: number;
+  negative_marking: number;
+  published: boolean;
+  sort_order?: number;
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  questions?: ChapterQuestion[];
+}
+
+export interface ChapterQuestion {
+  id?: number;
+  test_id?: number;
+  question_order: number;
+  question_text: string;
+  image_url?: string | null;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_option: 'A' | 'B' | 'C' | 'D' | string;
+  explanation?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ChapterTestResult {
+  id?: number | string;
+  test_id: number;
+  chapter_id?: number;
+  user_id: string;
+  score: number;
+  total_marks: number;
+  correct_answers: number;
+  incorrect_answers: number;
+  unattempted_answers: number;
+  accuracy: number;
+  negative_marks: number;
+  time_taken_seconds: number;
+  answers: {
+    questions: StoredQuestionAnswer[];
+    userAnswers: Record<number, string>;
+  };
+  completed_at: string;
+  created_at?: string;
+  updated_at?: string;
+  test_title?: string;
+  chapter_name?: string;
+  subject?: string;
+  percentage?: number;
+}
+

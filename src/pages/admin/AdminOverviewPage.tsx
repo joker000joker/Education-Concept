@@ -16,16 +16,12 @@ import {
   FileQuestion,
   Ticket
 } from 'lucide-react';
-import { BackButton } from '../../components/common/BackButton';
 
 export const AdminOverviewPage: React.FC = () => {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Top Header */}
       <div>
-        <div className="mb-4">
-          <BackButton fallbackTo="/" label="Back to Homepage" forceFallback={true} />
-        </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Admin Dashboard
         </h1>
@@ -54,11 +50,11 @@ export const AdminOverviewPage: React.FC = () => {
         </Link>
         <Link
           to="/admin/chapter-test"
-          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors group opacity-75"
+          className="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-yellow-200 bg-yellow-50/50 hover:bg-yellow-100/70 transition-colors group"
         >
-          <FileQuestion className="w-5 h-5 text-slate-500 mb-1.5" />
-          <span className="text-xs font-semibold text-slate-700 text-center">Chapter Wise</span>
-          <span className="text-[10px] text-slate-400 mt-0.5">Coming Soon</span>
+          <FileQuestion className="w-5 h-5 text-yellow-600 mb-1.5 group-hover:scale-110 transition-transform" />
+          <span className="text-xs font-bold text-yellow-900 text-center">Chapter Wise Test</span>
+          <span className="text-[10px] text-yellow-600 font-semibold mt-0.5">Active</span>
         </Link>
         <Link
           to="/admin/test-pass"

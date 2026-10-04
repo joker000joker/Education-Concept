@@ -62,10 +62,10 @@ export const TestsLandingPage: React.FC = () => {
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
       border: 'border-emerald-200',
-      isActive: false,
+      isActive: true,
       link: '/tests/chapter-wise',
       description: 'Topic & chapter specific assessment tests for targeted practice and conceptual mastery.',
-      badge: 'Coming Soon'
+      badge: 'Active'
     },
     {
       id: 'test-pass',
@@ -128,8 +128,14 @@ export const TestsLandingPage: React.FC = () => {
                     <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
                       <Icon className="w-8 h-8" />
                     </div>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse"></span>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                      card.id === 'chapter-wise'
+                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                        : 'bg-purple-100 text-purple-700 border border-purple-200'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                        card.id === 'chapter-wise' ? 'bg-emerald-600' : 'bg-purple-600'
+                      }`}></span>
                       {card.badge}
                     </span>
                   </div>
@@ -144,8 +150,8 @@ export const TestsLandingPage: React.FC = () => {
                     {card.description}
                   </p>
 
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-purple-600 group-hover:text-purple-700">
-                    <span>Enter Sectional Tests</span>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
+                    <span>Enter {card.title}</span>
                     <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
