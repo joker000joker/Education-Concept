@@ -45,10 +45,18 @@ chapterRouter.use((_req, res, next) => {
 chapterRouter.get('/chapters', async (req: Request, res: Response) => {
   try {
     const supabase = getSupabaseClient(req);
-    const { subject } = req.query;
+    const { subject, subCategory } = req.query;
     let query = supabase.from('chapters').select('*').order('sort_order', { ascending: true });
     if (subject && typeof subject === 'string') {
-      query = query.ilike('subject', subject.trim());
+      const trimmed = subject.trim();
+      if (trimmed.toLowerCase() === 'math' || trimmed.toLowerCase() === 'mathematics') {
+        query = query.in('subject', ['Math', 'Mathematics', 'math', 'mathematics']);
+      } else {
+        query = query.ilike('subject', trimmed);
+      }
+    }
+    if (subCategory && typeof subCategory === 'string' && subCategory.toLowerCase() !== 'all') {
+      query = query.ilike('sub_category', subCategory.trim());
     }
     const { data, error } = await query;
     if (error) {
@@ -63,7 +71,7 @@ chapterRouter.get('/chapters', async (req: Request, res: Response) => {
 chapterRouter.post('/chapters', async (req: Request, res: Response) => {
   try {
     const supabase = getSupabaseClient(req);
-    const { id, subject, name, hindi_name, description, sort_order } = req.body;
+    const { id, subject, sub_category, name, hindi_name, description, sort_order } = req.body;
     if (!name || !subject) {
       return res.status(400).json({ success: false, error: 'Name and subject are required.' });
     }
@@ -73,6 +81,7 @@ chapterRouter.post('/chapters', async (req: Request, res: Response) => {
         .from('chapters')
         .update({
           subject,
+          sub_category: sub_category || null,
           name,
           hindi_name,
           description,
@@ -89,6 +98,7 @@ chapterRouter.post('/chapters', async (req: Request, res: Response) => {
         .from('chapters')
         .insert({
           subject,
+          sub_category: sub_category || null,
           name,
           hindi_name,
           description,
@@ -146,7 +156,12 @@ chapterRouter.get('/tests', async (req: Request, res: Response) => {
       query = query.eq('chapter_id', Number(chapterId));
     }
     if (subject && typeof subject === 'string') {
-      query = query.ilike('subject', subject.trim());
+      const trimmed = subject.trim();
+      if (trimmed.toLowerCase() === 'math' || trimmed.toLowerCase() === 'mathematics') {
+        query = query.in('subject', ['Math', 'Mathematics', 'math', 'mathematics']);
+      } else {
+        query = query.ilike('subject', trimmed);
+      }
     }
     if (publishedOnly === 'true') {
       query = query.eq('published', true);
@@ -156,6 +171,23 @@ chapterRouter.get('/tests', async (req: Request, res: Response) => {
       return res.status(200).json({ success: true, data: [] });
     }
     return res.json({ success: true, data: data || [] });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+chapterRouter.post('/tests/reorder', async (req: Request, res: Response) => {
+  try {
+    const supabase = getSupabaseClient(req);
+    const { orderedIds } = req.body;
+    if (Array.isArray(orderedIds)) {
+      await Promise.all(
+        orderedIds.map((id, index) =>
+          supabase.from('chapter_tests').update({ sort_order: index + 1 }).eq('id', id)
+        )
+      );
+    }
+    return res.json({ success: true });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
   }

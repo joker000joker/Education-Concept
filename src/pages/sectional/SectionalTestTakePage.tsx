@@ -95,6 +95,13 @@ export const SectionalTestTakePage: React.FC = () => {
   const [reviewFilter, setReviewFilter] = useState<'all' | 'correct' | 'incorrect' | 'unattempted'>('all');
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const userAnswersRef = useRef<Record<number, string>>(userAnswers);
+  const isSubmittingRef = useRef<boolean>(false);
+  const timeRemainingRef = useRef<number>(timeRemainingSeconds);
+
+  useEffect(() => {
+    userAnswersRef.current = userAnswers;
+  }, [userAnswers]);
 
   useEffect(() => {
     loadTestAndQuestions();
@@ -164,9 +171,12 @@ export const SectionalTestTakePage: React.FC = () => {
         if (storedActive && !isAnalyseRequested) {
           try {
             const parsed = JSON.parse(storedActive);
-            if (parsed.testId === testId && parsed.timeRemainingSeconds > 0) {
-              setUserAnswers(parsed.userAnswers || {});
+            if (String(parsed.testId) === String(testId) && parsed.timeRemainingSeconds > 0) {
+              const restoredAnswers = parsed.userAnswers || {};
+              userAnswersRef.current = restoredAnswers;
+              setUserAnswers(restoredAnswers);
               setMarkedForReview(parsed.markedForReview || {});
+              timeRemainingRef.current = parsed.timeRemainingSeconds;
               setTimeRemainingSeconds(parsed.timeRemainingSeconds);
               setCurrentIndex(parsed.currentIndex || 0);
               setMode('taking');
@@ -230,21 +240,33 @@ export const SectionalTestTakePage: React.FC = () => {
   // Timer countdown
   useEffect(() => {
     if (mode === 'taking' && timeRemainingSeconds > 0) {
+      timeRemainingRef.current = timeRemainingSeconds;
       timerRef.current = setInterval(() => {
-        setTimeRemainingSeconds((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            handleTimeUpSubmit();
-            return 0;
+        if (timeRemainingRef.current <= 1) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
           }
-          return prev - 1;
-        });
+          timeRemainingRef.current = 0;
+          setTimeRemainingSeconds(0);
+          handleTimeUpSubmit();
+          return;
+        }
+
+        timeRemainingRef.current -= 1;
+        setTimeRemainingSeconds(timeRemainingRef.current);
       }, 1000);
     } else {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [mode]);
 
@@ -257,7 +279,11 @@ export const SectionalTestTakePage: React.FC = () => {
   const handleStartTest = () => {
     if (!test || questions.length === 0) return;
     sessionStorage.removeItem(`ec_active_test_${test.id}`);
-    setTimeRemainingSeconds((test.duration_minutes || 20) * 60);
+    isSubmittingRef.current = false;
+    userAnswersRef.current = {};
+    const durationSec = (test.duration_minutes || 20) * 60;
+    timeRemainingRef.current = durationSec;
+    setTimeRemainingSeconds(durationSec);
     setCurrentIndex(0);
     setUserAnswers({});
     setMarkedForReview({});
@@ -267,20 +293,21 @@ export const SectionalTestTakePage: React.FC = () => {
   const handleSelectOption = (option: string) => {
     const currentQ = questions[currentIndex];
     if (!currentQ) return;
-    setUserAnswers((prev) => ({
-      ...prev,
+    const next = {
+      ...userAnswersRef.current,
       [currentQ.question_order]: option
-    }));
+    };
+    userAnswersRef.current = next;
+    setUserAnswers(next);
   };
 
   const handleClearResponse = () => {
     const currentQ = questions[currentIndex];
     if (!currentQ) return;
-    setUserAnswers((prev) => {
-      const next = { ...prev };
-      delete next[currentQ.question_order];
-      return next;
-    });
+    const next = { ...userAnswersRef.current };
+    delete next[currentQ.question_order];
+    userAnswersRef.current = next;
+    setUserAnswers(next);
   };
 
   const handleToggleMarkForReview = () => {
@@ -297,14 +324,34 @@ export const SectionalTestTakePage: React.FC = () => {
   const unattemptedCount = Math.max(0, questions.length - attemptedCount);
   const markedCount = Object.values(markedForReview).filter(Boolean).length;
 
-  const handleTimeUpSubmit = () => {
-    calculateAndSaveResult(true);
+  const getEffectiveAnswers = (): Record<number, string> => {
+    if (userAnswersRef.current && Object.keys(userAnswersRef.current).length > 0) {
+      return userAnswersRef.current;
+    }
+    if (userAnswers && Object.keys(userAnswers).length > 0) {
+      return userAnswers;
+    }
+    try {
+      const raw = sessionStorage.getItem(`ec_active_test_${test?.id || testId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.userAnswers && typeof parsed.userAnswers === 'object' && Object.keys(parsed.userAnswers).length > 0) {
+          return parsed.userAnswers;
+        }
+      }
+    } catch {}
+    return userAnswersRef.current || {};
   };
 
   const calculateAndSaveResult = async (isAuto = false) => {
-    if (!test) return;
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (!test || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
+    const effectiveAnswers = getEffectiveAnswers();
     const totalQ = questions.length || 1;
     const totalMarks = Number(test.total_marks) || 50;
     const marksPerQ = totalMarks / totalQ;
@@ -314,7 +361,7 @@ export const SectionalTestTakePage: React.FC = () => {
     let incorrect = 0;
 
     questions.forEach((q) => {
-      const studentAns = userAnswers[q.question_order];
+      const studentAns = effectiveAnswers[q.question_order];
       if (studentAns) {
         if (studentAns.toUpperCase() === q.correct_option.toUpperCase()) {
           correct++;
@@ -331,7 +378,8 @@ export const SectionalTestTakePage: React.FC = () => {
     const percentage = Math.round((finalScore / totalMarks) * 100);
     const accuracy = correct + incorrect > 0 ? Math.round((correct / (correct + incorrect)) * 100) : 0;
     const durationSeconds = (test.duration_minutes || 20) * 60;
-    const timeTaken = Math.max(0, durationSeconds - timeRemainingSeconds);
+    const finalRemainingSeconds = isAuto ? 0 : Math.max(0, timeRemainingSeconds);
+    const timeTaken = Math.max(0, durationSeconds - finalRemainingSeconds);
 
     const attemptResult: TestAttemptResult = {
       testId: test.id,
@@ -349,29 +397,47 @@ export const SectionalTestTakePage: React.FC = () => {
       unattemptedCount: unattempted,
       accuracy,
       timeTakenSeconds: timeTaken,
-      userAnswers,
+      userAnswers: effectiveAnswers,
       submittedAt: new Date().toISOString()
     };
 
     // Save and replace latest result in Supabase & Local Cache
-    const saveRes = await saveLatestSectionalResult({
-      test,
-      questions,
-      userAnswers,
-      timeRemainingSeconds,
-      userId: user?.id || 'guest'
-    });
+    try {
+      const saveRes = await saveLatestSectionalResult({
+        test,
+        questions,
+        userAnswers: effectiveAnswers,
+        timeRemainingSeconds: finalRemainingSeconds,
+        userId: user?.id || 'guest'
+      });
 
-    if (saveRes.success) {
-      setExistingResult(saveRes.result);
+      if (saveRes.success) {
+        setExistingResult(saveRes.result);
+      }
+    } catch (err) {
+      console.warn('Failed to save sectional test result', err);
     }
 
     sessionStorage.removeItem(`ec_active_test_${test.id}`);
     saveTestAttempt(attemptResult, user?.id);
+    setUserAnswers(effectiveAnswers);
     setResult(attemptResult);
     setShowSubmitModal(false);
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setMode('result');
+  };
+
+  const calculateAndSaveResultRef = useRef(calculateAndSaveResult);
+  useEffect(() => {
+    calculateAndSaveResultRef.current = calculateAndSaveResult;
+  });
+
+  const handleTimeUpSubmit = () => {
+    if (calculateAndSaveResultRef.current) {
+      calculateAndSaveResultRef.current(true);
+    } else {
+      calculateAndSaveResult(true);
+    }
   };
 
   if (loading) {
@@ -799,12 +865,13 @@ export const SectionalTestTakePage: React.FC = () => {
         </div>
 
         {/* ============================================================== */}
+        {/* ============================================================== */}
         {/* DESKTOP EXAM INTERFACE (hidden md:flex flex-col min-h-screen)  */}
         {/* ============================================================== */}
         <div className="hidden md:flex flex-col min-h-screen bg-slate-100">
           {/* Sticky Exam Top Bar */}
-          <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs px-4 sm:px-6 py-2.5">
-            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs px-4 sm:px-6 lg:px-8 py-2.5">
+            <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
               {/* TOP-LEFT: Back arrow + Subject badge + Test Title */}
               <div className="flex items-center gap-3 min-w-0">
                 <button
@@ -880,8 +947,8 @@ export const SectionalTestTakePage: React.FC = () => {
           </header>
 
           {/* Status Bar with Progress Indicator */}
-          <div className="bg-slate-50 border-b border-slate-200/80 px-4 sm:px-6 py-2">
-            <div className="max-w-7xl mx-auto flex items-center justify-between text-xs gap-4 flex-wrap">
+          <div className="bg-slate-50 border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-2.5">
+            <div className="max-w-[1400px] mx-auto flex items-center justify-between text-xs gap-4 flex-wrap">
               <div className="flex items-center gap-4 sm:gap-6 font-semibold">
                 <span className="text-emerald-700 flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0"></span>
@@ -920,11 +987,11 @@ export const SectionalTestTakePage: React.FC = () => {
           </div>
 
           {/* Main Test Layout (Question + Question Palette) */}
-          <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Question Panel (8 cols on desktop) */}
-            <div className="lg:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7">
+          <div className="flex-1 max-w-[1400px] w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Question Panel (9 cols on desktop: wider, primary focus) */}
+            <div className="lg:col-span-9 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7 lg:p-8 min-h-[580px] lg:min-h-[620px]">
               {/* Question Header */}
-              <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-5">
+              <div className="shrink-0 flex items-center justify-between pb-3.5 border-b border-slate-100 mb-5">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
@@ -950,67 +1017,70 @@ export const SectionalTestTakePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Question Text */}
-              <div className="text-[15px] sm:text-base font-semibold text-slate-900 leading-relaxed whitespace-pre-line mb-5 tracking-normal">
-                {currentQ.question_text}
-              </div>
-
-              {/* Optional Question Image */}
-              {currentQ.image_url && (
-                <div className="mb-5 rounded-xl overflow-hidden border border-slate-200 max-h-72">
-                  <img
-                    src={currentQ.image_url}
-                    alt={`Question ${currentIndex + 1}`}
-                    className="w-full h-auto object-contain max-h-72"
-                    referrerPolicy="no-referrer"
-                  />
+              {/* Question Content Area (Flex-1 to absorb vertical space and stabilize height) */}
+              <div className="flex-1 flex flex-col justify-start">
+                {/* Question Text */}
+                <div className="text-[15px] sm:text-base font-semibold text-slate-900 leading-relaxed whitespace-pre-line mb-5 tracking-normal select-text">
+                  {currentQ.question_text}
                 </div>
-              )}
 
-              {/* Four Options */}
-              <div className="space-y-2.5">
-                {[
-                  { key: 'A', text: currentQ.option_a },
-                  { key: 'B', text: currentQ.option_b },
-                  { key: 'C', text: currentQ.option_c },
-                  { key: 'D', text: currentQ.option_d },
-                ].map((opt) => {
-                  const isSelected = userAnswers[currentQ.question_order] === opt.key;
-                  return (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      onClick={() => handleSelectOption(opt.key)}
-                      className={`w-full text-left p-3.5 sm:p-4 rounded-xl border-2 transition-all flex items-start gap-3.5 cursor-pointer select-none ${
-                        isSelected
-                          ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-500/20'
-                          : 'border-slate-200/90 bg-white hover:bg-slate-50/90 hover:border-slate-300'
-                      }`}
-                    >
-                      <span
-                        className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 transition-colors ${
+                {/* Optional Question Image */}
+                {currentQ.image_url && (
+                  <div className="mb-5 rounded-xl overflow-hidden border border-slate-200 max-h-72 shrink-0">
+                    <img
+                      src={currentQ.image_url}
+                      alt={`Question ${currentIndex + 1}`}
+                      className="w-full h-auto object-contain max-h-72"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                )}
+
+                {/* Four Options */}
+                <div className="space-y-2.5 sm:space-y-3">
+                  {[
+                    { key: 'A', text: currentQ.option_a },
+                    { key: 'B', text: currentQ.option_b },
+                    { key: 'C', text: currentQ.option_c },
+                    { key: 'D', text: currentQ.option_d },
+                  ].map((opt) => {
+                    const isSelected = userAnswers[currentQ.question_order] === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => handleSelectOption(opt.key)}
+                        className={`w-full text-left p-3.5 sm:p-4 rounded-xl border-2 transition-all flex items-start gap-3.5 cursor-pointer select-none group min-h-[54px] ${
                           isSelected
-                            ? 'bg-purple-600 text-white shadow-xs'
-                            : 'bg-slate-100 text-slate-700'
+                            ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-500/20'
+                            : 'border-slate-200/90 bg-white hover:bg-slate-50/90 hover:border-slate-300'
                         }`}
                       >
-                        {opt.key}
-                      </span>
-                      <span className={`text-xs sm:text-sm pt-0.5 leading-relaxed break-words flex-1 ${isSelected ? 'font-bold text-purple-950' : 'text-slate-800'}`}>
-                        {opt.text}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span
+                          className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 transition-colors ${
+                            isSelected
+                              ? 'bg-purple-600 text-white shadow-xs'
+                              : 'bg-slate-100 text-slate-700 group-hover:bg-purple-50 group-hover:text-purple-700'
+                          }`}
+                        >
+                          {opt.key}
+                        </span>
+                        <span className={`text-xs sm:text-sm pt-0.5 leading-relaxed break-words flex-1 select-text ${isSelected ? 'font-bold text-purple-950' : 'text-slate-800'}`}>
+                          {opt.text}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Bottom Actions Bar */}
-              <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+              {/* Bottom Actions Bar (Firmly pinned to consistent bottom position) */}
+              <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={handleToggleMarkForReview}
-                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+                    className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border transition-colors flex items-center gap-1.5 ${
                       isMarked
                         ? 'bg-purple-50 border-purple-300 text-purple-800 hover:bg-purple-100'
                         : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -1024,19 +1094,19 @@ export const SectionalTestTakePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleClearResponse}
-                      className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-colors"
+                      className="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-colors"
                     >
                       Clear Response
                     </button>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <button
                     type="button"
                     onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
                     disabled={currentIndex === 0}
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-40 transition-colors flex items-center gap-1"
+                    className="px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-40 transition-colors flex items-center gap-1"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     <span>Previous</span>
@@ -1051,7 +1121,7 @@ export const SectionalTestTakePage: React.FC = () => {
                         setShowSubmitModal(true);
                       }
                     }}
-                    className={`px-5 py-2 rounded-xl text-xs font-bold text-white shadow-xs transition-colors flex items-center gap-1 ${
+                    className={`px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white shadow-xs transition-colors flex items-center gap-1.5 ${
                       currentIndex < questions.length - 1
                         ? 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800'
                         : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800'
@@ -1068,13 +1138,13 @@ export const SectionalTestTakePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Question Palette (Desktop: 4 cols) */}
-            <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-6 flex flex-col sticky top-20">
+            {/* Question Palette (Desktop: 3 cols, compact & secondary) */}
+            <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col sticky top-24">
               <div>
-                <div className="flex items-center justify-between mb-3.5 pb-3 border-b border-slate-100">
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100">
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
                     <Layers className="w-4 h-4 text-purple-600" />
-                    Question Palette
+                    <span>Question Palette</span>
                   </h3>
                   <span className="text-[11px] font-semibold text-slate-500">
                     {questions.length} Questions
@@ -1082,7 +1152,7 @@ export const SectionalTestTakePage: React.FC = () => {
                 </div>
 
                 {/* Grid of question numbers with subtle polished scrollbar */}
-                <div className="grid grid-cols-5 sm:grid-cols-6 gap-2 max-h-[380px] overflow-y-auto p-1 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-400">
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 max-h-[350px] overflow-y-auto p-1 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-400">
                   {questions.map((q, idx) => {
                     const answered = Boolean(userAnswers[q.question_order]);
                     const marked = Boolean(markedForReview[q.question_order]);
@@ -1105,7 +1175,7 @@ export const SectionalTestTakePage: React.FC = () => {
                         key={q.question_order}
                         type="button"
                         onClick={() => setCurrentIndex(idx)}
-                        className={`h-9 rounded-xl text-xs font-bold transition-all relative flex items-center justify-center ${btnStyle} ${
+                        className={`h-8 sm:h-8.5 rounded-lg text-xs font-bold transition-all relative flex items-center justify-center ${btnStyle} ${
                           isCurrent ? 'ring-2 ring-blue-600 ring-offset-2 z-10 scale-105 font-black' : ''
                         }`}
                       >
@@ -1123,28 +1193,28 @@ export const SectionalTestTakePage: React.FC = () => {
               </div>
 
               {/* Status Legend in Palette */}
-              <div className="pt-4 border-t border-slate-100 mt-4">
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-600 mb-4">
+              <div className="pt-3.5 border-t border-slate-100 mt-3.5">
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-600 mb-3.5">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-md bg-emerald-600 shrink-0"></span>
-                    <span>Answered ({attemptedCount})</span>
+                    <span className="w-2.5 h-2.5 rounded-md bg-emerald-600 shrink-0"></span>
+                    <span className="truncate">Answered ({attemptedCount})</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-md bg-purple-600 shrink-0"></span>
-                    <span>Marked ({markedCount})</span>
+                    <span className="w-2.5 h-2.5 rounded-md bg-purple-600 shrink-0"></span>
+                    <span className="truncate">Marked ({markedCount})</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-md bg-purple-600 ring-2 ring-emerald-500 shrink-0 relative">
-                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span className="w-2.5 h-2.5 rounded-md bg-purple-600 ring-1 ring-emerald-500 shrink-0 relative">
+                      <span className="absolute -top-0.5 -right-0.5 w-1 h-1 rounded-full bg-emerald-400"></span>
                     </span>
-                    <span>Ans & Marked</span>
+                    <span className="truncate">Ans & Marked</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-md bg-slate-100 border border-slate-300 shrink-0"></span>
-                    <span>Unanswered ({unattemptedCount})</span>
+                    <span className="w-2.5 h-2.5 rounded-md bg-slate-100 border border-slate-300 shrink-0"></span>
+                    <span className="truncate">Unanswered ({unattemptedCount})</span>
                   </div>
                   <div className="col-span-2 flex items-center gap-1.5 pt-0.5">
-                    <span className="w-3 h-3 rounded-md ring-2 ring-blue-600 bg-white shrink-0"></span>
+                    <span className="w-2.5 h-2.5 rounded-md ring-2 ring-blue-600 bg-white shrink-0"></span>
                     <span>Current Question</span>
                   </div>
                 </div>

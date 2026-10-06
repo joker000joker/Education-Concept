@@ -1,7 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getSubjectBySlug } from '../../data/sectionalSubjects';
-import { fetchChapters, getSubCategoriesForSubject } from '../../services/chapterTestService';
+import {
+  fetchChapters,
+  getSubCategoriesForSubject,
+  CHAPTER_DATA_CHANGED_EVENT
+} from '../../services/chapterTestService';
 import { Chapter } from '../../types';
 import { BackButton } from '../../components/common/BackButton';
 import {
@@ -24,7 +28,7 @@ export const ChapterListPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Check if subject is divided into sub-categories (History, Geography, Reasoning, Chemistry)
+  // Check if subject is divided into sub-categories (Mathematics, History, Geography, Reasoning, Chemistry)
   const subCategories = useMemo(() => {
     return subjectMeta ? getSubCategoriesForSubject(subjectMeta.name) : null;
   }, [subjectMeta?.name]);
@@ -39,26 +43,33 @@ export const ChapterListPage: React.FC = () => {
     if (!subjectMeta) return;
     loadChapters();
 
-    let lastFocus = Date.now();
     const onFocus = () => {
-      if (document.visibilityState === 'visible' && Date.now() - lastFocus > 10000) {
-        lastFocus = Date.now();
+      if (document.visibilityState === 'visible') {
         loadChapters({ silent: true });
       }
     };
+    const onDataChanged = () => {
+      loadChapters({ silent: true });
+    };
+
     window.addEventListener('focus', onFocus);
     window.addEventListener('visibilitychange', onFocus);
+    window.addEventListener(CHAPTER_DATA_CHANGED_EVENT, onDataChanged);
+    window.addEventListener('storage', onDataChanged);
+
     return () => {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('visibilitychange', onFocus);
+      window.removeEventListener(CHAPTER_DATA_CHANGED_EVENT, onDataChanged);
+      window.removeEventListener('storage', onDataChanged);
     };
-  }, [subjectMeta?.name]);
+  }, [subjectMeta?.name, activeSubCategory]);
 
   const loadChapters = async (options?: { silent?: boolean }) => {
     if (!subjectMeta) return;
-    if (!options?.silent) setLoading(true);
+    if (!options?.silent && chapters.length === 0) setLoading(true);
     try {
-      const data = await fetchChapters(subjectMeta.name);
+      const data = await fetchChapters(subjectMeta.name, undefined, { publishedOnly: true });
       setChapters(data);
     } catch (err) {
       console.warn('Failed to load chapters for subject', err);

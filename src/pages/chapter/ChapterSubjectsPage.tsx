@@ -1,11 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SECTIONAL_SUBJECTS_LIST } from '../../data/sectionalSubjects';
 import { BackButton } from '../../components/common/BackButton';
+import {
+  fetchChapters,
+  fetchChapterTests,
+  CHAPTER_DATA_CHANGED_EVENT
+} from '../../services/chapterTestService';
 import { Search, ArrowRight, ArrowLeft, ChevronRight, BookOpen } from 'lucide-react';
 
 export const ChapterSubjectsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [subjectStats, setSubjectStats] = useState<Record<string, { chapters: number; tests: number }>>({});
+
+  useEffect(() => {
+    loadStats();
+
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') {
+        loadStats();
+      }
+    };
+    const onDataChanged = () => {
+      loadStats();
+    };
+
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('visibilitychange', onFocus);
+    window.addEventListener(CHAPTER_DATA_CHANGED_EVENT, onDataChanged);
+    window.addEventListener('storage', onDataChanged);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('visibilitychange', onFocus);
+      window.removeEventListener(CHAPTER_DATA_CHANGED_EVENT, onDataChanged);
+      window.removeEventListener('storage', onDataChanged);
+    };
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const [allChapters, allTests] = await Promise.all([
+        fetchChapters(),
+        fetchChapterTests({ publishedOnly: true })
+      ]);
+
+      const stats: Record<string, { chapters: number; tests: number }> = {};
+      SECTIONAL_SUBJECTS_LIST.forEach((s) => {
+        const key = s.name.toLowerCase();
+        stats[key] = { chapters: 0, tests: 0 };
+      });
+
+      const chapterSubjectMap = new Map<number, string>();
+      allChapters.forEach((c) => {
+        let key = (c.subject || '').toLowerCase().trim();
+        if (key === 'math') key = 'mathematics';
+        chapterSubjectMap.set(Number(c.id), key);
+        if (stats[key]) {
+          stats[key].chapters += 1;
+        }
+      });
+
+      allTests.forEach((t) => {
+        let key = (t.subject || '').toLowerCase().trim() || chapterSubjectMap.get(Number(t.chapter_id));
+        if (key === 'math') key = 'mathematics';
+        if (key && stats[key]) {
+          stats[key].tests += 1;
+        }
+      });
+
+      setSubjectStats(stats);
+    } catch (err) {
+      console.warn('Failed to load chapter subjects stats', err);
+    }
+  };
 
   const filteredSubjects = SECTIONAL_SUBJECTS_LIST.filter((s) => {
     const term = searchTerm.toLowerCase();
@@ -92,7 +160,9 @@ export const ChapterSubjectsPage: React.FC = () => {
                       {subject.name}
                     </h3>
                     <p className="text-[11px] font-medium text-slate-400 mt-0.5">
-                      Chapter Wise Test
+                      {subjectStats[subject.name.toLowerCase()]?.chapters
+                        ? `${subjectStats[subject.name.toLowerCase()].chapters} ${subjectStats[subject.name.toLowerCase()].chapters === 1 ? 'Chapter' : 'Chapters'} • ${subjectStats[subject.name.toLowerCase()].tests} ${subjectStats[subject.name.toLowerCase()].tests === 1 ? 'Test' : 'Tests'}`
+                        : 'Chapter Wise Test'}
                     </p>
                   </div>
                 </div>
@@ -127,7 +197,9 @@ export const ChapterSubjectsPage: React.FC = () => {
                       {subject.name}
                     </h3>
                     <p className="text-xs font-medium text-slate-400 mt-1">
-                      Chapter Wise Test
+                      {subjectStats[subject.name.toLowerCase()]?.chapters
+                        ? `${subjectStats[subject.name.toLowerCase()].chapters} ${subjectStats[subject.name.toLowerCase()].chapters === 1 ? 'Chapter' : 'Chapters'} • ${subjectStats[subject.name.toLowerCase()].tests} ${subjectStats[subject.name.toLowerCase()].tests === 1 ? 'Test' : 'Tests'} available`
+                        : 'Chapter Wise Test'}
                     </p>
                   </div>
                 </div>

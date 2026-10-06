@@ -13,17 +13,27 @@ export const LOCAL_STORAGE_CHAPTERS_KEY = 'ec_chapters_v1';
 export const LOCAL_STORAGE_CHAPTER_TESTS_KEY = 'ec_chapter_tests_v1';
 export const LOCAL_STORAGE_CHAPTER_QUESTIONS_KEY = 'ec_chapter_questions_v1';
 export const LOCAL_STORAGE_CHAPTER_RESULTS_KEY = 'ec_chapter_results_v1';
-
-// Strict rule: No fake or demo data. Empty lists remain empty.
-const INITIAL_DEMO_CHAPTERS: Chapter[] = [];
-const INITIAL_DEMO_TESTS: ChapterTest[] = [];
-const INITIAL_DEMO_QUESTIONS: Record<number, ChapterQuestion[]> = {};
+export const CHAPTER_DATA_CHANGED_EVENT = 'ec_chapter_data_changed';
 
 // -----------------------------------------------------------------------------
-// Local Storage Helpers
+// Cross-View Event Notification Helper
+// -----------------------------------------------------------------------------
+
+export function notifyChapterDataChanged(detail?: any): void {
+  try {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(CHAPTER_DATA_CHANGED_EVENT, { detail }));
+    }
+  } catch {}
+}
+
+// -----------------------------------------------------------------------------
+// Subject & Sub-Category Configuration
 // -----------------------------------------------------------------------------
 
 export const SUBJECT_SUB_CATEGORIES: Record<string, string[]> = {
+  Mathematics: ['Arithmetic Mathematics', 'Advanced Mathematics'],
+  Math: ['Arithmetic Mathematics', 'Advanced Mathematics'],
   History: ['Ancient History', 'Medieval History', 'Modern History'],
   Geography: ['Physical Geography', 'Indian Geography', 'World Geography'],
   Reasoning: ['Verbal Reasoning', 'Non-Verbal Reasoning', 'Logical/Analytical Reasoning'],
@@ -38,10 +48,44 @@ export function getSubCategoriesForSubject(subject: string): string[] | null {
   return match ? SUBJECT_SUB_CATEGORIES[match] : null;
 }
 
+// -----------------------------------------------------------------------------
+// Auth Headers Helper (Matches Sectional Test Architecture)
+// -----------------------------------------------------------------------------
+
+/**
+ * Helper to retrieve current user session auth headers for Supabase RLS enforcement.
+ * Ensures public.is_admin() evaluates properly on backend endpoints.
+ */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache'
+  };
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.access_token) {
+      headers['Authorization'] = `Bearer ${data.session.access_token}`;
+    }
+  } catch {}
+  return headers;
+}
+
+async function getJsonAuthHeaders(): Promise<Record<string, string>> {
+  const headers = await getAuthHeaders();
+  headers['Content-Type'] = 'application/json';
+  return headers;
+}
+
+// -----------------------------------------------------------------------------
+// Local Storage Cache Mirror Helpers
+// Strict rule: LocalStorage is ONLY a passive mirror of confirmed server data.
+// It is NEVER an alternative database or source of truth.
+// -----------------------------------------------------------------------------
+
 function getLocalChapters(): Chapter[] {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_CHAPTERS_KEY);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         return parsed.map((item) => ({
@@ -76,10 +120,26 @@ function setLocalChapters(chapters: Chapter[]): void {
   }
 }
 
+function updateLocalChapterInMirror(chapter: Chapter): void {
+  const list = getLocalChapters();
+  const idx = list.findIndex((c) => Number(c.id) === Number(chapter.id));
+  if (idx >= 0) {
+    list[idx] = chapter;
+  } else {
+    list.push(chapter);
+  }
+  setLocalChapters(list);
+}
+
+function removeLocalChapterFromMirror(chapterId: number): void {
+  const list = getLocalChapters().filter((c) => Number(c.id) !== Number(chapterId));
+  setLocalChapters(list);
+}
+
 function getLocalTests(): ChapterTest[] {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_CHAPTER_TESTS_KEY);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         return parsed.map((item) => ({
@@ -92,20 +152,16 @@ function getLocalTests(): ChapterTest[] {
           total_marks: Number(item.total_marks || 50),
           duration_minutes: Number(item.duration_minutes || 20),
           negative_marking: Number(item.negative_marking ?? 0.25),
-          published: item.published !== undefined ? Boolean(item.published) : true,
+          published: Boolean(item.published !== false),
           sort_order: item.sort_order !== undefined && item.sort_order !== null ? Number(item.sort_order) : 0,
+          created_by: item.created_by,
           created_at: item.created_at || new Date().toISOString(),
           updated_at: item.updated_at || new Date().toISOString()
-        })).sort((a, b) => {
-          const orderA = a.sort_order ?? 0;
-          const orderB = b.sort_order ?? 0;
-          if (orderA !== orderB) return orderA - orderB;
-          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-        });
+        })).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
       }
     }
   } catch (err) {
-    console.warn('Failed to parse local chapter tests', err);
+    console.warn('Failed to parse local tests', err);
   }
   return [];
 }
@@ -114,15 +170,41 @@ function setLocalTests(tests: ChapterTest[]): void {
   try {
     localStorage.setItem(LOCAL_STORAGE_CHAPTER_TESTS_KEY, JSON.stringify(tests));
   } catch (err) {
-    console.warn('Failed to save local chapter tests', err);
+    console.warn('Failed to save local tests', err);
   }
+}
+
+function updateLocalTestInMirror(test: ChapterTest): void {
+  const list = getLocalTests();
+  const idx = list.findIndex((t) => Number(t.id) === Number(test.id));
+  if (idx >= 0) {
+    list[idx] = test;
+  } else {
+    list.push(test);
+  }
+  setLocalTests(list);
+}
+
+function removeLocalTestFromMirror(testId: number): void {
+  const list = getLocalTests().filter((t) => Number(t.id) !== Number(testId));
+  setLocalTests(list);
+  const qMap = getLocalQuestions();
+  delete qMap[testId];
+  delete qMap[String(testId)];
+  setLocalQuestions(qMap);
+  try {
+    localStorage.removeItem(`ec_chapter_questions_${testId}`);
+  } catch {}
 }
 
 function getLocalQuestions(): Record<number, ChapterQuestion[]> {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_CHAPTER_QUESTIONS_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return parsed;
+      }
     }
   } catch (err) {
     console.warn('Failed to parse local chapter questions', err);
@@ -159,202 +241,221 @@ function setLocalResults(store: Record<string, ChapterTestResult>): void {
 }
 
 // -----------------------------------------------------------------------------
-// CHAPTERS API
+// CHAPTERS API (Authoritative Server Persistence via /api/chapter-tests)
 // -----------------------------------------------------------------------------
 
-export async function fetchChapters(subject?: string, subCategory?: string): Promise<Chapter[]> {
+export async function fetchChapters(
+  subject?: string,
+  subCategory?: string,
+  options?: { publishedOnly?: boolean }
+): Promise<Chapter[]> {
   let chapters: Chapter[] = [];
   const normalizedSubject = subject ? subject.toLowerCase().trim() : '';
 
-  if (isSupabaseConfigured) {
-    try {
-      let query = supabase.from('chapters').select('*').order('sort_order', { ascending: true });
-      if (normalizedSubject) {
-        query = query.ilike('subject', normalizedSubject);
+  // 1. Primary: Fetch from Shared Server Backend API (authoritative source)
+  try {
+    const params = new URLSearchParams();
+    if (normalizedSubject && normalizedSubject !== 'all') {
+      params.append('subject', subject!.trim());
+    }
+    if (subCategory && subCategory.trim() && subCategory.toLowerCase() !== 'all') {
+      params.append('subCategory', subCategory.trim());
+    }
+    params.append('_t', String(Date.now()));
+
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`/api/chapter-tests/chapters?${params.toString()}`, {
+      cache: 'no-store',
+      headers: authHeaders
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && Array.isArray(json.data)) {
+        chapters = json.data as Chapter[];
+        if (!subject || subject === 'All' || subject === 'all') {
+          // If fetching all, authoritatively replace local mirror (even if empty [])
+          setLocalChapters(chapters);
+        } else if (subCategory && subCategory.trim() && subCategory.toLowerCase() !== 'all') {
+          // If sub-category filtered, replace only that sub-category's records for this subject
+          const normSub = subCategory.trim().toLowerCase();
+          const isMath = normalizedSubject === 'mathematics' || normalizedSubject === 'math';
+          const preserved = getLocalChapters().filter((c) => {
+            const cSub = (c.subject || '').toLowerCase().trim();
+            const isSameSubject = isMath
+              ? cSub === 'mathematics' || cSub === 'math'
+              : cSub === normalizedSubject;
+            if (!isSameSubject) return true;
+            return (c.sub_category || '').toLowerCase().trim() !== normSub;
+          });
+          setLocalChapters([...preserved, ...chapters]);
+        } else {
+          // For the currently selected subject:
+          // - replace the subject's chapter records with the fresh server response;
+          // - preserve chapters belonging to other subjects;
+          // - do NOT merge stale records back into the selected subject;
+          // - do NOT resurrect deleted records from localStorage.
+          const isMath = normalizedSubject === 'mathematics' || normalizedSubject === 'math';
+          const otherSubjectChapters = getLocalChapters().filter((c) => {
+            const cSub = (c.subject || '').toLowerCase().trim();
+            if (isMath) {
+              return cSub !== 'mathematics' && cSub !== 'math';
+            }
+            return cSub !== normalizedSubject;
+          });
+          setLocalChapters([...otherSubjectChapters, ...chapters]);
+        }
       }
-      const { data, error } = await query;
-      if (!error && Array.isArray(data)) {
-        chapters = data as Chapter[];
-        // Sync local cache
-        const allLocal = getLocalChapters();
-        const existingMap = new Map(allLocal.map((c) => [c.id, c]));
-        chapters.forEach((c) => existingMap.set(c.id, c));
-        setLocalChapters(Array.from(existingMap.values()));
-      }
-    } catch {
-      // Fallback to local
+    }
+  } catch (err) {
+    console.info('[ChapterTest] Server fetch notice, checking local mirror:', err);
+    // Offline fallback only on network error
+    const isMath = normalizedSubject === 'mathematics' || normalizedSubject === 'math';
+    const all = getLocalChapters();
+    chapters = (normalizedSubject && normalizedSubject !== 'all')
+      ? all.filter((c) => {
+          const cSub = (c.subject || '').toLowerCase().trim();
+          return isMath ? cSub === 'mathematics' || cSub === 'math' : cSub === normalizedSubject;
+        })
+      : all;
+    if (subCategory && subCategory.trim() && subCategory.toLowerCase() !== 'all') {
+      const normSub = subCategory.toLowerCase().trim();
+      chapters = chapters.filter(
+        (c) => c.sub_category && c.sub_category.toLowerCase().trim() === normSub
+      );
     }
   }
 
-  if (chapters.length === 0) {
-    const all = getLocalChapters();
-    chapters = normalizedSubject
-      ? all.filter((c) => c.subject.toLowerCase().trim() === normalizedSubject)
-      : all;
-  }
-
-  if (subCategory && subCategory.trim()) {
-    const normSub = subCategory.toLowerCase().trim();
-    chapters = chapters.filter(
-      (c) => c.sub_category && c.sub_category.toLowerCase().trim() === normSub
-    );
-  }
-
   // Calculate test_count for each chapter
-  const tests = await fetchChapterTests({ publishedOnly: false });
+  const isPublishedOnly = options?.publishedOnly ?? false;
+  const tests = await fetchChapterTests({ publishedOnly: isPublishedOnly });
   const counts: Record<number, number> = {};
   tests.forEach((t) => {
-    counts[t.chapter_id] = (counts[t.chapter_id] || 0) + 1;
+    counts[Number(t.chapter_id)] = (counts[Number(t.chapter_id)] || 0) + 1;
   });
 
   return chapters.map((c) => ({
     ...c,
-    test_count: counts[c.id] || 0
+    test_count: counts[Number(c.id)] || 0
   }));
 }
 
+/**
+ * Save a chapter (Create or Update).
+ * MANDATORY: Persists to the shared server database.
+ * If server save fails, throws error immediately. Never saves fake local records.
+ */
 export async function saveChapter(payload: Partial<Chapter>): Promise<Chapter> {
-  const timestamp = new Date().toISOString();
-  let savedChapter: Chapter;
+  const headers = await getJsonAuthHeaders();
+  const res = await fetch('/api/chapter-tests/chapters', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      id: payload.id ? Number(payload.id) : undefined,
+      subject: String(payload.subject || '').trim(),
+      sub_category: payload.sub_category ? String(payload.sub_category).trim() : null,
+      name: String(payload.name || '').trim(),
+      hindi_name: payload.hindi_name ? String(payload.hindi_name).trim() : null,
+      description: payload.description ? String(payload.description).trim() : null,
+      sort_order: payload.sort_order ?? 0
+    })
+  });
 
-  if (payload.id) {
-    // Update existing
-    savedChapter = {
-      id: Number(payload.id),
-      subject: payload.subject || '',
-      sub_category: payload.sub_category ? String(payload.sub_category) : undefined,
-      name: payload.name || '',
-      hindi_name: payload.hindi_name,
-      description: payload.description,
-      sort_order: payload.sort_order ?? 0,
-      created_at: payload.created_at || timestamp,
-      updated_at: timestamp
-    };
-
-    if (isSupabaseConfigured) {
-      try {
-        const updateData: any = {
-          subject: savedChapter.subject,
-          name: savedChapter.name,
-          hindi_name: savedChapter.hindi_name,
-          description: savedChapter.description,
-          sort_order: savedChapter.sort_order,
-          updated_at: timestamp
-        };
-        if (savedChapter.sub_category !== undefined) {
-          updateData.sub_category = savedChapter.sub_category;
-        }
-
-        const { data, error } = await supabase
-          .from('chapters')
-          .update(updateData)
-          .eq('id', savedChapter.id)
-          .select()
-          .single();
-        if (!error && data) {
-          savedChapter = data as Chapter;
-        }
-      } catch {}
-    }
-  } else {
-    // Insert new
-    const newId = Date.now();
-    savedChapter = {
-      id: newId,
-      subject: payload.subject || '',
-      sub_category: payload.sub_category ? String(payload.sub_category) : undefined,
-      name: payload.name || '',
-      hindi_name: payload.hindi_name,
-      description: payload.description,
-      sort_order: payload.sort_order ?? 0,
-      created_at: timestamp,
-      updated_at: timestamp
-    };
-
-    if (isSupabaseConfigured) {
-      try {
-        const insertData: any = {
-          subject: savedChapter.subject,
-          name: savedChapter.name,
-          hindi_name: savedChapter.hindi_name,
-          description: savedChapter.description,
-          sort_order: savedChapter.sort_order
-        };
-        if (savedChapter.sub_category !== undefined) {
-          insertData.sub_category = savedChapter.sub_category;
-        }
-
-        const { data, error } = await supabase
-          .from('chapters')
-          .insert(insertData)
-          .select()
-          .single();
-        if (!error && data) {
-          savedChapter = data as Chapter;
-        }
-      } catch {}
-    }
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = `Server save failed (${res.status})`;
+    try {
+      const errJson = JSON.parse(errorText);
+      if (errJson.error) errorMessage = errJson.error;
+    } catch {}
+    throw new Error(errorMessage);
   }
 
-  // Update local storage
-  const localChapters = getLocalChapters();
-  const idx = localChapters.findIndex((c) => c.id === savedChapter.id);
-  if (idx >= 0) {
-    localChapters[idx] = savedChapter;
-  } else {
-    localChapters.push(savedChapter);
+  const json = await res.json();
+  if (!json || !json.success || !json.data) {
+    throw new Error(json?.error || 'Server did not return confirmed chapter data');
   }
-  setLocalChapters(localChapters);
+
+  const savedChapter: Chapter = json.data;
+
+  // Authoritatively update local cache mirror
+  updateLocalChapterInMirror(savedChapter);
+
+  notifyChapterDataChanged({
+    type: 'chapter_saved',
+    chapterId: savedChapter.id,
+    subject: savedChapter.subject,
+    subCategory: savedChapter.sub_category
+  });
 
   return savedChapter;
 }
 
+/**
+ * Delete a chapter from the shared persistent backend and local mirror.
+ */
 export async function deleteChapter(chapterId: number): Promise<boolean> {
-  if (isSupabaseConfigured) {
+  const numId = Number(chapterId);
+  const authHeaders = await getAuthHeaders();
+  const res = await fetch(`/api/chapter-tests/chapters/${numId}`, {
+    method: 'DELETE',
+    headers: authHeaders
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = `Failed to delete chapter (${res.status})`;
     try {
-      await supabase.from('chapters').delete().eq('id', chapterId);
+      const errJson = JSON.parse(errorText);
+      if (errJson.error) errorMessage = errJson.error;
     } catch {}
+    throw new Error(errorMessage);
   }
 
-  // Also delete from local storage
-  const localChapters = getLocalChapters().filter((c) => c.id !== chapterId);
-  setLocalChapters(localChapters);
+  // Remove from local mirror
+  removeLocalChapterFromMirror(numId);
 
-  // Cascade delete tests belonging to this chapter locally
-  const localTests = getLocalTests().filter((t) => t.chapter_id !== chapterId);
-  setLocalTests(localTests);
+  // Cascade clean tests belonging to this chapter in local mirror
+  const remainingTests = getLocalTests().filter((t) => Number(t.chapter_id) !== numId);
+  setLocalTests(remainingTests);
+
+  notifyChapterDataChanged({
+    type: 'chapter_deleted',
+    chapterId: numId
+  });
 
   return true;
 }
 
 export async function reorderChapters(orderedIds: number[]): Promise<boolean> {
-  const localChapters = getLocalChapters();
-  const chapterMap = new Map(localChapters.map((c) => [c.id, c]));
+  const headers = await getJsonAuthHeaders();
+  const res = await fetch('/api/chapter-tests/chapters/reorder', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ orderedIds })
+  });
 
+  if (!res.ok) {
+    throw new Error('Failed to persist chapter order on server');
+  }
+
+  // Update local mirror
+  const localChapters = getLocalChapters();
+  const chapterMap = new Map(localChapters.map((c) => [Number(c.id), c]));
   orderedIds.forEach((id, index) => {
-    const chap = chapterMap.get(id);
+    const chap = chapterMap.get(Number(id));
     if (chap) {
       chap.sort_order = index + 1;
     }
   });
-
   setLocalChapters(Array.from(chapterMap.values()));
 
-  if (isSupabaseConfigured) {
-    try {
-      await Promise.all(
-        orderedIds.map((id, index) =>
-          supabase.from('chapters').update({ sort_order: index + 1 }).eq('id', id)
-        )
-      );
-    } catch {}
-  }
-
+  notifyChapterDataChanged({ type: 'chapters_reordered', orderedIds });
   return true;
 }
 
 // -----------------------------------------------------------------------------
-// CHAPTER TESTS API
+// CHAPTER TESTS API (Authoritative Server Persistence via /api/chapter-tests)
 // -----------------------------------------------------------------------------
 
 export async function fetchChapterTests(options?: {
@@ -362,315 +463,346 @@ export async function fetchChapterTests(options?: {
   subject?: string;
   publishedOnly?: boolean;
 }): Promise<ChapterTest[]> {
-  let tests: ChapterTest[] = [];
-
-  if (isSupabaseConfigured) {
-    try {
-      let query = supabase.from('chapter_tests').select('*').order('sort_order', { ascending: true });
-      if (options?.chapterId) {
-        query = query.eq('chapter_id', options.chapterId);
-      }
-      if (options?.subject) {
-        query = query.ilike('subject', options.subject.trim());
-      }
-      if (options?.publishedOnly) {
-        query = query.eq('published', true);
-      }
-      const { data, error } = await query;
-      if (!error && Array.isArray(data)) {
-        tests = data as ChapterTest[];
-        // Sync local cache
-        const allLocal = getLocalTests();
-        const map = new Map(allLocal.map((t) => [t.id, t]));
-        tests.forEach((t) => map.set(t.id, t));
-        setLocalTests(Array.from(map.values()));
-      }
-    } catch {}
-  }
-
-  if (tests.length === 0) {
-    let all = getLocalTests();
+  try {
+    const params = new URLSearchParams();
     if (options?.chapterId) {
-      all = all.filter((t) => t.chapter_id === options.chapterId);
+      params.append('chapterId', String(options.chapterId));
     }
-    if (options?.subject) {
-      const sub = options.subject.toLowerCase().trim();
-      all = all.filter((t) => t.subject.toLowerCase().trim() === sub);
+    if (options?.subject && options.subject !== 'All') {
+      params.append('subject', options.subject.trim());
     }
     if (options?.publishedOnly) {
-      all = all.filter((t) => t.published);
+      params.append('publishedOnly', 'true');
     }
-    tests = all;
+    params.append('_t', String(Date.now()));
+
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`/api/chapter-tests/tests?${params.toString()}`, {
+      cache: 'no-store',
+      headers: authHeaders
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && Array.isArray(json.data)) {
+        const tests = json.data as ChapterTest[];
+        if (!options?.chapterId && (!options?.subject || options.subject === 'All')) {
+          setLocalTests(tests);
+        } else if (options?.chapterId) {
+          const cid = Number(options.chapterId);
+          const others = getLocalTests().filter((t) => Number(t.chapter_id) !== cid);
+          setLocalTests([...others, ...tests]);
+        }
+        return tests;
+      }
+    }
+  } catch (err) {
+    console.info('[ChapterTest] Server tests fetch notice, using local mirror:', err);
   }
 
-  return tests;
+  // Offline fallback only on network failure
+  let local = getLocalTests();
+  if (options?.chapterId) {
+    local = local.filter((t) => Number(t.chapter_id) === Number(options.chapterId));
+  }
+  if (options?.subject && options.subject !== 'All') {
+    const sub = options.subject.toLowerCase().trim();
+    local = local.filter((t) => (t.subject || '').toLowerCase().trim() === sub);
+  }
+  if (options?.publishedOnly) {
+    local = local.filter((t) => t.published !== false);
+  }
+  return local;
 }
 
-export async function fetchChapterTestById(id: number): Promise<ChapterTest | null> {
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase
-        .from('chapter_tests')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (!error && data) {
-        return data as ChapterTest;
+export async function fetchChapterTestById(id: number | string): Promise<ChapterTest | null> {
+  const numId = Number(id);
+  try {
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`/api/chapter-tests/tests/${numId}?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: authHeaders
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && json.data) {
+        return json.data as ChapterTest;
       }
-    } catch {}
-  }
+    } else if (res.status === 404) {
+      return null;
+    }
+  } catch {}
 
-  const local = getLocalTests().find((t) => t.id === id);
+  const local = getLocalTests().find((t) => Number(t.id) === numId);
   return local || null;
 }
 
+/**
+ * Save a chapter test and optionally its questions.
+ * MANDATORY: Persists to the shared server database.
+ * If server save fails, throws error immediately. Never saves fake local records.
+ */
 export async function saveChapterTest(
   payload: Partial<ChapterTest>,
   questions?: ChapterQuestion[]
 ): Promise<ChapterTest> {
-  const timestamp = new Date().toISOString();
-  const totalQuestions = questions ? questions.length : payload.total_questions || 0;
-  let savedTest: ChapterTest;
+  const headers = await getJsonAuthHeaders();
+  const totalQuestions = Array.isArray(questions) ? questions.length : Number(payload.total_questions || 0);
 
-  if (payload.id) {
-    savedTest = {
-      id: Number(payload.id),
+  const res = await fetch('/api/chapter-tests/tests', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      id: payload.id ? Number(payload.id) : undefined,
       chapter_id: Number(payload.chapter_id),
       title: String(payload.title || '').trim(),
-      subject: payload.subject || '',
-      chapter_name: payload.chapter_name,
+      subject: String(payload.subject || '').trim(),
       total_questions: totalQuestions,
       total_marks: Number(payload.total_marks ?? 50),
       duration_minutes: Number(payload.duration_minutes ?? 20),
       negative_marking: Number(payload.negative_marking ?? 0.25),
       published: payload.published !== undefined ? Boolean(payload.published) : true,
-      sort_order: payload.sort_order ?? 0,
-      created_by: payload.created_by,
-      created_at: payload.created_at || timestamp,
-      updated_at: timestamp
-    };
+      sort_order: payload.sort_order ?? 0
+    })
+  });
 
-    if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from('chapter_tests')
-          .update({
-            chapter_id: savedTest.chapter_id,
-            title: savedTest.title,
-            subject: savedTest.subject,
-            total_questions: savedTest.total_questions,
-            total_marks: savedTest.total_marks,
-            duration_minutes: savedTest.duration_minutes,
-            negative_marking: savedTest.negative_marking,
-            published: savedTest.published,
-            sort_order: savedTest.sort_order,
-            updated_at: timestamp
-          })
-          .eq('id', savedTest.id)
-          .select()
-          .single();
-        if (!error && data) {
-          savedTest = data as ChapterTest;
-        }
-      } catch {}
-    }
-  } else {
-    const newId = Date.now();
-    savedTest = {
-      id: newId,
-      chapter_id: Number(payload.chapter_id),
-      title: String(payload.title || '').trim(),
-      subject: payload.subject || '',
-      chapter_name: payload.chapter_name,
-      total_questions: totalQuestions,
-      total_marks: Number(payload.total_marks ?? 50),
-      duration_minutes: Number(payload.duration_minutes ?? 20),
-      negative_marking: Number(payload.negative_marking ?? 0.25),
-      published: payload.published !== undefined ? Boolean(payload.published) : true,
-      sort_order: payload.sort_order ?? 0,
-      created_by: payload.created_by,
-      created_at: timestamp,
-      updated_at: timestamp
-    };
-
-    if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from('chapter_tests')
-          .insert({
-            chapter_id: savedTest.chapter_id,
-            title: savedTest.title,
-            subject: savedTest.subject,
-            total_questions: savedTest.total_questions,
-            total_marks: savedTest.total_marks,
-            duration_minutes: savedTest.duration_minutes,
-            negative_marking: savedTest.negative_marking,
-            published: savedTest.published,
-            sort_order: savedTest.sort_order
-          })
-          .select()
-          .single();
-        if (!error && data) {
-          savedTest = data as ChapterTest;
-        }
-      } catch {}
-    }
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = `Server save failed (${res.status})`;
+    try {
+      const errJson = JSON.parse(errorText);
+      if (errJson.error) errorMessage = errJson.error;
+    } catch {}
+    throw new Error(errorMessage);
   }
 
-  // Update local storage
-  const localTests = getLocalTests();
-  const idx = localTests.findIndex((t) => t.id === savedTest.id);
-  if (idx >= 0) {
-    localTests[idx] = savedTest;
-  } else {
-    localTests.push(savedTest);
+  const json = await res.json();
+  if (!json || !json.success || !json.data) {
+    throw new Error(json?.error || 'Server did not return confirmed test data');
   }
-  setLocalTests(localTests);
 
-  // If questions are provided, save questions as well
-  if (questions && questions.length > 0) {
-    await saveChapterQuestions(savedTest.id, questions);
+  const savedTest: ChapterTest = json.data;
+
+  // If questions are provided, persist questions to server as well
+  if (Array.isArray(questions)) {
+    await saveChapterQuestions(savedTest.id, questions, { skipNotify: true });
+    savedTest.total_questions = questions.length;
   }
+
+  // Update local cache mirror
+  updateLocalTestInMirror(savedTest);
+
+  notifyChapterDataChanged({
+    type: 'test_saved',
+    testId: savedTest.id,
+    chapterId: savedTest.chapter_id,
+    subject: savedTest.subject
+  });
 
   return savedTest;
 }
 
 export async function deleteChapterTest(testId: number): Promise<boolean> {
-  if (isSupabaseConfigured) {
+  const numId = Number(testId);
+  const authHeaders = await getAuthHeaders();
+  const res = await fetch(`/api/chapter-tests/tests/${numId}`, {
+    method: 'DELETE',
+    headers: authHeaders
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = `Failed to delete test (${res.status})`;
     try {
-      await supabase.from('chapter_tests').delete().eq('id', testId);
+      const errJson = JSON.parse(errorText);
+      if (errJson.error) errorMessage = errJson.error;
     } catch {}
+    throw new Error(errorMessage);
   }
 
-  const localTests = getLocalTests().filter((t) => t.id !== testId);
-  setLocalTests(localTests);
+  // Remove from local mirror
+  removeLocalTestFromMirror(numId);
 
-  const localQuestions = getLocalQuestions();
-  delete localQuestions[testId];
-  setLocalQuestions(localQuestions);
+  notifyChapterDataChanged({
+    type: 'test_deleted',
+    testId: numId
+  });
 
   return true;
 }
 
 export async function togglePublishChapterTest(testId: number, published: boolean): Promise<boolean> {
-  if (isSupabaseConfigured) {
+  const numId = Number(testId);
+  const headers = await getJsonAuthHeaders();
+  const res = await fetch(`/api/chapter-tests/tests/${numId}/publish`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ published })
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = `Failed to toggle publish status (${res.status})`;
     try {
-      await supabase.from('chapter_tests').update({ published }).eq('id', testId);
+      const errJson = JSON.parse(errorText);
+      if (errJson.error) errorMessage = errJson.error;
     } catch {}
+    throw new Error(errorMessage);
   }
 
-  const localTests = getLocalTests();
-  const test = localTests.find((t) => t.id === testId);
+  // Update local mirror
+  const currentTests = getLocalTests();
+  const test = currentTests.find((t) => Number(t.id) === numId);
   if (test) {
     test.published = published;
-    setLocalTests(localTests);
+    setLocalTests(currentTests);
   }
+
+  notifyChapterDataChanged({
+    type: 'test_publish_toggled',
+    testId: numId,
+    published,
+    chapterId: test?.chapter_id,
+    subject: test?.subject
+  });
+
   return true;
 }
 
 export async function reorderChapterTests(orderedIds: number[]): Promise<boolean> {
-  const localTests = getLocalTests();
-  const map = new Map(localTests.map((t) => [t.id, t]));
+  const headers = await getJsonAuthHeaders();
+  const res = await fetch('/api/chapter-tests/tests/reorder', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ orderedIds })
+  });
 
+  if (!res.ok) {
+    throw new Error('Failed to persist test order on server');
+  }
+
+  // Update local mirror
+  const localTests = getLocalTests();
+  const map = new Map(localTests.map((t) => [Number(t.id), t]));
   orderedIds.forEach((id, index) => {
-    const t = map.get(id);
+    const t = map.get(Number(id));
     if (t) {
       t.sort_order = index + 1;
     }
   });
-
   setLocalTests(Array.from(map.values()));
 
-  if (isSupabaseConfigured) {
-    try {
-      await Promise.all(
-        orderedIds.map((id, index) =>
-          supabase.from('chapter_tests').update({ sort_order: index + 1 }).eq('id', id)
-        )
-      );
-    } catch {}
-  }
-
+  notifyChapterDataChanged({ type: 'tests_reordered', orderedIds });
   return true;
 }
 
 // -----------------------------------------------------------------------------
-// CHAPTER QUESTIONS API
+// CHAPTER QUESTIONS API (Authoritative Server Persistence via /api/chapter-tests)
 // -----------------------------------------------------------------------------
 
-export async function fetchChapterQuestions(testId: number): Promise<ChapterQuestion[]> {
-  let questions: ChapterQuestion[] = [];
+export async function fetchChapterQuestions(testId: number | string): Promise<ChapterQuestion[]> {
+  const numId = Number(testId);
 
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase
-        .from('chapter_questions')
-        .select('*')
-        .eq('test_id', testId)
-        .order('question_order', { ascending: true });
-      if (!error && Array.isArray(data) && data.length > 0) {
-        questions = data as ChapterQuestion[];
-        // Sync local cache
+  try {
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`/api/chapter-tests/tests/${numId}/questions?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: authHeaders
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && Array.isArray(json.data)) {
+        const questions = json.data as ChapterQuestion[];
         const allQuestions = getLocalQuestions();
-        allQuestions[testId] = questions;
+        allQuestions[numId] = questions;
         setLocalQuestions(allQuestions);
+        try {
+          localStorage.setItem(`ec_chapter_questions_${numId}`, JSON.stringify(questions));
+        } catch {}
         return questions;
       }
-    } catch {}
+    }
+  } catch (err) {
+    console.info('[ChapterTest] Questions fetch notice, using local mirror:', err);
   }
 
   const localQuestions = getLocalQuestions();
-  return localQuestions[testId] || [];
+  if (localQuestions[numId] && Array.isArray(localQuestions[numId])) {
+    return localQuestions[numId];
+  }
+  try {
+    const singleRaw = localStorage.getItem(`ec_chapter_questions_${numId}`);
+    if (singleRaw) {
+      const parsed = JSON.parse(singleRaw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+
+  return [];
 }
 
 export async function saveChapterQuestions(
   testId: number,
-  questions: ChapterQuestion[]
+  questions: ChapterQuestion[],
+  options?: { skipNotify?: boolean }
 ): Promise<ChapterQuestion[]> {
+  const numId = Number(testId);
   const formattedQuestions: ChapterQuestion[] = questions.map((q, idx) => ({
-    test_id: testId,
+    test_id: numId,
     question_order: q.question_order || idx + 1,
-    question_text: q.question_text.trim(),
-    option_a: q.option_a.trim(),
-    option_b: q.option_b.trim(),
-    option_c: q.option_c.trim(),
-    option_d: q.option_d.trim(),
-    correct_option: q.correct_option.trim().toUpperCase(),
-    explanation: q.explanation ? q.explanation.trim() : null,
+    question_text: String(q.question_text || '').trim(),
+    option_a: String(q.option_a || '').trim(),
+    option_b: String(q.option_b || '').trim(),
+    option_c: String(q.option_c || '').trim(),
+    option_d: String(q.option_d || '').trim(),
+    correct_option: String(q.correct_option || 'A').trim().toUpperCase(),
+    explanation: q.explanation ? String(q.explanation).trim() : null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }));
 
-  if (isSupabaseConfigured) {
+  const headers = await getJsonAuthHeaders();
+  const res = await fetch(`/api/chapter-tests/tests/${numId}/questions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ questions: formattedQuestions })
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = `Failed to save questions on server (${res.status})`;
     try {
-      // Delete old questions
-      await supabase.from('chapter_questions').delete().eq('test_id', testId);
-      // Insert new questions
-      const { data, error } = await supabase
-        .from('chapter_questions')
-        .insert(formattedQuestions)
-        .select();
-      if (!error && Array.isArray(data)) {
-        // Also update total_questions in chapter_tests
-        await supabase
-          .from('chapter_tests')
-          .update({ total_questions: formattedQuestions.length })
-          .eq('id', testId);
-      }
+      const errJson = JSON.parse(errorText);
+      if (errJson.error) errorMessage = errJson.error;
     } catch {}
+    throw new Error(errorMessage);
   }
 
-  // Update local storage
-  const localQuestions = getLocalQuestions();
-  localQuestions[testId] = formattedQuestions;
-  setLocalQuestions(localQuestions);
+  // Update local mirror
+  const allQuestions = getLocalQuestions();
+  allQuestions[numId] = formattedQuestions;
+  setLocalQuestions(allQuestions);
+  try {
+    localStorage.setItem(`ec_chapter_questions_${numId}`, JSON.stringify(formattedQuestions));
+  } catch {}
 
-  // Update test question count locally
+  // Update local test question count
   const localTests = getLocalTests();
-  const test = localTests.find((t) => t.id === testId);
+  const test = localTests.find((t) => Number(t.id) === numId);
   if (test) {
     test.total_questions = formattedQuestions.length;
     setLocalTests(localTests);
+  }
+
+  if (!options?.skipNotify) {
+    notifyChapterDataChanged({
+      type: 'questions_saved',
+      testId: numId,
+      count: formattedQuestions.length,
+      chapterId: test?.chapter_id,
+      subject: test?.subject
+    });
   }
 
   return formattedQuestions;
@@ -782,13 +914,15 @@ export async function fetchUserChapterResults(
   return resultMap;
 }
 
+/**
+ * Synchronize local cache with the authoritative server database.
+ */
 export async function syncLocalChapterDataWithServer(): Promise<void> {
-  if (!isSupabaseConfigured) return;
   try {
     const chapters = await fetchChapters();
     const tests = await fetchChapterTests();
-    console.log(`Synced ${chapters.length} chapters and ${tests.length} tests with server.`);
+    notifyChapterDataChanged({ type: 'sync_completed', chaptersCount: chapters.length, testsCount: tests.length });
   } catch (err) {
-    console.warn('Sync failed', err);
+    console.info('[ChapterTest] Background sync notice:', err);
   }
 }

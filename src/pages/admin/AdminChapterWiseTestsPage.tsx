@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
   fetchChapters,
   saveChapter,
@@ -12,7 +12,8 @@ import {
   reorderChapterTests,
   syncLocalChapterDataWithServer,
   SUBJECT_SUB_CATEGORIES,
-  getSubCategoriesForSubject
+  getSubCategoriesForSubject,
+  CHAPTER_DATA_CHANGED_EVENT
 } from '../../services/chapterTestService';
 import { SECTIONAL_SUBJECTS } from '../../services/sectionalTestService';
 import { Chapter, ChapterTest, ChapterQuestion, SectionalSubject } from '../../types';
@@ -44,6 +45,8 @@ import {
   RefreshCw,
   GripVertical,
   ChevronRight,
+  ChevronDown,
+  ListPlus,
   FolderPlus
 } from 'lucide-react';
 
@@ -57,7 +60,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Sub-category filter for divided subjects (e.g. History, Geography, Reasoning, Chemistry)
+  // Sub-category filter for divided subjects (e.g. Mathematics, History, Geography, Reasoning, Chemistry)
   const [selectedSubCategoryFilter, setSelectedSubCategoryFilter] = useState<string>('all');
 
   // Search & Filter for Tests
@@ -72,6 +75,24 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
   const [chapterHindiName, setChapterHindiName] = useState('');
   const [chapterDescription, setChapterDescription] = useState('');
   const [savingChapter, setSavingChapter] = useState(false);
+  const [chapterAddMode, setChapterAddMode] = useState<'single' | 'bulk'>('single');
+  const [isNewChapterDropdownOpen, setIsNewChapterDropdownOpen] = useState(false);
+  const [bulkChapterText, setBulkChapterText] = useState('');
+  const newChapterDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (newChapterDropdownRef.current && !newChapterDropdownRef.current.contains(event.target as Node)) {
+        setIsNewChapterDropdownOpen(false);
+      }
+    };
+    if (isNewChapterDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNewChapterDropdownOpen]);
 
   // Check if active subject has sub-categories
   const subCategoriesForSelectedSubject = useMemo(() => {
@@ -107,19 +128,68 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
 
   useEffect(() => {
     setSelectedSubCategoryFilter('all');
-    loadData();
+    loadData({ silent: false, subCategoryOverride: 'all' });
   }, [selectedSubject]);
 
-  const loadData = async () => {
-    setLoading(true);
+  useEffect(() => {
+    let lastFocus = Date.now();
+    const onFocus = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastFocus > 1000) {
+        lastFocus = Date.now();
+        loadData({ silent: true });
+      }
+    };
+    const onDataChanged = () => {
+      if (!savingChapter && !savingTest && !isDeletingChapter && !isDeletingTest) {
+        loadData({ silent: true });
+      }
+    };
+
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('visibilitychange', onFocus);
+    window.addEventListener(CHAPTER_DATA_CHANGED_EVENT, onDataChanged);
+    window.addEventListener('storage', onDataChanged);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('visibilitychange', onFocus);
+      window.removeEventListener(CHAPTER_DATA_CHANGED_EVENT, onDataChanged);
+      window.removeEventListener('storage', onDataChanged);
+    };
+  }, [selectedSubject, selectedSubCategoryFilter, selectedChapterId, savingChapter, savingTest, isDeletingChapter, isDeletingTest]);
+
+  const loadData = async (options?: {
+    silent?: boolean;
+    preferredChapterId?: number | null;
+    subCategoryOverride?: string;
+  }) => {
+    if (!options?.silent && chapters.length === 0) {
+      setLoading(true);
+    }
     try {
       const chapList = await fetchChapters(selectedSubject);
       setChapters(chapList);
 
-      // Select first chapter by default if available and none selected
-      if (chapList.length > 0) {
-        const targetId = chapList.some((c) => c.id === selectedChapterId)
-          ? selectedChapterId
+      const filterSub = options?.subCategoryOverride !== undefined
+        ? options.subCategoryOverride
+        : selectedSubCategoryFilter;
+
+      const filtered = filterSub === 'all'
+        ? chapList
+        : chapList.filter((c) => (c.sub_category || '').toLowerCase().trim() === filterSub.toLowerCase().trim());
+
+      const chosenPrefId = options?.preferredChapterId !== undefined ? options.preferredChapterId : selectedChapterId;
+
+      if (filtered.length > 0) {
+        const targetId = (chosenPrefId && filtered.some((c) => c.id === chosenPrefId))
+          ? (chosenPrefId as number)
+          : filtered[0].id;
+        setSelectedChapterId(targetId);
+        const testList = await fetchChapterTests({ chapterId: targetId });
+        setTests(testList);
+      } else if (chapList.length > 0) {
+        const targetId = (chosenPrefId && chapList.some((c) => c.id === chosenPrefId))
+          ? (chosenPrefId as number)
           : chapList[0].id;
         setSelectedChapterId(targetId);
         const testList = await fetchChapterTests({ chapterId: targetId });
@@ -133,6 +203,11 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSelectSubCategory = async (sc: string) => {
+    setSelectedSubCategoryFilter(sc);
+    await loadData({ silent: true, subCategoryOverride: sc });
   };
 
   const handleSelectChapter = async (chapId: number) => {
@@ -149,7 +224,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
     setRefreshing(true);
     try {
       await syncLocalChapterDataWithServer();
-      await loadData();
+      await loadData({ silent: true });
       toast.showToast('Chapter data synchronized successfully!', 'success');
     } catch {
       toast.showToast('Failed to sync chapter data', 'error');
@@ -162,8 +237,10 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
   // CHAPTER CRUD
   // ---------------------------------------------------------------------------
 
-  const openCreateChapterModal = () => {
+  const openCreateChapterModal = (mode: 'single' | 'bulk' = 'single') => {
+    setIsNewChapterDropdownOpen(false);
     setEditingChapterId(null);
+    setChapterAddMode(mode);
     if (subCategoriesForSelectedSubject && subCategoriesForSelectedSubject.length > 0) {
       const defaultSub =
         selectedSubCategoryFilter !== 'all' && subCategoriesForSelectedSubject.includes(selectedSubCategoryFilter)
@@ -176,10 +253,13 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
     setChapterName('');
     setChapterHindiName('');
     setChapterDescription('');
+    setBulkChapterText('');
     setIsChapterModalOpen(true);
   };
 
   const openEditChapterModal = (chap: Chapter) => {
+    setIsNewChapterDropdownOpen(false);
+    setChapterAddMode('single');
     setEditingChapterId(chap.id);
     setChapterSubCategory(
       chap.sub_category ||
@@ -245,15 +325,99 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
       toast.showToast(editingChapterId ? 'Chapter updated!' : 'Chapter added successfully!', 'success');
       setIsChapterModalOpen(false);
 
-      const updatedChapters = await fetchChapters(selectedSubject);
-      setChapters(updatedChapters);
-      if (!editingChapterId) {
-        setSelectedChapterId(saved.id);
-        const testList = await fetchChapterTests({ chapterId: saved.id });
-        setTests(testList);
+      const targetSubCat = subCatValue || selectedSubCategoryFilter;
+      if (subCatValue && selectedSubCategoryFilter !== 'all' && selectedSubCategoryFilter !== subCatValue) {
+        setSelectedSubCategoryFilter(subCatValue);
       }
+
+      await loadData({ silent: true, preferredChapterId: saved.id, subCategoryOverride: targetSubCat });
     } catch {
       toast.showToast('Failed to save chapter', 'error');
+    } finally {
+      setSavingChapter(false);
+    }
+  };
+
+  const handleBulkSaveChapters = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const lines = bulkChapterText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (lines.length === 0) {
+      toast.showToast('Please enter at least one chapter name', 'error');
+      return;
+    }
+
+    const subCatValue =
+      subCategoriesForSelectedSubject && subCategoriesForSelectedSubject.length > 0
+        ? chapterSubCategory.trim()
+        : undefined;
+
+    if (subCategoriesForSelectedSubject && !subCatValue) {
+      toast.showToast('Please select a sub-category', 'error');
+      return;
+    }
+
+    setSavingChapter(true);
+    try {
+      let createdCount = 0;
+      let firstSavedChapterId: number | null = null;
+
+      // Duplicate check under same subject and sub_category
+      const existingNames = new Set(
+        chapters
+          .filter((c) => {
+            if (subCatValue) {
+              return (c.sub_category || '').toLowerCase().trim() === subCatValue.toLowerCase().trim();
+            }
+            return true;
+          })
+          .map((c) => c.name.toLowerCase().trim())
+      );
+
+      const uniqueNewLines = lines.filter((name) => {
+        const lower = name.toLowerCase().trim();
+        if (existingNames.has(lower)) return false;
+        existingNames.add(lower);
+        return true;
+      });
+
+      if (uniqueNewLines.length === 0) {
+        toast.showToast('All entered chapters already exist under this subject.', 'info');
+        setSavingChapter(false);
+        return;
+      }
+
+      for (let i = 0; i < uniqueNewLines.length; i++) {
+        const name = uniqueNewLines[i];
+        const saved = await saveChapter({
+          subject: selectedSubject,
+          sub_category: subCatValue,
+          name,
+          sort_order: chapters.length + i + 1
+        });
+        if (saved) {
+          createdCount++;
+          if (!firstSavedChapterId) {
+            firstSavedChapterId = saved.id;
+          }
+        }
+      }
+
+      toast.showToast(`Successfully added ${createdCount} chapter${createdCount === 1 ? '' : 's'}!`, 'success');
+      setIsChapterModalOpen(false);
+      setBulkChapterText('');
+
+      const targetSubCat = subCatValue || selectedSubCategoryFilter;
+      if (subCatValue && selectedSubCategoryFilter !== 'all' && selectedSubCategoryFilter !== subCatValue) {
+        setSelectedSubCategoryFilter(subCatValue);
+      }
+
+      await loadData({ silent: true, preferredChapterId: firstSavedChapterId, subCategoryOverride: targetSubCat });
+    } catch (err: any) {
+      toast.showToast(err?.message || 'Failed to save chapters', 'error');
     } finally {
       setSavingChapter(false);
     }
@@ -263,10 +427,14 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
     if (!deletingChapter) return;
     setIsDeletingChapter(true);
     try {
-      await deleteChapter(deletingChapter.id);
+      const deletedId = deletingChapter.id;
+      await deleteChapter(deletedId);
+      setChapters(prev =>
+        prev.filter(chapter => Number(chapter.id) !== Number(deletedId))
+      );
       toast.showToast(`Chapter "${deletingChapter.name}" deleted!`, 'success');
       setDeletingChapter(null);
-      await loadData();
+      await loadData({ silent: true, preferredChapterId: null });
     } catch {
       toast.showToast('Failed to delete chapter', 'error');
     } finally {
@@ -449,6 +617,8 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
       const newStatus = !test.published;
       await togglePublishChapterTest(test.id, newStatus);
       setTests((prev) => prev.map((t) => (t.id === test.id ? { ...t, published: newStatus } : t)));
+      const updatedChapters = await fetchChapters(selectedSubject);
+      setChapters(updatedChapters);
       toast.showToast(`Test ${newStatus ? 'Published' : 'set to Draft'}!`, 'success');
     } catch {
       toast.showToast('Failed to update status', 'error');
@@ -720,9 +890,9 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
       </div>
 
       {/* Two Column Layout: Chapters (Left) | Tests (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 xl:gap-6 items-start">
         {/* LEFT COLUMN: Chapters List */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 flex flex-col">
+        <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 flex flex-col">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
             <div>
               <h2 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
@@ -731,13 +901,40 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
               </h2>
               <span className="text-[10px] text-slate-400 font-medium">in {selectedSubject}</span>
             </div>
-            <button
-              onClick={openCreateChapterModal}
-              className="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-1 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>+ New</span>
-            </button>
+            <div className="relative" ref={newChapterDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsNewChapterDropdownOpen((prev) => !prev)}
+                className="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-1 transition-colors shadow-2xs"
+                title="Add Chapters"
+                aria-expanded={isNewChapterDropdownOpen}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ New</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${isNewChapterDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isNewChapterDropdownOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-40 animate-in fade-in zoom-in-95">
+                  <button
+                    type="button"
+                    onClick={() => openCreateChapterModal('single')}
+                    className="w-full px-3 py-2 text-left text-xs font-bold text-slate-800 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Add Single Chapter</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openCreateChapterModal('bulk')}
+                    className="w-full px-3 py-2 text-left text-xs font-bold text-slate-800 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2 transition-colors border-t border-slate-100"
+                  >
+                    <ListPlus className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <span>Bulk Add Chapters</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Sub-category selector pills for divided subjects */}
@@ -745,7 +942,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
             <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-thin">
               <button
                 type="button"
-                onClick={() => setSelectedSubCategoryFilter('all')}
+                onClick={() => handleSelectSubCategory('all')}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors ${
                   selectedSubCategoryFilter === 'all'
                     ? 'bg-slate-900 text-white shadow-2xs'
@@ -763,7 +960,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
                   <button
                     key={sc}
                     type="button"
-                    onClick={() => setSelectedSubCategoryFilter(sc)}
+                    onClick={() => handleSelectSubCategory(sc)}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors ${
                       isSel
                         ? 'bg-emerald-600 text-white shadow-2xs'
@@ -863,7 +1060,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
         </div>
 
         {/* RIGHT COLUMN: Tests List for Selected Chapter */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-2xs p-5">
+        <div className="lg:col-span-8 xl:col-span-9 bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 xl:p-5">
           {/* Header of Tests Panel */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
             <div>
@@ -929,21 +1126,21 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
             </div>
           ) : filteredTests.length > 0 ? (
             <div className="overflow-x-auto rounded-xl border border-slate-200/80">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[10px] xl:text-[11px] font-bold uppercase tracking-wider">
                   <tr>
-                    <th className="py-3.5 px-3 w-10 text-center" title="Drag to reorder tests">
+                    <th className="py-3 px-2 w-8 text-center" title="Drag to reorder tests">
                       <span className="sr-only">Reorder</span>
                       <GripVertical className="w-4 h-4 text-slate-300 mx-auto" />
                     </th>
-                    <th className="py-3.5 px-4">Test Title</th>
-                    <th className="py-3.5 px-4">Subject</th>
-                    <th className="py-3.5 px-4 text-center">Questions</th>
-                    <th className="py-3.5 px-4 text-center">Marks</th>
-                    <th className="py-3.5 px-4 text-center">Duration</th>
-                    <th className="py-3.5 px-4 text-center">Negative</th>
-                    <th className="py-3.5 px-4 text-center">Status</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
+                    <th className="py-3 px-2.5 xl:px-3">Test Title</th>
+                    <th className="py-3 px-2 xl:px-2.5 text-center">Subject</th>
+                    <th className="py-3 px-2 text-center whitespace-nowrap">Questions</th>
+                    <th className="py-3 px-2 text-center whitespace-nowrap">Marks</th>
+                    <th className="py-3 px-2 text-center whitespace-nowrap">Duration</th>
+                    <th className="py-3 px-2 text-center whitespace-nowrap">Negative</th>
+                    <th className="py-3 px-2 xl:px-2.5 text-center whitespace-nowrap">Status</th>
+                    <th className="py-3 px-2.5 xl:px-3 text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -972,46 +1169,48 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
                         onDragEnd={handleDragEnd}
                         className={`hover:bg-purple-50/30 transition-all ${dragClasses}`}
                       >
-                        <td className="py-3.5 px-3 text-center">
+                        <td className="py-3 px-2 text-center">
                           <div
                             onTouchStart={(e) => handleTouchStart(e, t.id)}
                             onTouchMove={handleTouchMove}
                             onTouchEnd={handleTouchEnd}
                             onTouchCancel={handleTouchCancel}
-                            className="p-1.5 rounded-md text-slate-400 hover:text-purple-600 active:text-purple-700 cursor-grab active:cursor-grabbing hover:bg-purple-100/60 inline-flex items-center justify-center touch-none select-none transition-colors"
+                            className="p-1 rounded-md text-slate-400 hover:text-purple-600 active:text-purple-700 cursor-grab active:cursor-grabbing hover:bg-purple-100/60 inline-flex items-center justify-center touch-none select-none transition-colors"
                             title="Click and drag to reorder test"
                             aria-label={`Drag to reorder ${t.title}`}
                           >
-                            <GripVertical className="w-4 h-4 pointer-events-none" />
+                            <GripVertical className="w-3.5 h-3.5 pointer-events-none" />
                           </div>
                         </td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900 max-w-xs truncate cursor-grab active:cursor-grabbing">
-                          {t.title}
+                        <td className="py-3 px-2.5 xl:px-3 font-bold text-slate-900 cursor-grab active:cursor-grabbing">
+                          <div className="max-w-[150px] sm:max-w-[180px] xl:max-w-xs truncate" title={t.title}>
+                            {t.title}
+                          </div>
                         </td>
-                        <td className="py-3.5 px-4">
-                          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                        <td className="py-3 px-2 xl:px-2.5 text-center">
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">
                             {t.subject}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-center font-bold text-slate-700">
+                        <td className="py-3 px-2 text-center font-bold text-slate-700 whitespace-nowrap">
                           {t.total_questions}
                         </td>
-                        <td className="py-3.5 px-4 text-center text-slate-700 font-semibold">
+                        <td className="py-3 px-2 text-center text-slate-700 font-semibold whitespace-nowrap">
                           {t.total_marks}
                         </td>
-                        <td className="py-3.5 px-4 text-center text-slate-600">
+                        <td className="py-3 px-2 text-center text-slate-600 whitespace-nowrap">
                           {t.duration_minutes}m
                         </td>
-                        <td className="py-3.5 px-4 text-center text-rose-600 font-semibold">
+                        <td className="py-3 px-2 text-center text-rose-600 font-semibold whitespace-nowrap">
                           -{t.negative_marking}
                         </td>
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3 px-2 xl:px-2.5 text-center whitespace-nowrap">
                           <button
                             type="button"
                             draggable={false}
                             onMouseDown={(e) => e.stopPropagation()}
                             onClick={() => handleTogglePublish(t)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors whitespace-nowrap ${
                               t.published
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
                                 : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
@@ -1030,31 +1229,31 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
                             )}
                           </button>
                         </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5" onMouseDown={(e) => e.stopPropagation()}>
+                        <td className="py-3 px-2.5 xl:px-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1" onMouseDown={(e) => e.stopPropagation()}>
                             <button
                               type="button"
                               onClick={() => handleOpenPreview(t)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                              className="p-1 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
                               title="Preview Questions"
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-3.5 h-3.5" />
                             </button>
                             <button
                               type="button"
                               onClick={() => openEditTestModal(t)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                               title="Edit Test"
                             >
-                              <Edit2 className="w-4 h-4" />
+                              <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               type="button"
                               onClick={() => setDeletingTest(t)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                              className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                               title="Delete Test"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
@@ -1092,7 +1291,11 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900">
-                  {editingChapterId ? 'Edit Chapter' : 'Add New Chapter'}
+                  {editingChapterId
+                    ? 'Edit Chapter'
+                    : chapterAddMode === 'bulk'
+                    ? 'Bulk Add Chapters'
+                    : 'Add Single Chapter'}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Subject: <strong className="text-emerald-700">{selectedSubject}</strong>
@@ -1103,8 +1306,38 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
               </button>
             </div>
 
+            {/* Mode Switcher for Creating Chapters */}
+            {!editingChapterId && (
+              <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl mt-3 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setChapterAddMode('single')}
+                  className={`py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                    chapterAddMode === 'single'
+                      ? 'bg-white text-emerald-800 shadow-2xs font-extrabold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Single Chapter</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChapterAddMode('bulk')}
+                  className={`py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                    chapterAddMode === 'bulk'
+                      ? 'bg-white text-emerald-800 shadow-2xs font-extrabold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <ListPlus className="w-3.5 h-3.5" />
+                  <span>Bulk Add Chapters</span>
+                </button>
+              </div>
+            )}
+
             {/* Read-only Context Badge for Target Subject */}
-            <div className="mt-4 p-3 bg-emerald-50/70 border border-emerald-200/60 rounded-xl flex items-center justify-between">
+            <div className="mt-3.5 p-3 bg-emerald-50/70 border border-emerald-200/60 rounded-xl flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
                   Target Subject (Active Tab)
@@ -1116,85 +1349,160 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
               </span>
             </div>
 
-            <form onSubmit={handleSaveChapter} className="space-y-4 mt-4">
-              {subCategoriesForSelectedSubject && (
+            {chapterAddMode === 'single' || editingChapterId ? (
+              /* SINGLE CHAPTER FORM */
+              <form onSubmit={handleSaveChapter} className="space-y-4 mt-4">
+                {subCategoriesForSelectedSubject && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Sub-category <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={chapterSubCategory}
+                      onChange={(e) => setChapterSubCategory(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-semibold text-slate-800 cursor-pointer"
+                    >
+                      {subCategoriesForSelectedSubject.map((sc) => (
+                        <option key={sc} value={sc}>
+                          {sc}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Sub-category <span className="text-rose-500">*</span>
+                    Chapter Name <span className="text-rose-500">*</span>
                   </label>
-                  <select
-                    value={chapterSubCategory}
-                    onChange={(e) => setChapterSubCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-semibold text-slate-800 cursor-pointer"
-                  >
-                    {subCategoriesForSelectedSubject.map((sc) => (
-                      <option key={sc} value={sc}>
-                        {sc}
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter chapter name"
+                    value={chapterName}
+                    onChange={(e) => setChapterName(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 font-medium placeholder:text-slate-400"
+                    autoFocus
+                  />
                 </div>
-              )}
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Chapter Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Enter chapter name"
-                  value={chapterName}
-                  onChange={(e) => setChapterName(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 font-medium placeholder:text-slate-400"
-                  autoFocus
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Hindi Title <span className="text-slate-400 font-normal">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. हिन्दी शीर्षक"
+                    value={chapterHindiName}
+                    onChange={(e) => setChapterHindiName(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 font-medium placeholder:text-slate-400"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Hindi Title <span className="text-slate-400 font-normal">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. हिन्दी शीर्षक"
-                  value={chapterHindiName}
-                  onChange={(e) => setChapterHindiName(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 font-medium placeholder:text-slate-400"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Description / Topic Notes <span className="text-slate-400 font-normal">(Optional)</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Short note on topics covered..."
+                    value={chapterDescription}
+                    onChange={(e) => setChapterDescription(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 font-medium placeholder:text-slate-400"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Description / Topic Notes <span className="text-slate-400 font-normal">(Optional)</span>
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Short note on topics covered..."
-                  value={chapterDescription}
-                  onChange={(e) => setChapterDescription(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 font-medium placeholder:text-slate-400"
-                />
-              </div>
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsChapterModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingChapter}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm flex items-center gap-1.5"
+                  >
+                    {savingChapter && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{editingChapterId ? 'Update Chapter' : 'Add Chapter'}</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* BULK ADD CHAPTERS FORM */
+              <form onSubmit={handleBulkSaveChapters} className="space-y-4 mt-4">
+                {subCategoriesForSelectedSubject && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Sub-category <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={chapterSubCategory}
+                      onChange={(e) => setChapterSubCategory(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-semibold text-slate-800 cursor-pointer"
+                    >
+                      {subCategoriesForSelectedSubject.map((sc) => (
+                        <option key={sc} value={sc}>
+                          {sc}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      All bulk-entered chapters will be added under this sub-category.
+                    </p>
+                  </div>
+                )}
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsChapterModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingChapter}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm flex items-center gap-1.5"
-                >
-                  {savingChapter && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{editingChapterId ? 'Update Chapter' : 'Add Chapter'}</span>
-                </button>
-              </div>
-            </form>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Chapter Names (One per line) <span className="text-rose-500">*</span>
+                    </label>
+                    {bulkChapterText.trim() && (
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        {bulkChapterText.split('\n').filter((l) => l.trim().length > 0).length} chapter{bulkChapterText.split('\n').filter((l) => l.trim().length > 0).length === 1 ? '' : 's'} detected
+                      </span>
+                    )}
+                  </div>
+                  <textarea
+                    rows={7}
+                    required
+                    placeholder={`Indus Valley Civilization\nVedic Period\nMauryan Empire\nGupta Empire`}
+                    value={bulkChapterText}
+                    onChange={(e) => setBulkChapterText(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs font-mono border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 placeholder:text-slate-400 placeholder:font-sans leading-relaxed"
+                    autoFocus
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Enter one chapter per line. Blank lines are automatically ignored.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsChapterModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingChapter || !bulkChapterText.trim()}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm flex items-center gap-1.5"
+                  >
+                    {savingChapter && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    <span>
+                      {savingChapter
+                        ? 'Adding Chapters...'
+                        : `Add Chapters`}
+                    </span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
@@ -1212,7 +1520,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
                   {editingTestId ? 'Edit Chapter Test' : 'Create Chapter Wise Test'}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Under chapter: <strong>{activeChapter?.name}</strong> ({selectedSubject})
+                  Under chapter: <strong>{activeChapter?.name}</strong> ({selectedSubject}{activeChapter?.sub_category ? ` • ${activeChapter.sub_category}` : ''})
                 </p>
               </div>
               <button

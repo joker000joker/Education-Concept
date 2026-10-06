@@ -719,32 +719,30 @@ export const HomePage: React.FC = () => {
 
   // Desktop: EC Notes section with 6 service cards
   const renderDesktopServices = () => (
-    <section className="mb-12">
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
+    <section className="mb-10">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
             EC Notes
           </h2>
         </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
         {SERVICES.map((service) => {
           const Icon = service.icon;
           return (
             <Link
               key={service.id}
               to={service.path}
-              className="flex flex-col items-center text-center p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-200 group"
+              className="group relative flex flex-col items-center justify-center text-center p-5 sm:p-6 min-h-[148px] bg-white rounded-2xl border border-slate-200/70 shadow-[0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_12px_24px_rgba(15,23,42,0.08)] hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 w-full"
             >
-              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-3.5 ${service.bg} ${service.color} group-hover:scale-110 transition-transform shadow-2xs`}>
+              {/* Softer refined icon container */}
+              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-3.5 ${service.bg} ${service.color} group-hover:scale-105 transition-transform duration-300 shadow-2xs`}>
                 <Icon className="w-8 h-8 sm:w-9 sm:h-9" />
               </div>
-              <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-tight mb-1">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-snug">
                 {service.title}
               </h3>
-              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium line-clamp-1">
-                {service.subtitle}
-              </p>
             </Link>
           );
         })}
@@ -826,20 +824,20 @@ export const HomePage: React.FC = () => {
   };
 
   const renderDesktopTests = () => (
-    <section id="ec-test" className="mb-12 pt-6 border-t border-slate-200/80">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4 sm:mb-6">
+    <section id="ec-test" className="pt-8 border-t border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
             EC Test Series
           </h2>
         </div>
       </div>
 
       {/* Compact 6 Test Modules Grid matching EC Notes service-card layout */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
         {DESKTOP_TEST_MODULES.map((module) => {
           const Icon = module.icon;
-          const cardContent = (
+          const cardInner = (
             <>
               {/* Status State Badge */}
               <span
@@ -851,26 +849,23 @@ export const HomePage: React.FC = () => {
                 {module.badge}
               </span>
 
-              {/* Icon Container matching EC Notes dimensions & hover */}
+              {/* Softer refined icon container */}
               <div
-                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-3.5 ${module.bg} ${module.color} group-hover:scale-110 transition-transform shadow-2xs`}
+                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-3.5 ${module.bg} ${module.color} group-hover:scale-105 transition-transform duration-300 shadow-2xs`}
               >
                 <Icon className="w-8 h-8 sm:w-9 sm:h-9" />
               </div>
 
               {/* Title */}
               <h3
-                className={`text-xs sm:text-sm font-bold text-slate-800 ${
-                  module.isActive ? 'group-hover:text-purple-600' : 'group-hover:text-slate-900'
-                } transition-colors leading-tight mb-1`}
+                className={`text-xs sm:text-sm font-bold ${
+                  module.isActive
+                    ? 'text-slate-800 group-hover:text-purple-600'
+                    : 'text-slate-700 group-hover:text-slate-900'
+                } transition-colors leading-snug`}
               >
                 {module.title}
               </h3>
-
-              {/* Subtitle / Hindi Title matching EC Notes typography */}
-              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium line-clamp-1">
-                {module.hindiTitle}
-              </p>
             </>
           );
 
@@ -879,9 +874,9 @@ export const HomePage: React.FC = () => {
               <Link
                 key={module.id}
                 to={module.link}
-                className="relative flex flex-col items-center text-center p-4 sm:p-5 bg-white rounded-2xl border border-purple-200/90 shadow-2xs hover:shadow-xl hover:border-purple-400 hover:-translate-y-1 transition-all duration-200 group cursor-pointer w-full"
+                className="group relative flex flex-col items-center justify-center text-center p-5 sm:p-6 min-h-[148px] bg-white rounded-2xl border border-purple-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_12px_24px_rgba(147,51,234,0.12)] hover:border-purple-400 hover:-translate-y-1 transition-all duration-300 cursor-pointer w-full"
               >
-                {cardContent}
+                {cardInner}
               </Link>
             );
           }
@@ -891,9 +886,9 @@ export const HomePage: React.FC = () => {
               key={module.id}
               type="button"
               onClick={() => setComingSoonModal(module.title)}
-              className="relative flex flex-col items-center text-center p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-200 group cursor-pointer w-full text-slate-800"
+              className="group relative flex flex-col items-center justify-center text-center p-5 sm:p-6 min-h-[148px] bg-white rounded-2xl border border-slate-200/70 shadow-[0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_12px_24px_rgba(15,23,42,0.06)] hover:border-slate-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer w-full text-slate-800"
             >
-              {cardContent}
+              {cardInner}
             </button>
           );
         })}

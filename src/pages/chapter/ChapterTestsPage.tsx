@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getSubjectBySlug } from '../../data/sectionalSubjects';
-import { fetchChapters, fetchChapterTests, fetchUserChapterResults } from '../../services/chapterTestService';
+import {
+  fetchChapters,
+  fetchChapterTests,
+  fetchUserChapterResults,
+  CHAPTER_DATA_CHANGED_EVENT
+} from '../../services/chapterTestService';
 import { Chapter, ChapterTest, ChapterTestResult } from '../../types';
 import { BackButton } from '../../components/common/BackButton';
 import { useAuth } from '../../context/AuthContext';
@@ -55,18 +60,25 @@ export const ChapterTestsPage: React.FC = () => {
     if (!subjectMeta || !chapIdNum) return;
     loadData();
 
-    let lastFocus = Date.now();
     const onFocus = () => {
-      if (document.visibilityState === 'visible' && Date.now() - lastFocus > 10000) {
-        lastFocus = Date.now();
+      if (document.visibilityState === 'visible') {
         loadData({ silent: true });
       }
     };
+    const onDataChanged = () => {
+      loadData({ silent: true });
+    };
+
     window.addEventListener('focus', onFocus);
     window.addEventListener('visibilitychange', onFocus);
+    window.addEventListener(CHAPTER_DATA_CHANGED_EVENT, onDataChanged);
+    window.addEventListener('storage', onDataChanged);
+
     return () => {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('visibilitychange', onFocus);
+      window.removeEventListener(CHAPTER_DATA_CHANGED_EVENT, onDataChanged);
+      window.removeEventListener('storage', onDataChanged);
     };
   }, [subjectMeta?.name, chapIdNum]);
 
@@ -82,10 +94,10 @@ export const ChapterTestsPage: React.FC = () => {
     if (!options?.silent && tests.length === 0) setLoading(true);
     try {
       const [allChapters, chapterTests] = await Promise.all([
-        fetchChapters(subjectMeta?.name),
+        fetchChapters(subjectMeta?.name, undefined, { publishedOnly: true }),
         fetchChapterTests({ chapterId: chapIdNum, publishedOnly: true })
       ]);
-      const currentChapter = allChapters.find((c) => c.id === chapIdNum) || null;
+      const currentChapter = allChapters.find((c) => Number(c.id) === chapIdNum) || null;
       setChapter(currentChapter);
       setTests(chapterTests);
     } catch (err) {
@@ -110,8 +122,11 @@ export const ChapterTestsPage: React.FC = () => {
 
   const Icon = subjectMeta.icon;
 
-  const backUrl = chapter?.sub_category
-    ? `/tests/chapter-wise/${subjectMeta.slug}?sub=${encodeURIComponent(chapter.sub_category)}`
+  const [searchParams] = useSearchParams();
+  const subCategoryContext = chapter?.sub_category || searchParams.get('sub') || undefined;
+
+  const backUrl = subCategoryContext
+    ? `/tests/chapter-wise/${subjectMeta.slug}?sub=${encodeURIComponent(subCategoryContext)}`
     : `/tests/chapter-wise/${subjectMeta.slug}`;
 
   return (
@@ -131,7 +146,7 @@ export const ChapterTestsPage: React.FC = () => {
               {chapter?.name || 'Chapter Tests'}
             </h1>
             <p className="text-[11px] font-medium text-slate-500 leading-none mt-0.5 truncate">
-              {subjectMeta.name} {chapter?.sub_category ? `• ${chapter.sub_category}` : ''} • {tests.length} {tests.length === 1 ? 'Test' : 'Tests'}
+              {subjectMeta.name} {subCategoryContext ? `• ${subCategoryContext}` : ''} • {tests.length} {tests.length === 1 ? 'Test' : 'Tests'}
             </p>
           </div>
         </div>
@@ -145,7 +160,7 @@ export const ChapterTestsPage: React.FC = () => {
               <BackButton
                 to={backUrl}
                 forceFallback
-                label={chapter?.sub_category ? `${chapter.sub_category}` : 'All Chapters'}
+                label={subCategoryContext ? `${subCategoryContext}` : 'All Chapters'}
               />
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl ${subjectMeta.bg} ${subjectMeta.color} flex items-center justify-center shrink-0`}>
@@ -156,14 +171,14 @@ export const ChapterTestsPage: React.FC = () => {
                     <Link to="/tests/chapter-wise" className="hover:text-emerald-600">Chapter Wise</Link>
                     <span>/</span>
                     <Link to={`/tests/chapter-wise/${subjectMeta.slug}`} className="hover:text-emerald-600">{subjectMeta.name}</Link>
-                    {chapter?.sub_category && (
+                    {subCategoryContext && (
                       <>
                         <span>/</span>
                         <Link
-                          to={`/tests/chapter-wise/${subjectMeta.slug}?sub=${encodeURIComponent(chapter.sub_category)}`}
+                          to={`/tests/chapter-wise/${subjectMeta.slug}?sub=${encodeURIComponent(subCategoryContext)}`}
                           className="hover:text-emerald-600"
                         >
-                          {chapter.sub_category}
+                          {subCategoryContext}
                         </Link>
                       </>
                     )}
@@ -285,14 +300,14 @@ export const ChapterTestsPage: React.FC = () => {
                       /* Logged in with completed test: Analyse + Reattempt */
                       <div className="grid grid-cols-2 gap-2">
                         <Link
-                          to={`/tests/chapter-wise/test/${test.id}?mode=analyse`}
+                          to={`/tests/chapter-wise/test/${test.id}?mode=analyse${subCategoryContext ? `&sub=${encodeURIComponent(subCategoryContext)}` : ''}`}
                           className="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-700 border border-purple-200 text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-[0.99]"
                         >
                           <BarChart3 className="w-3.5 h-3.5" />
                           <span>Analyse</span>
                         </Link>
                         <Link
-                          to={`/tests/chapter-wise/test/${test.id}?reattempt=true`}
+                          to={`/tests/chapter-wise/test/${test.id}?reattempt=true${subCategoryContext ? `&sub=${encodeURIComponent(subCategoryContext)}` : ''}`}
                           className="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-[0.99]"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
@@ -302,7 +317,7 @@ export const ChapterTestsPage: React.FC = () => {
                     ) : (
                       /* First time / No result: Start Test */
                       <Link
-                        to={`/tests/chapter-wise/test/${test.id}`}
+                        to={`/tests/chapter-wise/test/${test.id}${subCategoryContext ? `?sub=${encodeURIComponent(subCategoryContext)}` : ''}`}
                         className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs sm:text-sm font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.99]"
                       >
                         <Play className="w-3.5 h-3.5 fill-white" />
