@@ -7,8 +7,24 @@
   },
   "rewrites": [
     {
+      "source": "/api/chapter-tests/(.*)",
+      "destination": "/api/chapter-tests?slug=$1"
+    },
+    {
+      "source": "/api/chapter-tests",
+      "destination": "/api/chapter-tests"
+    },
+    {
+      "source": "/api/sectional-tests/(.*)",
+      "destination": "/api/sectional-tests?slug=$1"
+    },
+    {
+      "source": "/api/sectional-tests",
+      "destination": "/api/sectional-tests"
+    },
+    {
       "source": "/api/(.*)",
-      "destination": "/api"
+      "destination": "/api?slug=$1"
     },
     {
       "source": "/(.*)",
