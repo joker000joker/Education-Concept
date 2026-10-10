@@ -58,12 +58,16 @@ chapterRouter.get('/chapters', async (req: Request, res: Response) => {
     if (subCategory && typeof subCategory === 'string' && subCategory.toLowerCase() !== 'all') {
       query = query.ilike('sub_category', subCategory.trim());
     }
-    const { data, error } = await query;
+    const { data, error } = await query
+      .order('sort_order', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true });
     if (error) {
-      return res.status(200).json({ success: true, data: [] });
+      console.error('[ChapterRouter] Supabase GET /chapters error:', error.message);
+      return res.status(500).json({ success: false, error: error.message });
     }
     return res.json({ success: true, data: data || [] });
   } catch (err: any) {
+    console.error('[ChapterRouter] GET /chapters exception:', err);
     return res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -163,15 +167,16 @@ chapterRouter.get('/tests', async (req: Request, res: Response) => {
         query = query.ilike('subject', trimmed);
       }
     }
-    if (publishedOnly === 'true') {
-      query = query.eq('published', true);
-    }
-    const { data, error } = await query;
+    const { data, error } = await query
+      .order('sort_order', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
     if (error) {
-      return res.status(200).json({ success: true, data: [] });
+      console.error('[ChapterRouter] Supabase GET /tests error:', error.message);
+      return res.status(500).json({ success: false, error: error.message });
     }
     return res.json({ success: true, data: data || [] });
   } catch (err: any) {
+    console.error('[ChapterRouter] GET /tests exception:', err);
     return res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -297,10 +302,12 @@ chapterRouter.get('/tests/:id/questions', async (req: Request, res: Response) =>
       .eq('test_id', testId)
       .order('question_order', { ascending: true });
     if (error) {
-      return res.status(200).json({ success: true, data: [] });
+      console.error('[ChapterRouter] Supabase GET /tests/:id/questions error:', error.message);
+      return res.status(500).json({ success: false, error: error.message });
     }
     return res.json({ success: true, data: data || [] });
   } catch (err: any) {
+    console.error('[ChapterRouter] GET /tests/:id/questions exception:', err);
     return res.status(500).json({ success: false, error: err.message });
   }
 });

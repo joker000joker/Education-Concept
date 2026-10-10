@@ -82,7 +82,12 @@ async function getJsonAuthHeaders(): Promise<Record<string, string>> {
 // It is NEVER an alternative database or source of truth.
 // -----------------------------------------------------------------------------
 
+function isLocalStorageAvailable(): boolean {
+  return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+}
+
 function getLocalChapters(): Chapter[] {
+  if (!isLocalStorageAvailable()) return [];
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_CHAPTERS_KEY);
     if (raw !== null) {
@@ -113,6 +118,7 @@ function getLocalChapters(): Chapter[] {
 }
 
 function setLocalChapters(chapters: Chapter[]): void {
+  if (!isLocalStorageAvailable()) return;
   try {
     localStorage.setItem(LOCAL_STORAGE_CHAPTERS_KEY, JSON.stringify(chapters));
   } catch (err) {
@@ -137,6 +143,7 @@ function removeLocalChapterFromMirror(chapterId: number): void {
 }
 
 function getLocalTests(): ChapterTest[] {
+  if (!isLocalStorageAvailable()) return [];
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_CHAPTER_TESTS_KEY);
     if (raw !== null) {
@@ -167,6 +174,7 @@ function getLocalTests(): ChapterTest[] {
 }
 
 function setLocalTests(tests: ChapterTest[]): void {
+  if (!isLocalStorageAvailable()) return;
   try {
     localStorage.setItem(LOCAL_STORAGE_CHAPTER_TESTS_KEY, JSON.stringify(tests));
   } catch (err) {
@@ -192,12 +200,15 @@ function removeLocalTestFromMirror(testId: number): void {
   delete qMap[testId];
   delete qMap[String(testId)];
   setLocalQuestions(qMap);
-  try {
-    localStorage.removeItem(`ec_chapter_questions_${testId}`);
-  } catch {}
+  if (isLocalStorageAvailable()) {
+    try {
+      localStorage.removeItem(`ec_chapter_questions_${testId}`);
+    } catch {}
+  }
 }
 
 function getLocalQuestions(): Record<number, ChapterQuestion[]> {
+  if (!isLocalStorageAvailable()) return {};
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_CHAPTER_QUESTIONS_KEY);
     if (raw) {
@@ -213,6 +224,7 @@ function getLocalQuestions(): Record<number, ChapterQuestion[]> {
 }
 
 function setLocalQuestions(store: Record<number, ChapterQuestion[]>): void {
+  if (!isLocalStorageAvailable()) return;
   try {
     localStorage.setItem(LOCAL_STORAGE_CHAPTER_QUESTIONS_KEY, JSON.stringify(store));
   } catch (err) {
@@ -221,6 +233,7 @@ function setLocalQuestions(store: Record<number, ChapterQuestion[]>): void {
 }
 
 function getLocalResults(): Record<string, ChapterTestResult> {
+  if (!isLocalStorageAvailable()) return {};
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_CHAPTER_RESULTS_KEY);
     if (raw) {
@@ -233,6 +246,7 @@ function getLocalResults(): Record<string, ChapterTestResult> {
 }
 
 function setLocalResults(store: Record<string, ChapterTestResult>): void {
+  if (!isLocalStorageAvailable()) return;
   try {
     localStorage.setItem(LOCAL_STORAGE_CHAPTER_RESULTS_KEY, JSON.stringify(store));
   } catch (err) {
@@ -240,8 +254,73 @@ function setLocalResults(store: Record<string, ChapterTestResult>): void {
   }
 }
 
+function syncChaptersIntoLocalMirror(chapters: Chapter[], subject?: string, subCategory?: string): void {
+  const normalizedSubject = subject ? subject.toLowerCase().trim() : '';
+  if (!subject || subject === 'All' || subject === 'all') {
+    // If fetching all, authoritatively replace local mirror (even if empty [])
+    setLocalChapters(chapters);
+  } else if (subCategory && subCategory.trim() && subCategory.toLowerCase() !== 'all') {
+    // If sub-category filtered, replace only that sub-category's records for this subject
+    const normSub = subCategory.trim().toLowerCase();
+    const isMath = normalizedSubject === 'mathematics' || normalizedSubject === 'math';
+    const preserved = getLocalChapters().filter((c) => {
+      const cSub = (c.subject || '').toLowerCase().trim();
+      const isSameSubject = isMath
+        ? cSub === 'mathematics' || cSub === 'math'
+        : cSub === normalizedSubject;
+      if (!isSameSubject) return true;
+      return (c.sub_category || '').toLowerCase().trim() !== normSub;
+    });
+    setLocalChapters([...preserved, ...chapters]);
+  } else {
+    // For the currently selected subject:
+    // - replace the subject's chapter records with the fresh response;
+    // - preserve chapters belonging to other subjects;
+    // - do NOT merge stale records back into the selected subject;
+    // - do NOT resurrect deleted records from localStorage.
+    const isMath = normalizedSubject === 'mathematics' || normalizedSubject === 'math';
+    const otherSubjectChapters = getLocalChapters().filter((c) => {
+      const cSub = (c.subject || '').toLowerCase().trim();
+      if (isMath) {
+        return cSub !== 'mathematics' && cSub !== 'math';
+      }
+      return cSub !== normalizedSubject;
+    });
+    setLocalChapters([...otherSubjectChapters, ...chapters]);
+  }
+}
+
 // -----------------------------------------------------------------------------
-// CHAPTERS API (Authoritative Server Persistence via /api/chapter-tests)
+// Response Shape Validation Helpers
+// Prevents incorrect payloads (e.g., Sectional Tests accidentally returned by
+// misrouted servers) from being mistaken for valid chapter or chapter-test data.
+// -----------------------------------------------------------------------------
+
+export function isValidChapterRecord(item: any): boolean {
+  return Boolean(
+    item &&
+    typeof item === 'object' &&
+    (typeof item.id === 'number' || typeof item.id === 'string') &&
+    typeof item.name === 'string' &&
+    item.name.trim().length > 0 &&
+    typeof item.subject === 'string'
+  );
+}
+
+export function isValidChapterTestRecord(item: any): boolean {
+  return Boolean(
+    item &&
+    typeof item === 'object' &&
+    (typeof item.id === 'number' || typeof item.id === 'string') &&
+    item.chapter_id !== undefined &&
+    item.chapter_id !== null &&
+    typeof item.title === 'string' &&
+    item.title.trim().length > 0
+  );
+}
+
+// -----------------------------------------------------------------------------
+// CHAPTERS API (Authoritative Server Persistence with Direct Supabase Fallback)
 // -----------------------------------------------------------------------------
 
 export async function fetchChapters(
@@ -251,6 +330,7 @@ export async function fetchChapters(
 ): Promise<Chapter[]> {
   let chapters: Chapter[] = [];
   const normalizedSubject = subject ? subject.toLowerCase().trim() : '';
+  let serverFetched = false;
 
   // 1. Primary: Fetch from Shared Server Backend API (authoritative source)
   try {
@@ -271,45 +351,83 @@ export async function fetchChapters(
 
     if (res.ok) {
       const json = await res.json();
+      let candidateList: any[] | null = null;
       if (json && json.success && Array.isArray(json.data)) {
-        chapters = json.data as Chapter[];
-        if (!subject || subject === 'All' || subject === 'all') {
-          // If fetching all, authoritatively replace local mirror (even if empty [])
-          setLocalChapters(chapters);
-        } else if (subCategory && subCategory.trim() && subCategory.toLowerCase() !== 'all') {
-          // If sub-category filtered, replace only that sub-category's records for this subject
-          const normSub = subCategory.trim().toLowerCase();
-          const isMath = normalizedSubject === 'mathematics' || normalizedSubject === 'math';
-          const preserved = getLocalChapters().filter((c) => {
-            const cSub = (c.subject || '').toLowerCase().trim();
-            const isSameSubject = isMath
-              ? cSub === 'mathematics' || cSub === 'math'
-              : cSub === normalizedSubject;
-            if (!isSameSubject) return true;
-            return (c.sub_category || '').toLowerCase().trim() !== normSub;
-          });
-          setLocalChapters([...preserved, ...chapters]);
-        } else {
-          // For the currently selected subject:
-          // - replace the subject's chapter records with the fresh server response;
-          // - preserve chapters belonging to other subjects;
-          // - do NOT merge stale records back into the selected subject;
-          // - do NOT resurrect deleted records from localStorage.
-          const isMath = normalizedSubject === 'mathematics' || normalizedSubject === 'math';
-          const otherSubjectChapters = getLocalChapters().filter((c) => {
-            const cSub = (c.subject || '').toLowerCase().trim();
-            if (isMath) {
-              return cSub !== 'mathematics' && cSub !== 'math';
-            }
-            return cSub !== normalizedSubject;
-          });
-          setLocalChapters([...otherSubjectChapters, ...chapters]);
-        }
+        candidateList = json.data;
+      } else if (Array.isArray(json)) {
+        candidateList = json;
       }
+
+      const isShapeValid =
+        candidateList !== null &&
+        (candidateList.length === 0 || candidateList.every(isValidChapterRecord));
+
+      if (isShapeValid && candidateList !== null) {
+        chapters = candidateList.map((c: any) => ({
+          id: Number(c.id),
+          subject: String(c.subject || ''),
+          sub_category: c.sub_category ? String(c.sub_category) : undefined,
+          name: String(c.name || ''),
+          hindi_name: c.hindi_name ? String(c.hindi_name) : undefined,
+          description: c.description ? String(c.description) : undefined,
+          sort_order: c.sort_order !== undefined && c.sort_order !== null ? Number(c.sort_order) : 0,
+          created_at: c.created_at || new Date().toISOString(),
+          updated_at: c.updated_at || new Date().toISOString()
+        }));
+        serverFetched = true;
+        syncChaptersIntoLocalMirror(chapters, subject, subCategory);
+      } else {
+        console.warn('[ChapterTest] Server returned invalid chapter shape, triggering Supabase fallback');
+      }
+    } else {
+      console.info(`[ChapterTest] Server /chapters returned ${res.status}, falling back to Supabase client.`);
     }
   } catch (err) {
-    console.info('[ChapterTest] Server fetch notice, checking local mirror:', err);
-    // Offline fallback only on network error
+    console.info('[ChapterTest] Server fetch notice, checking direct Supabase:', err);
+  }
+
+  // 2. Cloud Fallback: Direct Supabase PostgreSQL Query (Matches Sectional Test Architecture)
+  if (!serverFetched && isSupabaseConfigured) {
+    try {
+      let query = supabase.from('chapters').select('*');
+      if (normalizedSubject && normalizedSubject !== 'all') {
+        if (normalizedSubject === 'math' || normalizedSubject === 'mathematics') {
+          query = query.in('subject', ['Math', 'Mathematics', 'math', 'mathematics']);
+        } else {
+          query = query.ilike('subject', subject!.trim());
+        }
+      }
+      if (subCategory && subCategory.trim() && subCategory.toLowerCase() !== 'all') {
+        query = query.ilike('sub_category', subCategory.trim());
+      }
+      const { data, error } = await query
+        .order('sort_order', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true });
+
+      if (!error && Array.isArray(data)) {
+        chapters = data.map((row: any) => ({
+          id: Number(row.id),
+          subject: String(row.subject || ''),
+          sub_category: row.sub_category ? String(row.sub_category) : undefined,
+          name: String(row.name || ''),
+          hindi_name: row.hindi_name ? String(row.hindi_name) : undefined,
+          description: row.description ? String(row.description) : undefined,
+          sort_order: row.sort_order !== undefined && row.sort_order !== null ? Number(row.sort_order) : 0,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        }));
+        serverFetched = true;
+        syncChaptersIntoLocalMirror(chapters, subject, subCategory);
+      } else if (error) {
+        console.warn('[ChapterTest] Direct Supabase chapters query error:', error.message);
+      }
+    } catch (sbErr) {
+      console.warn('[ChapterTest] Direct Supabase chapters query exception:', sbErr);
+    }
+  }
+
+  // 3. Device Cache Fallback (Offline only when both server and direct Supabase fail)
+  if (!serverFetched) {
     const isMath = normalizedSubject === 'mathematics' || normalizedSubject === 'math';
     const all = getLocalChapters();
     chapters = (normalizedSubject && normalizedSubject !== 'all')
@@ -342,53 +460,115 @@ export async function fetchChapters(
 
 /**
  * Save a chapter (Create or Update).
- * MANDATORY: Persists to the shared server database.
- * If server save fails, throws error immediately. Never saves fake local records.
+ * MANDATORY: Persists to the shared server database backed by Supabase PostgreSQL.
+ * If server endpoint fails, automatically falls back to direct Supabase client persistence.
  */
 export async function saveChapter(payload: Partial<Chapter>): Promise<Chapter> {
   const headers = await getJsonAuthHeaders();
-  const res = await fetch('/api/chapter-tests/chapters', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      id: payload.id ? Number(payload.id) : undefined,
-      subject: String(payload.subject || '').trim(),
-      sub_category: payload.sub_category ? String(payload.sub_category).trim() : null,
-      name: String(payload.name || '').trim(),
-      hindi_name: payload.hindi_name ? String(payload.hindi_name).trim() : null,
-      description: payload.description ? String(payload.description).trim() : null,
-      sort_order: payload.sort_order ?? 0
-    })
-  });
+  let serverSaved: Chapter | null = null;
+  let serverError: string | null = null;
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    let errorMessage = `Server save failed (${res.status})`;
+  // 1. Primary: Server API
+  try {
+    const res = await fetch('/api/chapter-tests/chapters', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        id: payload.id ? Number(payload.id) : undefined,
+        subject: String(payload.subject || '').trim(),
+        sub_category: payload.sub_category ? String(payload.sub_category).trim() : null,
+        name: String(payload.name || '').trim(),
+        hindi_name: payload.hindi_name ? String(payload.hindi_name).trim() : null,
+        description: payload.description ? String(payload.description).trim() : null,
+        sort_order: payload.sort_order ?? 0
+      })
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && json.data) {
+        serverSaved = json.data as Chapter;
+      }
+    } else {
+      const errorText = await res.text();
+      let errorMessage = `Server save failed (${res.status})`;
+      try {
+        const errJson = JSON.parse(errorText);
+        if (errJson.error) errorMessage = errJson.error;
+      } catch {}
+      serverError = errorMessage;
+    }
+  } catch (err: any) {
+    serverError = err?.message || 'Network error connecting to chapter server';
+  }
+
+  if (serverSaved) {
+    updateLocalChapterInMirror(serverSaved);
+    notifyChapterDataChanged({
+      type: 'chapter_saved',
+      chapterId: serverSaved.id,
+      subject: serverSaved.subject,
+      subCategory: serverSaved.sub_category
+    });
+    return serverSaved;
+  }
+
+  // 2. Cloud Fallback: Direct Supabase Write if server route failed
+  if (isSupabaseConfigured) {
     try {
-      const errJson = JSON.parse(errorText);
-      if (errJson.error) errorMessage = errJson.error;
-    } catch {}
-    throw new Error(errorMessage);
+      let sbData: any = null;
+      if (payload.id) {
+        const { data, error } = await supabase
+          .from('chapters')
+          .update({
+            subject: String(payload.subject || '').trim(),
+            sub_category: payload.sub_category ? String(payload.sub_category).trim() : null,
+            name: String(payload.name || '').trim(),
+            hindi_name: payload.hindi_name ? String(payload.hindi_name).trim() : null,
+            description: payload.description ? String(payload.description).trim() : null,
+            sort_order: payload.sort_order ?? 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', Number(payload.id))
+          .select()
+          .single();
+        if (!error && data) sbData = data;
+        else if (error) throw new Error(error.message);
+      } else {
+        const { data, error } = await supabase
+          .from('chapters')
+          .insert({
+            subject: String(payload.subject || '').trim(),
+            sub_category: payload.sub_category ? String(payload.sub_category).trim() : null,
+            name: String(payload.name || '').trim(),
+            hindi_name: payload.hindi_name ? String(payload.hindi_name).trim() : null,
+            description: payload.description ? String(payload.description).trim() : null,
+            sort_order: payload.sort_order ?? 0
+          })
+          .select()
+          .single();
+        if (!error && data) sbData = data;
+        else if (error) throw new Error(error.message);
+      }
+
+      if (sbData) {
+        const savedChapter: Chapter = sbData;
+        updateLocalChapterInMirror(savedChapter);
+        notifyChapterDataChanged({
+          type: 'chapter_saved',
+          chapterId: savedChapter.id,
+          subject: savedChapter.subject,
+          subCategory: savedChapter.sub_category
+        });
+        return savedChapter;
+      }
+    } catch (sbErr: any) {
+      console.warn('[ChapterTest] Direct Supabase save chapter error:', sbErr);
+      throw new Error(serverError || sbErr?.message || 'Failed to save chapter to database');
+    }
   }
 
-  const json = await res.json();
-  if (!json || !json.success || !json.data) {
-    throw new Error(json?.error || 'Server did not return confirmed chapter data');
-  }
-
-  const savedChapter: Chapter = json.data;
-
-  // Authoritatively update local cache mirror
-  updateLocalChapterInMirror(savedChapter);
-
-  notifyChapterDataChanged({
-    type: 'chapter_saved',
-    chapterId: savedChapter.id,
-    subject: savedChapter.subject,
-    subCategory: savedChapter.sub_category
-  });
-
-  return savedChapter;
+  throw new Error(serverError || 'Failed to save chapter to server or database');
 }
 
 /**
@@ -397,19 +577,46 @@ export async function saveChapter(payload: Partial<Chapter>): Promise<Chapter> {
 export async function deleteChapter(chapterId: number): Promise<boolean> {
   const numId = Number(chapterId);
   const authHeaders = await getAuthHeaders();
-  const res = await fetch(`/api/chapter-tests/chapters/${numId}`, {
-    method: 'DELETE',
-    headers: authHeaders
-  });
+  let serverDeleted = false;
+  let serverError: string | null = null;
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    let errorMessage = `Failed to delete chapter (${res.status})`;
+  try {
+    const res = await fetch(`/api/chapter-tests/chapters/${numId}`, {
+      method: 'DELETE',
+      headers: authHeaders
+    });
+
+    if (res.ok) {
+      serverDeleted = true;
+    } else {
+      const errorText = await res.text();
+      let errorMessage = `Failed to delete chapter (${res.status})`;
+      try {
+        const errJson = JSON.parse(errorText);
+        if (errJson.error) errorMessage = errJson.error;
+      } catch {}
+      serverError = errorMessage;
+    }
+  } catch (err: any) {
+    serverError = err?.message || 'Network error deleting chapter';
+  }
+
+  // Cloud Fallback: Direct Supabase Delete
+  if (!serverDeleted && isSupabaseConfigured) {
     try {
-      const errJson = JSON.parse(errorText);
-      if (errJson.error) errorMessage = errJson.error;
-    } catch {}
-    throw new Error(errorMessage);
+      const { error } = await supabase.from('chapters').delete().eq('id', numId);
+      if (!error) {
+        serverDeleted = true;
+      } else {
+        throw new Error(error.message);
+      }
+    } catch (sbErr: any) {
+      throw new Error(serverError || sbErr?.message || 'Failed to delete chapter');
+    }
+  }
+
+  if (!serverDeleted) {
+    throw new Error(serverError || 'Failed to delete chapter');
   }
 
   // Remove from local mirror
@@ -429,14 +636,30 @@ export async function deleteChapter(chapterId: number): Promise<boolean> {
 
 export async function reorderChapters(orderedIds: number[]): Promise<boolean> {
   const headers = await getJsonAuthHeaders();
-  const res = await fetch('/api/chapter-tests/chapters/reorder', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ orderedIds })
-  });
+  let serverPersisted = false;
 
-  if (!res.ok) {
-    throw new Error('Failed to persist chapter order on server');
+  try {
+    const res = await fetch('/api/chapter-tests/chapters/reorder', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ orderedIds })
+    });
+
+    if (res.ok) {
+      serverPersisted = true;
+    }
+  } catch {}
+
+  // Cloud Fallback: Direct Supabase Update
+  if (!serverPersisted && isSupabaseConfigured) {
+    try {
+      await Promise.all(
+        orderedIds.map((id, index) =>
+          supabase.from('chapters').update({ sort_order: index + 1 }).eq('id', id)
+        )
+      );
+      serverPersisted = true;
+    } catch {}
   }
 
   // Update local mirror
@@ -455,7 +678,7 @@ export async function reorderChapters(orderedIds: number[]): Promise<boolean> {
 }
 
 // -----------------------------------------------------------------------------
-// CHAPTER TESTS API (Authoritative Server Persistence via /api/chapter-tests)
+// CHAPTER TESTS API (Authoritative Server Persistence with Direct Supabase Fallback)
 // -----------------------------------------------------------------------------
 
 export async function fetchChapterTests(options?: {
@@ -463,6 +686,10 @@ export async function fetchChapterTests(options?: {
   subject?: string;
   publishedOnly?: boolean;
 }): Promise<ChapterTest[]> {
+  let tests: ChapterTest[] = [];
+  let serverFetched = false;
+
+  // 1. Primary: Shared Server Backend API
   try {
     const params = new URLSearchParams();
     if (options?.chapterId) {
@@ -484,8 +711,35 @@ export async function fetchChapterTests(options?: {
 
     if (res.ok) {
       const json = await res.json();
+      let candidateList: any[] | null = null;
       if (json && json.success && Array.isArray(json.data)) {
-        const tests = json.data as ChapterTest[];
+        candidateList = json.data;
+      } else if (Array.isArray(json)) {
+        candidateList = json;
+      }
+
+      const isShapeValid =
+        candidateList !== null &&
+        (candidateList.length === 0 || candidateList.every(isValidChapterTestRecord));
+
+      if (isShapeValid && candidateList !== null) {
+        tests = candidateList.map((t: any) => ({
+          id: Number(t.id),
+          chapter_id: Number(t.chapter_id),
+          title: String(t.title || ''),
+          subject: String(t.subject || ''),
+          chapter_name: t.chapter_name ? String(t.chapter_name) : undefined,
+          total_questions: Number(t.total_questions || 0),
+          total_marks: Number(t.total_marks || 50),
+          duration_minutes: Number(t.duration_minutes || 20),
+          negative_marking: Number(t.negative_marking ?? 0.25),
+          published: Boolean(t.published !== false),
+          sort_order: t.sort_order !== undefined && t.sort_order !== null ? Number(t.sort_order) : 0,
+          created_by: t.created_by,
+          created_at: t.created_at || new Date().toISOString(),
+          updated_at: t.updated_at || new Date().toISOString()
+        }));
+        serverFetched = true;
         if (!options?.chapterId && (!options?.subject || options.subject === 'All')) {
           setLocalTests(tests);
         } else if (options?.chapterId) {
@@ -494,13 +748,71 @@ export async function fetchChapterTests(options?: {
           setLocalTests([...others, ...tests]);
         }
         return tests;
+      } else {
+        console.warn('[ChapterTest] Server returned invalid chapter test shape, triggering Supabase fallback');
       }
+    } else {
+      console.info(`[ChapterTest] Server /tests returned ${res.status}, falling back to Supabase client.`);
     }
   } catch (err) {
-    console.info('[ChapterTest] Server tests fetch notice, using local mirror:', err);
+    console.info('[ChapterTest] Server tests fetch notice, checking direct Supabase:', err);
   }
 
-  // Offline fallback only on network failure
+  // 2. Cloud Fallback: Direct Supabase PostgreSQL Query (Matches Sectional Test Architecture)
+  if (!serverFetched && isSupabaseConfigured) {
+    try {
+      let query = supabase.from('chapter_tests').select('*');
+      if (options?.chapterId) {
+        query = query.eq('chapter_id', Number(options.chapterId));
+      }
+      if (options?.subject && options.subject !== 'All') {
+        const normSub = options.subject.toLowerCase().trim();
+        if (normSub === 'math' || normSub === 'mathematics') {
+          query = query.in('subject', ['Math', 'Mathematics', 'math', 'mathematics']);
+        } else {
+          query = query.ilike('subject', options.subject.trim());
+        }
+      }
+      if (options?.publishedOnly) {
+        query = query.eq('published', true);
+      }
+      const { data, error } = await query
+        .order('sort_order', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const supabaseTests: ChapterTest[] = data.map((row: any) => ({
+          id: Number(row.id),
+          chapter_id: Number(row.chapter_id),
+          title: String(row.title || ''),
+          subject: String(row.subject || ''),
+          chapter_name: row.chapter_name ? String(row.chapter_name) : undefined,
+          total_questions: Number(row.total_questions || 0),
+          total_marks: Number(row.total_marks || 50),
+          duration_minutes: Number(row.duration_minutes || 20),
+          negative_marking: Number(row.negative_marking ?? 0.25),
+          published: Boolean(row.published !== false),
+          sort_order: row.sort_order !== undefined && row.sort_order !== null ? Number(row.sort_order) : 0,
+          created_by: row.created_by,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        }));
+
+        if (!options?.chapterId && (!options?.subject || options.subject === 'All')) {
+          setLocalTests(supabaseTests);
+        } else if (options?.chapterId) {
+          const cid = Number(options.chapterId);
+          const others = getLocalTests().filter((t) => Number(t.chapter_id) !== cid);
+          setLocalTests([...others, ...supabaseTests]);
+        }
+        return supabaseTests;
+      }
+    } catch (sbErr) {
+      console.warn('[ChapterTest] Direct Supabase chapter tests query exception:', sbErr);
+    }
+  }
+
+  // 3. Offline Device Cache Fallback
   let local = getLocalTests();
   if (options?.chapterId) {
     local = local.filter((t) => Number(t.chapter_id) === Number(options.chapterId));
@@ -517,6 +829,8 @@ export async function fetchChapterTests(options?: {
 
 export async function fetchChapterTestById(id: number | string): Promise<ChapterTest | null> {
   const numId = Number(id);
+
+  // 1. Primary: Server API
   try {
     const authHeaders = await getAuthHeaders();
     const res = await fetch(`/api/chapter-tests/tests/${numId}?_t=${Date.now()}`, {
@@ -525,14 +839,58 @@ export async function fetchChapterTestById(id: number | string): Promise<Chapter
     });
     if (res.ok) {
       const json = await res.json();
-      if (json && json.success && json.data) {
-        return json.data as ChapterTest;
+      const testCandidate = json && json.success ? json.data : json;
+      if (isValidChapterTestRecord(testCandidate)) {
+        return {
+          id: Number(testCandidate.id),
+          chapter_id: Number(testCandidate.chapter_id),
+          title: String(testCandidate.title || ''),
+          subject: String(testCandidate.subject || ''),
+          chapter_name: testCandidate.chapter_name ? String(testCandidate.chapter_name) : undefined,
+          total_questions: Number(testCandidate.total_questions || 0),
+          total_marks: Number(testCandidate.total_marks || 50),
+          duration_minutes: Number(testCandidate.duration_minutes || 20),
+          negative_marking: Number(testCandidate.negative_marking ?? 0.25),
+          published: Boolean(testCandidate.published !== false),
+          sort_order: testCandidate.sort_order !== undefined && testCandidate.sort_order !== null ? Number(testCandidate.sort_order) : 0,
+          created_by: testCandidate.created_by,
+          created_at: testCandidate.created_at || new Date().toISOString(),
+          updated_at: testCandidate.updated_at || new Date().toISOString()
+        };
       }
-    } else if (res.status === 404) {
-      return null;
     }
   } catch {}
 
+  // 2. Cloud Fallback: Direct Supabase
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('chapter_tests')
+        .select('*')
+        .eq('id', numId)
+        .maybeSingle();
+      if (!error && data) {
+        return {
+          id: Number(data.id),
+          chapter_id: Number(data.chapter_id),
+          title: String(data.title || ''),
+          subject: String(data.subject || ''),
+          chapter_name: data.chapter_name ? String(data.chapter_name) : undefined,
+          total_questions: Number(data.total_questions || 0),
+          total_marks: Number(data.total_marks || 50),
+          duration_minutes: Number(data.duration_minutes || 20),
+          negative_marking: Number(data.negative_marking ?? 0.25),
+          published: Boolean(data.published !== false),
+          sort_order: data.sort_order !== undefined && data.sort_order !== null ? Number(data.sort_order) : 0,
+          created_by: data.created_by,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        };
+      }
+    } catch {}
+  }
+
+  // 3. Local Cache Fallback
   const local = getLocalTests().find((t) => Number(t.id) === numId);
   return local || null;
 }
@@ -540,7 +898,7 @@ export async function fetchChapterTestById(id: number | string): Promise<Chapter
 /**
  * Save a chapter test and optionally its questions.
  * MANDATORY: Persists to the shared server database.
- * If server save fails, throws error immediately. Never saves fake local records.
+ * If server save fails, automatically falls back to direct Supabase client persistence.
  */
 export async function saveChapterTest(
   payload: Partial<ChapterTest>,
@@ -548,42 +906,99 @@ export async function saveChapterTest(
 ): Promise<ChapterTest> {
   const headers = await getJsonAuthHeaders();
   const totalQuestions = Array.isArray(questions) ? questions.length : Number(payload.total_questions || 0);
+  let savedTest: ChapterTest | null = null;
+  let serverError: string | null = null;
 
-  const res = await fetch('/api/chapter-tests/tests', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      id: payload.id ? Number(payload.id) : undefined,
-      chapter_id: Number(payload.chapter_id),
-      title: String(payload.title || '').trim(),
-      subject: String(payload.subject || '').trim(),
-      total_questions: totalQuestions,
-      total_marks: Number(payload.total_marks ?? 50),
-      duration_minutes: Number(payload.duration_minutes ?? 20),
-      negative_marking: Number(payload.negative_marking ?? 0.25),
-      published: payload.published !== undefined ? Boolean(payload.published) : true,
-      sort_order: payload.sort_order ?? 0
-    })
-  });
+  // 1. Primary: Server API
+  try {
+    const res = await fetch('/api/chapter-tests/tests', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        id: payload.id ? Number(payload.id) : undefined,
+        chapter_id: Number(payload.chapter_id),
+        title: String(payload.title || '').trim(),
+        subject: String(payload.subject || '').trim(),
+        total_questions: totalQuestions,
+        total_marks: Number(payload.total_marks ?? 50),
+        duration_minutes: Number(payload.duration_minutes ?? 20),
+        negative_marking: Number(payload.negative_marking ?? 0.25),
+        published: payload.published !== undefined ? Boolean(payload.published) : true,
+        sort_order: payload.sort_order ?? 0
+      })
+    });
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    let errorMessage = `Server save failed (${res.status})`;
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && json.data) {
+        savedTest = json.data as ChapterTest;
+      }
+    } else {
+      const errorText = await res.text();
+      let errorMessage = `Server save failed (${res.status})`;
+      try {
+        const errJson = JSON.parse(errorText);
+        if (errJson.error) errorMessage = errJson.error;
+      } catch {}
+      serverError = errorMessage;
+    }
+  } catch (err: any) {
+    serverError = err?.message || 'Network error saving test';
+  }
+
+  // 2. Cloud Fallback: Direct Supabase Write
+  if (!savedTest && isSupabaseConfigured) {
     try {
-      const errJson = JSON.parse(errorText);
-      if (errJson.error) errorMessage = errJson.error;
-    } catch {}
-    throw new Error(errorMessage);
+      if (payload.id) {
+        const { data, error } = await supabase
+          .from('chapter_tests')
+          .update({
+            chapter_id: Number(payload.chapter_id),
+            title: String(payload.title || '').trim(),
+            subject: String(payload.subject || '').trim(),
+            total_questions: totalQuestions,
+            total_marks: Number(payload.total_marks ?? 50),
+            duration_minutes: Number(payload.duration_minutes ?? 20),
+            negative_marking: Number(payload.negative_marking ?? 0.25),
+            published: payload.published !== undefined ? Boolean(payload.published) : true,
+            sort_order: payload.sort_order ?? 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', Number(payload.id))
+          .select()
+          .single();
+        if (!error && data) savedTest = data;
+        else if (error) throw new Error(error.message);
+      } else {
+        const { data, error } = await supabase
+          .from('chapter_tests')
+          .insert({
+            chapter_id: Number(payload.chapter_id),
+            title: String(payload.title || '').trim(),
+            subject: String(payload.subject || '').trim(),
+            total_questions: totalQuestions,
+            total_marks: Number(payload.total_marks ?? 50),
+            duration_minutes: Number(payload.duration_minutes ?? 20),
+            negative_marking: Number(payload.negative_marking ?? 0.25),
+            published: payload.published !== undefined ? Boolean(payload.published) : true,
+            sort_order: payload.sort_order ?? 0
+          })
+          .select()
+          .single();
+        if (!error && data) savedTest = data;
+        else if (error) throw new Error(error.message);
+      }
+    } catch (sbErr: any) {
+      console.warn('[ChapterTest] Direct Supabase save chapter test error:', sbErr);
+      throw new Error(serverError || sbErr?.message || 'Failed to save test');
+    }
   }
 
-  const json = await res.json();
-  if (!json || !json.success || !json.data) {
-    throw new Error(json?.error || 'Server did not return confirmed test data');
+  if (!savedTest) {
+    throw new Error(serverError || 'Failed to save test to server or database');
   }
 
-  const savedTest: ChapterTest = json.data;
-
-  // If questions are provided, persist questions to server as well
+  // If questions are provided, persist questions as well
   if (Array.isArray(questions)) {
     await saveChapterQuestions(savedTest.id, questions, { skipNotify: true });
     savedTest.total_questions = questions.length;
@@ -605,19 +1020,43 @@ export async function saveChapterTest(
 export async function deleteChapterTest(testId: number): Promise<boolean> {
   const numId = Number(testId);
   const authHeaders = await getAuthHeaders();
-  const res = await fetch(`/api/chapter-tests/tests/${numId}`, {
-    method: 'DELETE',
-    headers: authHeaders
-  });
+  let serverDeleted = false;
+  let serverError: string | null = null;
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    let errorMessage = `Failed to delete test (${res.status})`;
+  try {
+    const res = await fetch(`/api/chapter-tests/tests/${numId}`, {
+      method: 'DELETE',
+      headers: authHeaders
+    });
+
+    if (res.ok) {
+      serverDeleted = true;
+    } else {
+      const errorText = await res.text();
+      let errorMessage = `Failed to delete test (${res.status})`;
+      try {
+        const errJson = JSON.parse(errorText);
+        if (errJson.error) errorMessage = errJson.error;
+      } catch {}
+      serverError = errorMessage;
+    }
+  } catch (err: any) {
+    serverError = err?.message || 'Network error';
+  }
+
+  // Cloud Fallback: Direct Supabase
+  if (!serverDeleted && isSupabaseConfigured) {
     try {
-      const errJson = JSON.parse(errorText);
-      if (errJson.error) errorMessage = errJson.error;
-    } catch {}
-    throw new Error(errorMessage);
+      const { error } = await supabase.from('chapter_tests').delete().eq('id', numId);
+      if (!error) serverDeleted = true;
+      else throw new Error(error.message);
+    } catch (sbErr: any) {
+      throw new Error(serverError || sbErr?.message || 'Failed to delete test');
+    }
+  }
+
+  if (!serverDeleted) {
+    throw new Error(serverError || 'Failed to delete test');
   }
 
   // Remove from local mirror
@@ -634,20 +1073,47 @@ export async function deleteChapterTest(testId: number): Promise<boolean> {
 export async function togglePublishChapterTest(testId: number, published: boolean): Promise<boolean> {
   const numId = Number(testId);
   const headers = await getJsonAuthHeaders();
-  const res = await fetch(`/api/chapter-tests/tests/${numId}/publish`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ published })
-  });
+  let updated = false;
+  let serverError: string | null = null;
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    let errorMessage = `Failed to toggle publish status (${res.status})`;
+  try {
+    const res = await fetch(`/api/chapter-tests/tests/${numId}/publish`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ published })
+    });
+
+    if (res.ok) {
+      updated = true;
+    } else {
+      const errorText = await res.text();
+      let errorMessage = `Failed to toggle publish status (${res.status})`;
+      try {
+        const errJson = JSON.parse(errorText);
+        if (errJson.error) errorMessage = errJson.error;
+      } catch {}
+      serverError = errorMessage;
+    }
+  } catch (err: any) {
+    serverError = err?.message || 'Network error';
+  }
+
+  // Cloud Fallback: Direct Supabase
+  if (!updated && isSupabaseConfigured) {
     try {
-      const errJson = JSON.parse(errorText);
-      if (errJson.error) errorMessage = errJson.error;
-    } catch {}
-    throw new Error(errorMessage);
+      const { error } = await supabase
+        .from('chapter_tests')
+        .update({ published, updated_at: new Date().toISOString() })
+        .eq('id', numId);
+      if (!error) updated = true;
+      else throw new Error(error.message);
+    } catch (sbErr: any) {
+      throw new Error(serverError || sbErr?.message || 'Failed to toggle publish status');
+    }
+  }
+
+  if (!updated) {
+    throw new Error(serverError || 'Failed to toggle publish status');
   }
 
   // Update local mirror
@@ -671,14 +1137,30 @@ export async function togglePublishChapterTest(testId: number, published: boolea
 
 export async function reorderChapterTests(orderedIds: number[]): Promise<boolean> {
   const headers = await getJsonAuthHeaders();
-  const res = await fetch('/api/chapter-tests/tests/reorder', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ orderedIds })
-  });
+  let serverPersisted = false;
 
-  if (!res.ok) {
-    throw new Error('Failed to persist test order on server');
+  try {
+    const res = await fetch('/api/chapter-tests/tests/reorder', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ orderedIds })
+    });
+
+    if (res.ok) {
+      serverPersisted = true;
+    }
+  } catch {}
+
+  // Cloud Fallback: Direct Supabase
+  if (!serverPersisted && isSupabaseConfigured) {
+    try {
+      await Promise.all(
+        orderedIds.map((id, index) =>
+          supabase.from('chapter_tests').update({ sort_order: index + 1 }).eq('id', id)
+        )
+      );
+      serverPersisted = true;
+    } catch {}
   }
 
   // Update local mirror
@@ -697,12 +1179,13 @@ export async function reorderChapterTests(orderedIds: number[]): Promise<boolean
 }
 
 // -----------------------------------------------------------------------------
-// CHAPTER QUESTIONS API (Authoritative Server Persistence via /api/chapter-tests)
+// CHAPTER QUESTIONS API (Authoritative Server Persistence with Direct Supabase Fallback)
 // -----------------------------------------------------------------------------
 
 export async function fetchChapterQuestions(testId: number | string): Promise<ChapterQuestion[]> {
   const numId = Number(testId);
 
+  // 1. Primary: Server API
   try {
     const authHeaders = await getAuthHeaders();
     const res = await fetch(`/api/chapter-tests/tests/${numId}/questions?_t=${Date.now()}`, {
@@ -712,8 +1195,50 @@ export async function fetchChapterQuestions(testId: number | string): Promise<Ch
 
     if (res.ok) {
       const json = await res.json();
+      let candidate: any[] | null = null;
       if (json && json.success && Array.isArray(json.data)) {
-        const questions = json.data as ChapterQuestion[];
+        candidate = json.data;
+      } else if (Array.isArray(json)) {
+        candidate = json;
+      }
+
+      const isValid =
+        candidate !== null &&
+        (candidate.length === 0 ||
+          candidate.every(
+            (q: any) =>
+              q &&
+              typeof q === 'object' &&
+              (q.question_text !== undefined || q.option_a !== undefined)
+          ));
+
+      if (isValid && candidate !== null) {
+        const questions = candidate as ChapterQuestion[];
+        const allQuestions = getLocalQuestions();
+        allQuestions[numId] = questions;
+        setLocalQuestions(allQuestions);
+        try {
+          localStorage.setItem(`ec_chapter_questions_${numId}`, JSON.stringify(questions));
+        } catch {}
+        return questions;
+      } else {
+        console.warn('[ChapterTest] Server returned invalid chapter questions shape, triggering Supabase fallback');
+      }
+    }
+  } catch (err) {
+    console.info('[ChapterTest] Questions fetch notice, checking direct Supabase:', err);
+  }
+
+  // 2. Cloud Fallback: Direct Supabase
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('chapter_questions')
+        .select('*')
+        .eq('test_id', numId)
+        .order('question_order', { ascending: true });
+      if (!error && Array.isArray(data)) {
+        const questions = data as ChapterQuestion[];
         const allQuestions = getLocalQuestions();
         allQuestions[numId] = questions;
         setLocalQuestions(allQuestions);
@@ -722,11 +1247,10 @@ export async function fetchChapterQuestions(testId: number | string): Promise<Ch
         } catch {}
         return questions;
       }
-    }
-  } catch (err) {
-    console.info('[ChapterTest] Questions fetch notice, using local mirror:', err);
+    } catch {}
   }
 
+  // 3. Local Cache Fallback
   const localQuestions = getLocalQuestions();
   if (localQuestions[numId] && Array.isArray(localQuestions[numId])) {
     return localQuestions[numId];
@@ -763,20 +1287,53 @@ export async function saveChapterQuestions(
   }));
 
   const headers = await getJsonAuthHeaders();
-  const res = await fetch(`/api/chapter-tests/tests/${numId}/questions`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ questions: formattedQuestions })
-  });
+  let serverSaved = false;
+  let serverError: string | null = null;
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    let errorMessage = `Failed to save questions on server (${res.status})`;
+  // 1. Primary: Server API
+  try {
+    const res = await fetch(`/api/chapter-tests/tests/${numId}/questions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ questions: formattedQuestions })
+    });
+
+    if (res.ok) {
+      serverSaved = true;
+    } else {
+      const errorText = await res.text();
+      let errorMessage = `Failed to save questions on server (${res.status})`;
+      try {
+        const errJson = JSON.parse(errorText);
+        if (errJson.error) errorMessage = errJson.error;
+      } catch {}
+      serverError = errorMessage;
+    }
+  } catch (err: any) {
+    serverError = err?.message || 'Network error saving questions';
+  }
+
+  // 2. Cloud Fallback: Direct Supabase
+  if (!serverSaved && isSupabaseConfigured) {
     try {
-      const errJson = JSON.parse(errorText);
-      if (errJson.error) errorMessage = errJson.error;
-    } catch {}
-    throw new Error(errorMessage);
+      await supabase.from('chapter_questions').delete().eq('test_id', numId);
+      if (formattedQuestions.length > 0) {
+        const { error: insErr } = await supabase.from('chapter_questions').insert(formattedQuestions);
+        if (insErr) throw new Error(insErr.message);
+      }
+      await supabase
+        .from('chapter_tests')
+        .update({ total_questions: formattedQuestions.length, updated_at: new Date().toISOString() })
+        .eq('id', numId);
+      serverSaved = true;
+    } catch (sbErr: any) {
+      console.warn('[ChapterTest] Direct Supabase save questions error:', sbErr);
+      throw new Error(serverError || sbErr?.message || 'Failed to save questions to database');
+    }
+  }
+
+  if (!serverSaved) {
+    throw new Error(serverError || 'Failed to save questions to server or database');
   }
 
   // Update local mirror

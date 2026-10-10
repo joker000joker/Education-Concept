@@ -1,6 +1,7 @@
 import { Router, Request, Response, Express } from 'express';
 import express from 'express';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { chapterRouter } from '../src/server/chapterRouter';
 
 // Resolve Supabase configuration from environment variables
 const SUPABASE_URL = (
@@ -426,6 +427,8 @@ export function createSectionalApiApp(): Express {
 
   app.use('/api/sectional-tests', sectionalRouter);
   app.use('/sectional-tests', sectionalRouter);
+  app.use('/api/chapter-tests', chapterRouter);
+  app.use('/chapter-tests', chapterRouter);
   app.use('/', sectionalRouter);
 
   app.get('/api/health', (_req: Request, res: Response) => res.json({ status: 'ok', service: 'education-concept-api' }));
@@ -437,13 +440,58 @@ export function createSectionalApiApp(): Express {
 const defaultSectionalApiApp = createSectionalApiApp();
 
 export function sectionalApiHandler(req: any, res: any) {
-  if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/sectional-tests')) {
-    const cleanUrl = req.url.startsWith('/') ? req.url : '/' + req.url;
-    req.url = '/api/sectional-tests' + (cleanUrl === '/' ? '' : cleanUrl);
-  } else if (!req.url) {
-    req.url = '/api/sectional-tests';
+  let targetUrl = req.url || '';
+
+  if (req.query?.slug) {
+    const slugParts = Array.isArray(req.query.slug) ? req.query.slug : [req.query.slug];
+    const slugPath = '/' + slugParts.join('/').replace(/^\/+/, '');
+    const queryString = targetUrl.includes('?') ? targetUrl.slice(targetUrl.indexOf('?')) : '';
+    
+    if (slugPath.startsWith('/chapter-tests')) {
+      targetUrl = '/api' + slugPath + queryString;
+    } else if (slugPath.startsWith('/chapters')) {
+      targetUrl = '/api/chapter-tests' + slugPath + queryString;
+    } else if (slugPath.startsWith('/sectional-tests')) {
+      targetUrl = '/api' + slugPath + queryString;
+    } else if (slugPath.startsWith('/api')) {
+      targetUrl = slugPath + queryString;
+    } else {
+      targetUrl = (slugPath.startsWith('/api') ? slugPath : '/api' + slugPath) + queryString;
+    }
+  } else if (
+    req.headers &&
+    typeof req.headers['x-forwarded-uri'] === 'string' &&
+    req.headers['x-forwarded-uri'].startsWith('/api/')
+  ) {
+    targetUrl = req.headers['x-forwarded-uri'];
+  } else if (
+    req.headers &&
+    typeof req.headers['x-matched-path'] === 'string' &&
+    req.headers['x-matched-path'].startsWith('/api/')
+  ) {
+    const queryString = targetUrl.includes('?') ? targetUrl.slice(targetUrl.indexOf('?')) : '';
+    targetUrl = req.headers['x-matched-path'] + queryString;
   }
+
+  if (
+    targetUrl &&
+    !targetUrl.startsWith('/api') &&
+    !targetUrl.startsWith('/sectional-tests') &&
+    !targetUrl.startsWith('/chapter-tests')
+  ) {
+    const cleanUrl = targetUrl.startsWith('/') ? targetUrl : '/' + targetUrl;
+    if (cleanUrl.startsWith('/chapters')) {
+      targetUrl = '/api/chapter-tests' + cleanUrl;
+    } else {
+      targetUrl = '/api/sectional-tests' + (cleanUrl === '/' ? '' : cleanUrl);
+    }
+  } else if (!targetUrl || targetUrl === '/' || targetUrl === '/api') {
+    targetUrl = '/api/sectional-tests';
+  }
+
+  req.url = targetUrl;
   return defaultSectionalApiApp(req, res);
 }
 
 export default sectionalApiHandler;
+

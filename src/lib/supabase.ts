@@ -1,8 +1,17 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Category, Note, Profile } from '../types';
 
-export const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').trim();
-export const SUPABASE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '').trim();
+export const SUPABASE_URL = (
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) ||
+  (typeof process !== 'undefined' && (process.env?.VITE_SUPABASE_URL || process.env?.SUPABASE_URL)) ||
+  ''
+).trim();
+
+export const SUPABASE_KEY = (
+  (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env?.VITE_SUPABASE_ANON_KEY)) ||
+  (typeof process !== 'undefined' && (process.env?.VITE_SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_ANON_KEY || process.env?.VITE_SUPABASE_ANON_KEY || process.env?.SUPABASE_KEY)) ||
+  ''
+).trim();
 
 export const isSupabaseConfigured = Boolean(
   SUPABASE_URL &&

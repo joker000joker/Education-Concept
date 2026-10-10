@@ -331,8 +331,8 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
       }
 
       await loadData({ silent: true, preferredChapterId: saved.id, subCategoryOverride: targetSubCat });
-    } catch {
-      toast.showToast('Failed to save chapter', 'error');
+    } catch (err: any) {
+      toast.showToast(err?.message || 'Failed to save chapter', 'error');
     } finally {
       setSavingChapter(false);
     }

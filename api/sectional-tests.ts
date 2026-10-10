@@ -1,6 +1,7 @@
 import { Router, Request, Response, Express } from 'express';
 import express from 'express';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { chapterRouter } from '../src/server/chapterRouter';
 
 // Resolve Supabase configuration from environment variables
 const SUPABASE_URL = (
@@ -426,6 +427,8 @@ export function createSectionalApiApp(): Express {
 
   app.use('/api/sectional-tests', sectionalRouter);
   app.use('/sectional-tests', sectionalRouter);
+  app.use('/api/chapter-tests', chapterRouter);
+  app.use('/chapter-tests', chapterRouter);
   app.use('/', sectionalRouter);
 
   app.get('/api/health', (_req: Request, res: Response) => res.json({ status: 'ok', service: 'education-concept-api' }));
@@ -437,7 +440,7 @@ export function createSectionalApiApp(): Express {
 const defaultSectionalApiApp = createSectionalApiApp();
 
 export function sectionalApiHandler(req: any, res: any) {
-  if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/sectional-tests')) {
+  if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/sectional-tests') && !req.url.startsWith('/chapter-tests')) {
     const cleanUrl = req.url.startsWith('/') ? req.url : '/' + req.url;
     req.url = '/api/sectional-tests' + (cleanUrl === '/' ? '' : cleanUrl);
   } else if (!req.url) {
