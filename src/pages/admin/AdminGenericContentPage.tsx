@@ -66,9 +66,9 @@ export const AdminGenericContentPage: React.FC<AdminGenericContentPageProps> = (
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-[#F8FAFC]">{title}</h1>
         <button 
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-semibold"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-semibold cursor-pointer"
           onClick={() => alert('Add form would open here (Requires implementation of generic upload modal)')}
         >
           <Plus className="w-4 h-4" />
@@ -76,8 +76,8 @@ export const AdminGenericContentPage: React.FC<AdminGenericContentPageProps> = (
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center gap-4">
+      <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0B1120] flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -85,14 +85,14 @@ export const AdminGenericContentPage: React.FC<AdminGenericContentPageProps> = (
               placeholder={`Search ${title.toLowerCase()}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-[#141C2E] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
           </div>
         </div>
         
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+            <thead className="bg-slate-50 dark:bg-[#0B1120] border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="px-6 py-3 font-medium">Title</th>
                 {hasCategory && <th className="px-6 py-3 font-medium">Category</th>}
@@ -102,43 +102,43 @@ export const AdminGenericContentPage: React.FC<AdminGenericContentPageProps> = (
                 <th className="px-6 py-3 font-medium text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
                     <Loader2 className="w-6 h-6 animate-spin text-blue-500 mx-auto mb-2" />
-                    <p className="text-slate-500">Loading records...</p>
+                    <p className="text-slate-500 dark:text-slate-400">Loading records...</p>
                   </td>
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                     No records found. Note: If the table was just created, it may be empty.
                   </td>
                 </tr>
               ) : (
                 filteredData.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="px-6 py-4">
-                      <p className="font-medium text-slate-900">{item.title}</p>
-                      {item.file_size && <p className="text-xs text-slate-500">{formatBytes(item.file_size)}</p>}
+                      <p className="font-medium text-slate-900 dark:text-[#F8FAFC]">{item.title}</p>
+                      {item.file_size && <p className="text-xs text-slate-500 dark:text-slate-400">{formatBytes(item.file_size)}</p>}
                     </td>
-                    {hasCategory && <td className="px-6 py-4 text-slate-600">{item.category}</td>}
-                    {hasPrice && <td className="px-6 py-4 text-slate-600 font-medium">₹{item.price}</td>}
+                    {hasCategory && <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{item.category}</td>}
+                    {hasPrice && <td className="px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">₹{item.price}</td>}
                     <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 rounded-md text-xs font-medium ${item.published ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                      <span className={`inline-flex px-2 py-1 rounded-md text-xs font-medium ${item.published ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                         {item.published ? 'Published' : 'Draft'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-500 text-xs">
+                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
                       {new Date(item.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end items-center gap-2">
-                        <button className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                        <button className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer">
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(item.id)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors">
+                        <button onClick={() => handleDelete(item.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>

@@ -163,36 +163,42 @@ export const Navbar: React.FC = () => {
               </div>
             </Link>
 
-            <div className="flex items-center gap-6">
-               <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                     <Search className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Search className="w-4 h-4 text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search courses, notes, tests..."
+                  className="w-72 xl:w-80 pl-9 pr-4 py-2 rounded-full text-sm bg-white dark:bg-[#141C2E] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-transparent dark:border-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') navigate(`/notes?q=${encodeURIComponent(e.currentTarget.value)}`);
+                  }}
+                />
+              </div>
+               
+              <PWAInstallButton />
+               
+              {user ? (
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2 pl-1.5 pr-4 py-1.5 rounded-full bg-blue-700/80 hover:bg-blue-800 text-white transition-colors"
+                >
+                  <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold text-white shadow-xs">
+                    {(profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U').toUpperCase()}
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Search courses, notes, tests..."
-                    className="w-64 pl-9 pr-4 py-1.5 rounded-full text-sm bg-white text-slate-900 placeholder:text-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-400"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') navigate(`/notes?q=${encodeURIComponent(e.currentTarget.value)}`);
-                    }}
-                  />
-               </div>
-               
-               <PWAInstallButton />
-               
-               {user ? (
-                 <Link to="/profile" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-700 hover:bg-blue-800 transition-colors">
-                   <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
-                     {user.email?.charAt(0).toUpperCase()}
-                   </div>
-                   <span className="text-sm font-semibold">{profile?.full_name || 'Profile'}</span>
-                 </Link>
-               ) : (
-                 <Link to="/login" className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-blue-600 hover:bg-blue-50 font-bold text-sm transition-colors shadow-sm">
-                    <User className="w-4 h-4" />
-                    LOGIN / REGISTER
-                 </Link>
-               )}
+                  <span className="text-sm font-semibold tracking-wide">{profile?.full_name || 'Profile'}</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-[#141C2E] text-blue-600 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-[#1B263B] font-bold text-xs tracking-wider shadow-xs transition-colors border border-transparent dark:border-slate-700"
+                >
+                  <User className="w-4 h-4" />
+                  <span>LOGIN / REGISTER</span>
+                </Link>
+              )}
             </div>
           </div>
           
@@ -244,10 +250,10 @@ export const Navbar: React.FC = () => {
                 <div
                   role="menu"
                   aria-label="More navigation links"
-                  className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-200/80 py-2 z-50 transition-all duration-150 ease-out animate-in fade-in"
+                  className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 bg-white dark:bg-[#141C2E] rounded-xl shadow-2xl border border-slate-200/80 dark:border-slate-800 py-2 z-50 transition-all duration-150 ease-out animate-in fade-in"
                 >
-                  <div className="px-3.5 py-1 mb-1 border-b border-slate-100">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                  <div className="px-3.5 py-1 mb-1 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
                       More Categories
                     </span>
                   </div>
@@ -264,15 +270,15 @@ export const Navbar: React.FC = () => {
                           role="menuitem"
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all group ${
                             active
-                              ? 'bg-blue-50 text-blue-600 font-bold'
-                              : 'text-slate-700 hover:bg-slate-50 hover:text-blue-600'
+                              ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold'
+                              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1B263B] hover:text-blue-600 dark:hover:text-blue-400'
                           }`}
                         >
                           <div
                             className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors ${
                               active
                                 ? 'bg-blue-600 text-white'
-                                : 'bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600'
+                                : 'bg-slate-100 dark:bg-[#1B263B] text-slate-500 dark:text-slate-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/60 group-hover:text-blue-600 dark:group-hover:text-blue-300'
                             }`}
                           >
                             <Icon className="w-3.5 h-3.5" />

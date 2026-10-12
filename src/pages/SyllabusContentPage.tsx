@@ -91,32 +91,32 @@ export const SyllabusContentPage: React.FC = () => {
   };
 
   return (
-    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF]">
+    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF] dark:bg-[#0B0F19]">
       <div className="flex items-center gap-3 mb-8">
         <button 
           onClick={() => navigate(`/syllabus/${category}/${encodeURIComponent(exam || '')}`)} 
-          className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 text-slate-700 active:scale-95 transition-transform cursor-pointer"
+          className="w-10 h-10 flex items-center justify-center bg-white dark:bg-[#141C2E] rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform cursor-pointer"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight line-clamp-1">{pageTitle}</h1>
-          <p className="text-xs text-slate-500">{decodedExam}</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight line-clamp-1">{pageTitle}</h1>
+          <p className="text-xs text-slate-500 dark:text-[#CBD5E1]">{decodedExam}</p>
         </div>
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
-          <p className="text-sm text-slate-500 font-medium">Checking document availability...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Checking document availability...</p>
         </div>
       ) : filePath ? (
-        <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center shadow-xs mt-8 max-w-lg mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+        <div className="bg-white dark:bg-[#141C2E] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center shadow-xs mt-8 max-w-lg mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4 border border-emerald-100 dark:border-emerald-900/50">
             <Icon className="w-8 h-8" />
           </div>
-          <h2 className="text-lg font-bold text-slate-900 mb-2">{pageTitle} Document Ready</h2>
-          <p className="text-sm text-slate-500 leading-relaxed mb-6">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC] mb-2">{pageTitle} Document Ready</h2>
+          <p className="text-sm text-slate-500 dark:text-[#CBD5E1] leading-relaxed mb-6">
             Official guidelines and document file for {decodedExam}.
           </p>
 
@@ -132,7 +132,7 @@ export const SyllabusContentPage: React.FC = () => {
             <button
               onClick={handleDownload}
               disabled={downloading}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-6 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-sm font-bold border border-slate-200 transition-colors cursor-pointer min-h-[44px] disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-6 bg-slate-50 dark:bg-[#1B263B] hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer min-h-[44px] disabled:opacity-50"
             >
               {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               <span>Download</span>
@@ -140,12 +140,12 @@ export const SyllabusContentPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center shadow-xs mt-8 max-w-md mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-4 border border-blue-100">
+        <div className="bg-white dark:bg-[#141C2E] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center shadow-xs mt-8 max-w-md mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-500 dark:text-blue-400 flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-900">
             <Icon className="w-8 h-8" />
           </div>
-          <h2 className="text-lg font-bold text-slate-900 mb-2">{emptyTitle}</h2>
-          <p className="text-sm text-slate-500 leading-relaxed">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC] mb-2">{emptyTitle}</h2>
+          <p className="text-sm text-slate-500 dark:text-[#CBD5E1] leading-relaxed">
             {emptySubtitle}
           </p>
         </div>

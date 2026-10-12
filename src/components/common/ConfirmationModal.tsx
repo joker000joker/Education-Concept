@@ -27,14 +27,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150">
       <div
         id="confirmation-modal-container"
-        className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative"
+        className="bg-white dark:bg-[#141C2E] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 relative"
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           disabled={isLoading}
         >
           <X className="w-5 h-5" />
@@ -43,15 +43,15 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <div className="flex items-start gap-4">
           <div
             className={`p-3 rounded-xl shrink-0 ${
-              isDangerous ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-blue-50 text-blue-600'
+              isDangerous ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/40' : 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400'
             }`}
           >
             <AlertTriangle className="w-6 h-6" />
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-slate-900">{title}</h3>
-            <p className="text-sm text-slate-600 mt-1 leading-relaxed">{message}</p>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">{title}</h3>
+            <p className="text-sm text-slate-600 dark:text-[#CBD5E1] mt-1 leading-relaxed">{message}</p>
           </div>
         </div>
 
@@ -60,7 +60,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50"
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-[#1B263B] hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
           >
             {cancelLabel}
           </button>

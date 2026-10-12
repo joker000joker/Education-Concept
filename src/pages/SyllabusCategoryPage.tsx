@@ -54,21 +54,21 @@ export const SyllabusCategoryPage: React.FC = () => {
   };
 
   return (
-    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF]">
+    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF] dark:bg-[#0B0F19]">
       <div className="flex items-center gap-3 mb-8">
         <button 
           onClick={() => navigate('/syllabus')} 
-          className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 text-slate-700 active:scale-95 transition-transform cursor-pointer"
+          className="w-10 h-10 flex items-center justify-center bg-white dark:bg-[#141C2E] rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform cursor-pointer"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h1>
+        <h1 className="text-xl font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight">{title}</h1>
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16">
           <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
-          <p className="text-sm text-slate-500 font-medium">Loading exams...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Loading exams...</p>
         </div>
       ) : exams.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
@@ -116,12 +116,12 @@ export const SyllabusCategoryPage: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center shadow-xs mt-8 max-w-md mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-4 border border-blue-100">
+        <div className="bg-white dark:bg-[#141C2E] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center shadow-xs mt-8 max-w-md mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-500 dark:text-blue-400 flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-900">
             <GraduationCap className="w-8 h-8" />
           </div>
-          <h2 className="text-lg font-bold text-slate-900 mb-2">No Published Exams Yet</h2>
-          <p className="text-sm text-slate-500 leading-relaxed">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC] mb-2">No Published Exams Yet</h2>
+          <p className="text-sm text-slate-500 dark:text-[#CBD5E1] leading-relaxed">
             Exam pattern and syllabus documents for this category are being prepared and will appear here as soon as published.
           </p>
         </div>

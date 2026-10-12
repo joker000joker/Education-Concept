@@ -107,22 +107,22 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
         <div
           ref={drawerRef}
           id="hamburger-drawer-panel"
-          className={`w-screen max-w-sm sm:max-w-md bg-white shadow-2xl border-r border-slate-200 flex flex-col justify-between overflow-y-auto pointer-events-auto transition-transform duration-300 ease-in-out transform ${
+          className={`w-screen max-w-sm sm:max-w-md bg-white dark:bg-[#141C2E] shadow-2xl border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between overflow-y-auto pointer-events-auto transition-transform duration-300 ease-in-out transform ${
             isOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           {/* Drawer Header */}
           <div>
-            <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between">
+            <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-full flex items-center justify-center shadow-xs overflow-hidden shrink-0 aspect-square">
                   <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
                 </div>
                 <div>
-                  <span className="text-sm font-extrabold tracking-tight text-slate-900 block leading-none">
+                  <span className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-[#F8FAFC] block leading-none">
                     EDUCATION CONCEPT
                   </span>
-                  <span className="text-[10px] tracking-wider uppercase font-semibold text-blue-600 block mt-0.5">
+                  <span className="text-[10px] tracking-wider uppercase font-semibold text-blue-600 dark:text-blue-400 block mt-0.5">
                     Menu & Account
                   </span>
                 </div>
@@ -131,7 +131,7 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
               <button
                 id="close-hamburger-drawer-btn"
                 onClick={onClose}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5" />
@@ -141,13 +141,13 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
             {/* User Account Section or Guest Notice */}
             <div className="p-5 sm:p-6 pb-2">
               {user ? (
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-slate-200/80 space-y-3">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 dark:from-[#1B263B] dark:to-[#141C2E] border border-slate-200/80 dark:border-slate-700/80 space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-base shadow-xs shadow-blue-500/20 shrink-0">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 overflow-hidden">
-                      <p className="text-xs font-bold text-slate-900 truncate">
+                      <p className="text-xs font-bold text-slate-900 dark:text-[#F8FAFC] truncate">
                         {profile?.full_name || user.email}
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
@@ -213,17 +213,17 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
               <button
                 id="drawer-item-my-profile"
                 onClick={() => handleNavigation('/profile')}
-                className="w-full flex items-center justify-between p-3 rounded-xl text-left hover:bg-slate-50 active:bg-slate-100 transition-colors group"
+                className="w-full flex items-center justify-between p-3 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-[#1B263B] active:bg-slate-100 dark:active:bg-[#141C2E] transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                     <User className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs sm:text-sm font-bold text-slate-800 block">
+                    <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-[#F8FAFC] block">
                       My Profile
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
                       View your registered account details
                     </span>
                   </div>
@@ -238,17 +238,17 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
                   onClose();
                   onOpenEditProfile();
                 }}
-                className="w-full flex items-center justify-between p-3 rounded-xl text-left hover:bg-slate-50 active:bg-slate-100 transition-colors group"
+                className="w-full flex items-center justify-between p-3 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-[#1B263B] active:bg-slate-100 dark:active:bg-[#141C2E] transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                     <UserCheck className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs sm:text-sm font-bold text-slate-800 block">
+                    <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-[#F8FAFC] block">
                       Edit Profile
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
                       Update contact number & profile info
                     </span>
                   </div>
@@ -263,17 +263,17 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
                   onClose();
                   onOpenChangePassword();
                 }}
-                className="w-full flex items-center justify-between p-3 rounded-xl text-left hover:bg-slate-50 active:bg-slate-100 transition-colors group"
+                className="w-full flex items-center justify-between p-3 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-[#1B263B] active:bg-slate-100 dark:active:bg-[#141C2E] transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                     <KeyRound className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs sm:text-sm font-bold text-slate-800 block">
+                    <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-[#F8FAFC] block">
                       Change Password
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
                       Securely update Supabase Auth password
                     </span>
                   </div>
@@ -288,17 +288,17 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
                   onClose();
                   onOpenSettings();
                 }}
-                className="w-full flex items-center justify-between p-3 rounded-xl text-left hover:bg-slate-50 active:bg-slate-100 transition-colors group"
+                className="w-full flex items-center justify-between p-3 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-[#1B263B] active:bg-slate-100 dark:active:bg-[#141C2E] transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center group-hover:scale-105 transition-transform">
                     <Settings className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs sm:text-sm font-bold text-slate-800 block">
+                    <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-[#F8FAFC] block">
                       Settings
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
                       PDF viewer preferences & app cache
                     </span>
                   </div>
@@ -311,17 +311,17 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
                 <button
                   id="drawer-item-admin-dashboard"
                   onClick={() => handleNavigation('/admin')}
-                  className="w-full flex items-center justify-between p-3 rounded-xl text-left bg-indigo-50/80 hover:bg-indigo-100/70 border border-indigo-200/80 transition-colors group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl text-left bg-indigo-50/80 dark:bg-indigo-950/40 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/50 border border-indigo-200/80 dark:border-indigo-800 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
                       <ShieldCheck className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="text-xs sm:text-sm font-bold text-indigo-950 block">
+                      <span className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200 block">
                         Admin Dashboard
                       </span>
-                      <span className="text-[10px] text-indigo-700 font-medium">
+                      <span className="text-[10px] text-indigo-700 dark:text-indigo-400 font-medium">
                         Manage notes, uploads & database
                       </span>
                     </div>
@@ -335,17 +335,17 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
                 <button
                   id="drawer-item-logout"
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-between p-3 rounded-xl text-left hover:bg-rose-50/80 transition-colors group text-rose-600"
+                  className="w-full flex items-center justify-between p-3 rounded-xl text-left hover:bg-rose-50/80 dark:hover:bg-rose-950/30 transition-colors group text-rose-600 dark:text-rose-400"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <LogOut className="w-4 h-4" />
                     </div>
                     <div>
                       <span className="text-xs sm:text-sm font-bold block">
                         Logout
                       </span>
-                      <span className="text-[10px] text-rose-400">
+                      <span className="text-[10px] text-rose-400 dark:text-rose-500">
                         Sign out of Education Concept
                       </span>
                     </div>
@@ -356,8 +356,8 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
             </div>
 
             {/* GENERAL SITE NAVIGATION */}
-            <div className="px-5 sm:px-6 py-3 border-t border-slate-100 space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-3 mb-1">
+            <div className="px-5 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block px-3 mb-1">
                 Explore Content
               </span>
 
@@ -365,8 +365,8 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
                 onClick={() => handleNavigation('/')}
                 className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold transition-colors ${
                   isCurrent('/') && location.pathname === '/'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-600 hover:bg-slate-50'
+                    ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1B263B]'
                 }`}
               >
                 <Home className="w-4 h-4" />
@@ -377,8 +377,8 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
                 onClick={() => handleNavigation('/subjects')}
                 className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold transition-colors ${
                   isCurrent('/subjects')
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-600 hover:bg-slate-50'
+                    ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1B263B]'
                 }`}
               >
                 <Layers className="w-4 h-4" />
@@ -389,8 +389,8 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
                 onClick={() => handleNavigation('/notes')}
                 className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold transition-colors ${
                   isCurrent('/notes') && !location.pathname.startsWith('/admin')
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-600 hover:bg-slate-50'
+                    ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1B263B]'
                 }`}
               >
                 <Search className="w-4 h-4" />
@@ -400,8 +400,8 @@ export const HamburgerDrawer: React.FC<HamburgerDrawerProps> = ({
           </div>
 
           {/* Drawer Footer */}
-          <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50/50 text-center">
-            <p className="text-[11px] text-slate-400">
+          <div className="p-5 sm:p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#141C2E] text-center">
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
               Education Concept • Verified Educational Platform
             </p>
           </div>

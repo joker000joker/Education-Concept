@@ -137,10 +137,10 @@ export const AdminNotesPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
             Notes Management
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Publish, edit details, replace storage PDFs, or remove documents.
           </p>
         </div>
@@ -156,7 +156,7 @@ export const AdminNotesPage: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs space-y-3">
+      <div className="bg-white dark:bg-[#141C2E] rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
           {/* Search input */}
           <div className="sm:col-span-6 relative">
@@ -166,7 +166,7 @@ export const AdminNotesPage: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by title or content..."
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 bg-slate-50/50"
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 bg-slate-50/50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
 
@@ -175,7 +175,7 @@ export const AdminNotesPage: React.FC = () => {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 bg-slate-50/50 focus:outline-hidden"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-50/50 dark:bg-[#0B1120] focus:outline-hidden"
             >
               <option value="all">All Subjects</option>
               {categories.map((c) => (
@@ -187,13 +187,13 @@ export const AdminNotesPage: React.FC = () => {
           </div>
 
           {/* Status Tabs */}
-          <div className="sm:col-span-3 flex rounded-xl bg-slate-100 p-1">
+          <div className="sm:col-span-3 flex rounded-xl bg-slate-100 dark:bg-[#0B1120] p-1 border border-transparent dark:border-slate-800">
             <button
               onClick={() => setStatusFilter('all')}
               className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                 statusFilter === 'all'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-[#1E293B] text-slate-900 dark:text-slate-100 shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
               All ({notes.length})
@@ -202,8 +202,8 @@ export const AdminNotesPage: React.FC = () => {
               onClick={() => setStatusFilter('published')}
               className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                 statusFilter === 'published'
-                  ? 'bg-white text-emerald-700 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-[#1E293B] text-emerald-700 dark:text-emerald-400 shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
               Live
@@ -212,8 +212,8 @@ export const AdminNotesPage: React.FC = () => {
               onClick={() => setStatusFilter('draft')}
               className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                 statusFilter === 'draft'
-                  ? 'bg-white text-amber-700 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-[#1E293B] text-amber-700 dark:text-amber-400 shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
               Drafts
@@ -226,16 +226,16 @@ export const AdminNotesPage: React.FC = () => {
       {loading ? (
         <div className="p-16 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
-          <p className="text-xs text-slate-500 font-medium">Loading notes inventory...</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Loading notes inventory...</p>
         </div>
       ) : filteredNotes.length > 0 ? (
         <div className="space-y-3">
           {/* Desktop Table View */}
-          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+          <div className="hidden md:block bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-[#0B1120]/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     <th className="py-3 px-4">Title & Subject</th>
                     <th className="py-3 px-4 hidden md:table-cell">File Details</th>
                     <th className="py-3 px-4">Status</th>
@@ -243,22 +243,22 @@ export const AdminNotesPage: React.FC = () => {
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                   {filteredNotes.map((note) => (
-                    <tr key={note.id} className="hover:bg-slate-50/70 transition-colors">
+                    <tr key={note.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-3.5 px-4 max-w-xs">
-                        <div className="font-bold text-slate-900 line-clamp-1">{note.title}</div>
-                        <div className="text-[11px] text-blue-600 font-semibold mt-0.5">
+                        <div className="font-bold text-slate-900 dark:text-[#F8FAFC] line-clamp-1">{note.title}</div>
+                        <div className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold mt-0.5">
                           {note.category_id === 9 ? 'Other E-Notes' : (note.category?.name || 'General')}
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 hidden md:table-cell text-slate-500">
-                        <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                      <td className="py-3.5 px-4 hidden md:table-cell text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
                           <FileText className="w-3.5 h-3.5 text-red-500" />
                           <span className="truncate max-w-[150px]">{note.file_name}</span>
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
                           {formatBytes(note.file_size)}
                         </div>
                       </td>
@@ -269,8 +269,8 @@ export const AdminNotesPage: React.FC = () => {
                           title="Click to toggle publish status"
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                             note.published
-                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
-                              : 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300'
+                              ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800/60'
+                              : 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-800/60'
                           }`}
                         >
                           {note.published ? (
@@ -287,7 +287,7 @@ export const AdminNotesPage: React.FC = () => {
                         </button>
                       </td>
 
-                      <td className="py-3.5 px-4 hidden lg:table-cell text-slate-400">
+                      <td className="py-3.5 px-4 hidden lg:table-cell text-slate-400 dark:text-slate-500">
                         {new Date(note.created_at).toLocaleDateString()}
                       </td>
 
@@ -296,21 +296,21 @@ export const AdminNotesPage: React.FC = () => {
                           <Link
                             to={`/notes/${note.id}`}
                             title="Preview Note"
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                           </Link>
                           <button
                             onClick={() => setEditingNote(note)}
                             title="Edit Note"
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setDeletingNote(note)}
                             title="Delete Note"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -328,31 +328,31 @@ export const AdminNotesPage: React.FC = () => {
             {filteredNotes.map((note) => (
               <div
                 key={note.id}
-                className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-3"
+                className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs space-y-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                      <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md">
                         {note.category_id === 9 ? 'Other E-Notes' : (note.category?.name || 'General')}
                       </span>
                       <button
                         onClick={() => handleTogglePublish(note)}
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                           note.published
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
+                            ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300'
+                            : 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'
                         }`}
                       >
                         {note.published ? <CheckCircle2 className="w-3 h-3" /> : <FileQuestion className="w-3 h-3" />}
                         <span>{note.published ? 'Published' : 'Draft'}</span>
                       </button>
                     </div>
-                    <h3 className="text-sm font-bold text-slate-900 leading-snug">{note.title}</h3>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-[#F8FAFC] leading-snug">{note.title}</h3>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
                   <FileText className="w-3.5 h-3.5 text-red-500 shrink-0" />
                   <span className="truncate max-w-[160px] font-medium">{note.file_name}</span>
                   <span>•</span>
@@ -365,8 +365,8 @@ export const AdminNotesPage: React.FC = () => {
                     onClick={() => handleTogglePublish(note)}
                     className={`min-h-[44px] py-2 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
                       note.published
-                        ? 'text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200'
-                        : 'text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
+                        ? 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-900/40'
+                        : 'text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-900/40'
                     }`}
                   >
                     {note.published ? 'Unpublish' : 'Publish'}
@@ -374,7 +374,7 @@ export const AdminNotesPage: React.FC = () => {
 
                   <button
                     onClick={() => setEditingNote(note)}
-                    className="min-h-[44px] py-2 px-3 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"
+                    className="min-h-[44px] py-2 px-3 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1.5"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                     <span>Edit</span>
@@ -382,7 +382,7 @@ export const AdminNotesPage: React.FC = () => {
 
                   <button
                     onClick={() => setDeletingNote(note)}
-                    className="min-h-[44px] py-2 px-3 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors flex items-center justify-center gap-1.5"
+                    className="min-h-[44px] py-2 px-3 rounded-xl text-xs font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/40 transition-colors flex items-center justify-center gap-1.5"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Delete</span>
@@ -393,10 +393,10 @@ export const AdminNotesPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
-          <FileText className="w-10 h-10 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-800">No matching notes found</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+        <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-3">
+          <FileText className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">No matching notes found</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
             Try adjusting your search query, selecting another category, or uploading a new note.
           </p>
           <Link

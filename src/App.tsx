@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { BottomNav } from './components/layout/BottomNav';
@@ -78,7 +79,8 @@ export default function App() {
       <ScrollToTop />
       <AuthProvider>
         <ToastProvider>
-          <div className="min-h-screen flex flex-col bg-[#F4F8FF] md:bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white">
+          <ThemeProvider>
+            <div className="min-h-screen flex flex-col bg-[#F4F8FF] md:bg-slate-50 dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 selection:bg-blue-600 selection:text-white transition-colors duration-300">
             {/* Global Online / Offline Status Indicator */}
             <ConnectionStatusBanner />
 
@@ -184,6 +186,7 @@ export default function App() {
               <BottomNav />
             </div>
           </div>
+          </ThemeProvider>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

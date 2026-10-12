@@ -85,22 +85,22 @@ export const ChapterSubjectsPage: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50">
+    <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50 dark:bg-[#0B0F19]">
       {/* Mobile Compact Header (md:hidden) */}
-      <div className="md:hidden bg-white border-b border-slate-200/80 px-4 py-3 shadow-2xs">
+      <div className="md:hidden bg-white dark:bg-[#141C2E] border-b border-slate-200/80 dark:border-slate-800 px-4 py-3 shadow-2xs">
         <div className="flex items-center gap-3">
           <Link
             to="/?tab=test"
-            className="p-1 -ml-1 rounded-lg text-slate-700 hover:text-blue-600 active:scale-95 transition-all shrink-0"
+            className="p-1 -ml-1 rounded-lg text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 active:scale-95 transition-all shrink-0"
             aria-label="Back to EC Test Home"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-700" />
+            <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-200" />
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight truncate">
+            <h1 className="text-base font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight leading-tight truncate">
               Chapter Wise Tests
             </h1>
-            <p className="text-[11px] font-medium text-slate-500 leading-none mt-0.5">
+            <p className="text-[11px] font-medium text-slate-500 dark:text-[#CBD5E1] leading-none mt-0.5">
               12 Subjects
             </p>
           </div>
@@ -108,16 +108,16 @@ export const ChapterSubjectsPage: React.FC = () => {
       </div>
 
       {/* Desktop Header (hidden md:block) */}
-      <div className="hidden md:block bg-white border-b border-[#E2ECFF] md:border-slate-200">
+      <div className="hidden md:block bg-white dark:bg-[#141C2E] border-b border-[#E2ECFF] md:border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
               <BackButton to="/?tab=test" forceFallback label="EC Test" />
               <div>
-                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
                   Chapter Wise Tests
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-500">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-[#CBD5E1]">
                   Select any of the 12 core competitive exam subjects to begin
                 </p>
               </div>
@@ -125,13 +125,13 @@ export const ChapterSubjectsPage: React.FC = () => {
 
             {/* Search Bar */}
             <div className="relative max-w-xs w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search subject..."
-                className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-slate-50 md:bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-slate-50 md:bg-white dark:bg-[#1B263B] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
           </div>
@@ -215,17 +215,17 @@ export const ChapterSubjectsPage: React.FC = () => {
         </div>
 
         {filteredSubjects.length === 0 && (
-          <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 max-w-md mx-auto my-8">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+          <div className="bg-white dark:bg-[#141C2E] rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-800 max-w-md mx-auto my-8">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto mb-3">
               <BookOpen className="w-6 h-6" />
             </div>
-            <h4 className="text-base font-bold text-slate-800">No subject found</h4>
-            <p className="text-xs text-slate-500 mt-1">
+            <h4 className="text-base font-bold text-slate-800 dark:text-[#F8FAFC]">No subject found</h4>
+            <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mt-1">
               No matching subject found for "{searchTerm}". Please try a different query.
             </p>
             <button
               onClick={() => setSearchTerm('')}
-              className="mt-4 px-4 py-2 rounded-xl bg-purple-50 text-purple-700 font-bold text-xs hover:bg-purple-100"
+              className="mt-4 px-4 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold text-xs hover:bg-purple-100 dark:hover:bg-purple-900/60"
             >
               Clear Search
             </button>

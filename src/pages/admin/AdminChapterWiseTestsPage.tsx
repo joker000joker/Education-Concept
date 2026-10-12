@@ -109,6 +109,17 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
   const [published, setPublished] = useState<boolean>(true);
   const [savingTest, setSavingTest] = useState(false);
 
+  // Prevent background scrolling while Create/Edit test modal is open
+  useEffect(() => {
+    if (isTestModalOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isTestModalOpen]);
+
   // Bulk Questions Parser State
   const [bulkInputText, setBulkInputText] = useState('');
   const [parseErrors, setParseErrors] = useState<string[]>([]);
@@ -126,6 +137,8 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
   const [deletingTest, setDeletingTest] = useState<ChapterTest | null>(null);
   const [isDeletingTest, setIsDeletingTest] = useState(false);
 
+  const isMutatingRef = useRef(false);
+
   useEffect(() => {
     setSelectedSubCategoryFilter('all');
     loadData({ silent: false, subCategoryOverride: 'all' });
@@ -140,7 +153,14 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
       }
     };
     const onDataChanged = () => {
-      if (!savingChapter && !savingTest && !isDeletingChapter && !isDeletingTest) {
+      // Guard against running duplicate full reloads when an admin mutation from this component is already running or completed
+      if (
+        !isMutatingRef.current &&
+        !savingChapter &&
+        !savingTest &&
+        !isDeletingChapter &&
+        !isDeletingTest
+      ) {
         loadData({ silent: true });
       }
     };
@@ -162,21 +182,29 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
     silent?: boolean;
     preferredChapterId?: number | null;
     subCategoryOverride?: string;
+    skipTestCount?: boolean;
   }) => {
     if (!options?.silent && chapters.length === 0) {
       setLoading(true);
     }
     try {
-      const chapList = await fetchChapters(selectedSubject);
-      setChapters(chapList);
+      const chapList = await fetchChapters(selectedSubject, undefined, {
+        skipTestCount: options?.skipTestCount
+      });
+      // If skipTestCount was specified, preserve existing known test counts for existing chapters
+      const existingCounts = new Map(chapters.map((c) => [c.id, c.test_count || 0]));
+      const resolvedChapters = options?.skipTestCount
+        ? chapList.map((c) => ({ ...c, test_count: existingCounts.get(c.id) || 0 }))
+        : chapList;
+      setChapters(resolvedChapters);
 
       const filterSub = options?.subCategoryOverride !== undefined
         ? options.subCategoryOverride
         : selectedSubCategoryFilter;
 
       const filtered = filterSub === 'all'
-        ? chapList
-        : chapList.filter((c) => (c.sub_category || '').toLowerCase().trim() === filterSub.toLowerCase().trim());
+        ? resolvedChapters
+        : resolvedChapters.filter((c) => (c.sub_category || '').toLowerCase().trim() === filterSub.toLowerCase().trim());
 
       const chosenPrefId = options?.preferredChapterId !== undefined ? options.preferredChapterId : selectedChapterId;
 
@@ -187,10 +215,10 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
         setSelectedChapterId(targetId);
         const testList = await fetchChapterTests({ chapterId: targetId });
         setTests(testList);
-      } else if (chapList.length > 0) {
-        const targetId = (chosenPrefId && chapList.some((c) => c.id === chosenPrefId))
+      } else if (resolvedChapters.length > 0) {
+        const targetId = (chosenPrefId && resolvedChapters.some((c) => c.id === chosenPrefId))
           ? (chosenPrefId as number)
-          : chapList[0].id;
+          : resolvedChapters[0].id;
         setSelectedChapterId(targetId);
         const testList = await fetchChapterTests({ chapterId: targetId });
         setTests(testList);
@@ -207,7 +235,24 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
 
   const handleSelectSubCategory = async (sc: string) => {
     setSelectedSubCategoryFilter(sc);
-    await loadData({ silent: true, subCategoryOverride: sc });
+    // In-memory filter on already loaded chapters for the active subject
+    const filtered = sc === 'all'
+      ? chapters
+      : chapters.filter((c) => (c.sub_category || '').toLowerCase().trim() === sc.toLowerCase().trim());
+
+    if (filtered.length > 0) {
+      const targetId = filtered[0].id;
+      setSelectedChapterId(targetId);
+      try {
+        const testList = await fetchChapterTests({ chapterId: targetId });
+        setTests(testList);
+      } catch (err) {
+        console.warn('Failed to fetch tests for chapter', err);
+      }
+    } else {
+      setSelectedChapterId(null);
+      setTests([]);
+    }
   };
 
   const handleSelectChapter = async (chapId: number) => {
@@ -313,6 +358,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
     }
 
     setSavingChapter(true);
+    isMutatingRef.current = true;
     try {
       const saved = await saveChapter({
         id: editingChapterId || undefined,
@@ -330,16 +376,32 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
         setSelectedSubCategoryFilter(subCatValue);
       }
 
-      await loadData({ silent: true, preferredChapterId: saved.id, subCategoryOverride: targetSubCat });
+      if (editingChapterId) {
+        // Targeted in-place update preserving existing test_count
+        setChapters((prev) =>
+          prev.map((c) => (c.id === saved.id ? { ...c, ...saved, test_count: c.test_count ?? 0 } : c))
+        );
+      } else {
+        // New chapter created with 0 tests
+        const newChapter: Chapter = { ...saved, test_count: 0 };
+        setChapters((prev) => [...prev, newChapter]);
+        setSelectedChapterId(saved.id);
+        setTests([]);
+      }
     } catch (err: any) {
       toast.showToast(err?.message || 'Failed to save chapter', 'error');
     } finally {
       setSavingChapter(false);
+      isMutatingRef.current = false;
     }
   };
 
   const handleBulkSaveChapters = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingChapter || isMutatingRef.current) {
+      return;
+    }
+
     const lines = bulkChapterText
       .split('\n')
       .map((l) => l.trim())
@@ -360,85 +422,169 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
       return;
     }
 
+    // Duplicate check under same subject and sub_category
+    const existingNames = new Set(
+      chapters
+        .filter((c) => {
+          if (subCatValue) {
+            return (c.sub_category || '').toLowerCase().trim() === subCatValue.toLowerCase().trim();
+          }
+          return true;
+        })
+        .map((c) => c.name.toLowerCase().trim())
+    );
+
+    const uniqueNewLines = lines.filter((name) => {
+      const lower = name.toLowerCase().trim();
+      if (existingNames.has(lower)) return false;
+      existingNames.add(lower);
+      return true;
+    });
+
+    if (uniqueNewLines.length === 0) {
+      toast.showToast('All entered chapters already exist under this subject.', 'info');
+      return;
+    }
+
     setSavingChapter(true);
+    isMutatingRef.current = true;
     try {
-      let createdCount = 0;
-      let firstSavedChapterId: number | null = null;
-
-      // Duplicate check under same subject and sub_category
-      const existingNames = new Set(
-        chapters
-          .filter((c) => {
-            if (subCatValue) {
-              return (c.sub_category || '').toLowerCase().trim() === subCatValue.toLowerCase().trim();
-            }
-            return true;
-          })
-          .map((c) => c.name.toLowerCase().trim())
-      );
-
-      const uniqueNewLines = lines.filter((name) => {
-        const lower = name.toLowerCase().trim();
-        if (existingNames.has(lower)) return false;
-        existingNames.add(lower);
-        return true;
-      });
-
-      if (uniqueNewLines.length === 0) {
-        toast.showToast('All entered chapters already exist under this subject.', 'info');
-        setSavingChapter(false);
-        return;
-      }
-
-      for (let i = 0; i < uniqueNewLines.length; i++) {
-        const name = uniqueNewLines[i];
-        const saved = await saveChapter({
+      const baseSortOrder = chapters.length;
+      const tasks = uniqueNewLines.map((name, i) => ({
+        name,
+        payload: {
           subject: selectedSubject,
           sub_category: subCatValue,
           name,
-          sort_order: chapters.length + i + 1
-        });
-        if (saved) {
-          createdCount++;
-          if (!firstSavedChapterId) {
-            firstSavedChapterId = saved.id;
+          sort_order: baseSortOrder + i + 1
+        }
+      }));
+
+      // Execute controlled parallel requests (concurrency limit: 5)
+      const CONCURRENCY_LIMIT = 5;
+      const settledResults: PromiseSettledResult<Chapter>[] = new Array(tasks.length);
+      let nextIndex = 0;
+
+      const worker = async () => {
+        while (nextIndex < tasks.length) {
+          const idx = nextIndex++;
+          try {
+            const saved = await saveChapter(tasks[idx].payload);
+            settledResults[idx] = { status: 'fulfilled', value: saved };
+          } catch (err: any) {
+            settledResults[idx] = { status: 'rejected', reason: err };
           }
+        }
+      };
+
+      const workerCount = Math.min(CONCURRENCY_LIMIT, tasks.length);
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
+
+      const succeeded: Chapter[] = [];
+      const failed: { name: string; error: string }[] = [];
+
+      settledResults.forEach((res, i) => {
+        const item = tasks[i];
+        if (res.status === 'fulfilled' && res.value) {
+          succeeded.push(res.value);
+        } else {
+          const errMsg = res.status === 'rejected' ? (res.reason?.message || String(res.reason)) : 'Save failed';
+          failed.push({ name: item.name, error: errMsg });
+        }
+      });
+
+      // If at least one chapter succeeded, update React state locally preserving test counts
+      if (succeeded.length > 0) {
+        const newChapters: Chapter[] = succeeded.map((saved) => ({
+          ...saved,
+          test_count: 0
+        }));
+
+        setChapters((prev) => {
+          const existingIds = new Set(prev.map((c) => c.id));
+          const updated = [...prev];
+          for (const nc of newChapters) {
+            if (!existingIds.has(nc.id)) {
+              updated.push(nc);
+            }
+          }
+          return updated;
+        });
+
+        // Switch filter if sub-category was specified
+        const targetSubCat = subCatValue || selectedSubCategoryFilter;
+        if (subCatValue && selectedSubCategoryFilter !== 'all' && selectedSubCategoryFilter !== subCatValue) {
+          setSelectedSubCategoryFilter(subCatValue);
+        }
+
+        // If no chapter currently selected, select the first newly created chapter
+        if (!selectedChapterId) {
+          setSelectedChapterId(succeeded[0].id);
+          setTests([]);
         }
       }
 
-      toast.showToast(`Successfully added ${createdCount} chapter${createdCount === 1 ? '' : 's'}!`, 'success');
-      setIsChapterModalOpen(false);
-      setBulkChapterText('');
-
-      const targetSubCat = subCatValue || selectedSubCategoryFilter;
-      if (subCatValue && selectedSubCategoryFilter !== 'all' && selectedSubCategoryFilter !== subCatValue) {
-        setSelectedSubCategoryFilter(subCatValue);
+      // Handle messaging and modal state based on success / partial failure
+      if (failed.length === 0) {
+        // Complete success
+        toast.showToast(`Successfully added ${succeeded.length} chapter${succeeded.length === 1 ? '' : 's'}!`, 'success');
+        setIsChapterModalOpen(false);
+        setBulkChapterText('');
+      } else if (succeeded.length > 0) {
+        // Partial success: keep only failed chapters in textarea so user can retry without duplicate inserts
+        const failedNames = failed.map((f) => f.name);
+        setBulkChapterText(failedNames.join('\n'));
+        toast.showToast(
+          `Added ${succeeded.length} chapter${succeeded.length === 1 ? '' : 's'}. ${failed.length} failed: ${failedNames.join(', ')}`,
+          'warning'
+        );
+      } else {
+        // All failed
+        const firstErr = failed[0]?.error || 'Failed to save chapters';
+        toast.showToast(`Failed to save chapters: ${firstErr}`, 'error');
       }
-
-      await loadData({ silent: true, preferredChapterId: firstSavedChapterId, subCategoryOverride: targetSubCat });
     } catch (err: any) {
       toast.showToast(err?.message || 'Failed to save chapters', 'error');
     } finally {
       setSavingChapter(false);
+      isMutatingRef.current = false;
     }
   };
 
   const handleDeleteChapterConfirm = async () => {
     if (!deletingChapter) return;
     setIsDeletingChapter(true);
+    isMutatingRef.current = true;
     try {
       const deletedId = deletingChapter.id;
       await deleteChapter(deletedId);
-      setChapters(prev =>
-        prev.filter(chapter => Number(chapter.id) !== Number(deletedId))
-      );
+      const remainingChapters = chapters.filter(chapter => Number(chapter.id) !== Number(deletedId));
+      setChapters(remainingChapters);
       toast.showToast(`Chapter "${deletingChapter.name}" deleted!`, 'success');
       setDeletingChapter(null);
-      await loadData({ silent: true, preferredChapterId: null });
+
+      // If the deleted chapter was active, select the next available without a full scan
+      if (selectedChapterId === deletedId) {
+        const filterSub = selectedSubCategoryFilter;
+        const visible = filterSub === 'all'
+          ? remainingChapters
+          : remainingChapters.filter((c) => (c.sub_category || '').toLowerCase().trim() === filterSub.toLowerCase().trim());
+        const nextChap = visible[0] || remainingChapters[0] || null;
+
+        if (nextChap) {
+          setSelectedChapterId(nextChap.id);
+          const testList = await fetchChapterTests({ chapterId: nextChap.id });
+          setTests(testList);
+        } else {
+          setSelectedChapterId(null);
+          setTests([]);
+        }
+      }
     } catch {
       toast.showToast('Failed to delete chapter', 'error');
     } finally {
       setIsDeletingChapter(false);
+      isMutatingRef.current = false;
     }
   };
 
@@ -451,8 +597,10 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
       toast.showToast('Please create or select a chapter first', 'error');
       return;
     }
+    const currentChapter = chapters.find((c) => c.id === selectedChapterId);
+    const suggestedTitle = currentChapter?.name?.trim() ? `${currentChapter.name.trim()} Test` : '';
     setEditingTestId(null);
-    setTestTitle('');
+    setTestTitle(suggestedTitle);
     setTotalMarks(50);
     setDurationMinutes(20);
     setNegativeMarking(0.25);
@@ -571,6 +719,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
     const isPublishedFinal = typeof explicitPublish === 'boolean' ? explicitPublish : published;
 
     setSavingTest(true);
+    isMutatingRef.current = true;
     try {
       const curChap = chapters.find((c) => c.id === selectedChapterId);
       const saved = await saveChapterTest(
@@ -598,50 +747,63 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
         );
         setIsTestModalOpen(false);
 
-        const updatedTests = await fetchChapterTests({ chapterId: selectedChapterId });
-        setTests(updatedTests);
-
-        // Refresh chapter test counts
-        const updatedChapters = await fetchChapters(selectedSubject);
-        setChapters(updatedChapters);
+        // Targeted local updates without refetching the entire chapter or test table
+        if (editingTestId) {
+          setTests((prev) => prev.map((t) => (t.id === saved.id ? saved : t)));
+        } else {
+          setTests((prev) => [saved, ...prev.filter((t) => t.id !== saved.id)]);
+          // Increment chapter test count locally
+          setChapters((prev) =>
+            prev.map((c) => (c.id === selectedChapterId ? { ...c, test_count: (c.test_count || 0) + 1 } : c))
+          );
+        }
       }
     } catch (err: any) {
       toast.showToast(err?.message || 'Failed to save test', 'error');
     } finally {
       setSavingTest(false);
+      isMutatingRef.current = false;
     }
   };
 
   const handleTogglePublish = async (test: ChapterTest) => {
+    isMutatingRef.current = true;
     try {
       const newStatus = !test.published;
       await togglePublishChapterTest(test.id, newStatus);
       setTests((prev) => prev.map((t) => (t.id === test.id ? { ...t, published: newStatus } : t)));
-      const updatedChapters = await fetchChapters(selectedSubject);
-      setChapters(updatedChapters);
       toast.showToast(`Test ${newStatus ? 'Published' : 'set to Draft'}!`, 'success');
     } catch {
       toast.showToast('Failed to update status', 'error');
+    } finally {
+      isMutatingRef.current = false;
     }
   };
 
   const handleDeleteTestConfirm = async () => {
     if (!deletingTest) return;
     setIsDeletingTest(true);
+    isMutatingRef.current = true;
     try {
-      await deleteChapterTest(deletingTest.id);
-      toast.showToast(`Test "${deletingTest.title}" deleted!`, 'success');
+      const testToDelete = deletingTest;
+      await deleteChapterTest(testToDelete.id);
+      toast.showToast(`Test "${testToDelete.title}" deleted!`, 'success');
       setDeletingTest(null);
-      if (selectedChapterId) {
-        const updatedTests = await fetchChapterTests({ chapterId: selectedChapterId });
-        setTests(updatedTests);
-      }
-      const updatedChapters = await fetchChapters(selectedSubject);
-      setChapters(updatedChapters);
+
+      // Targeted local updates
+      setTests((prev) => prev.filter((t) => t.id !== testToDelete.id));
+      setChapters((prev) =>
+        prev.map((c) =>
+          c.id === testToDelete.chapter_id
+            ? { ...c, test_count: Math.max(0, (c.test_count || 1) - 1) }
+            : c
+        )
+      );
     } catch {
       toast.showToast('Failed to delete test', 'error');
     } finally {
       setIsDeletingTest(false);
+      isMutatingRef.current = false;
     }
   };
 
@@ -698,6 +860,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
     setIsSavingOrder(true);
 
     try {
+      isMutatingRef.current = true;
       const orderedIds = updated.map((t) => t.id);
       const res = await reorderChapterTests(orderedIds);
       if (res) {
@@ -717,6 +880,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
       }
     } finally {
       setIsSavingOrder(false);
+      isMutatingRef.current = false;
     }
   };
 
@@ -810,6 +974,179 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
     setDraggedTestId(null);
     setDragOverTestId(null);
     setDropPosition(null);
+  };
+
+  // Chapter Drag-and-drop reordering state
+  const [draggedChapterId, setDraggedChapterId] = useState<number | null>(null);
+  const [dragOverChapterId, setDragOverChapterId] = useState<number | null>(null);
+  const [chapterDropPosition, setChapterDropPosition] = useState<'above' | 'below' | null>(null);
+  const [isSavingChapterOrder, setIsSavingChapterOrder] = useState(false);
+
+  // Chapter drag-and-drop reordering handlers
+  const executeReorderChapters = async (sourceId: number, targetId: number, position: 'above' | 'below') => {
+    if (sourceId === targetId || isSavingChapterOrder) {
+      setDraggedChapterId(null);
+      setDragOverChapterId(null);
+      setChapterDropPosition(null);
+      return;
+    }
+
+    const sourceIdx = displayedChapters.findIndex((c) => c.id === sourceId);
+    const targetIdx = displayedChapters.findIndex((c) => c.id === targetId);
+
+    if (sourceIdx === -1 || targetIdx === -1) {
+      setDraggedChapterId(null);
+      setDragOverChapterId(null);
+      setChapterDropPosition(null);
+      return;
+    }
+
+    // Save previous snapshot in case of failure rollback
+    const previousChapters = [...chapters];
+
+    // Reorder inside the currently displayed list
+    const updatedDisplayed = [...displayedChapters];
+    const [movedChapter] = updatedDisplayed.splice(sourceIdx, 1);
+    let insertIdx = updatedDisplayed.findIndex((c) => c.id === targetId);
+    if (position === 'below') {
+      insertIdx += 1;
+    }
+    updatedDisplayed.splice(insertIdx, 0, movedChapter);
+
+    // Merge new order back into full chapters list
+    const displayedIdSet = new Set(updatedDisplayed.map((c) => c.id));
+    const newFullChapters: Chapter[] = [];
+    let updatedDispIdx = 0;
+
+    for (const c of chapters) {
+      if (displayedIdSet.has(c.id)) {
+        newFullChapters.push(updatedDisplayed[updatedDispIdx++]);
+      } else {
+        newFullChapters.push(c);
+      }
+    }
+
+    // Recalculate sort_order sequentially
+    const finalizedChapters = newFullChapters.map((c, i) => ({
+      ...c,
+      sort_order: i + 1
+    }));
+
+    // Optimistically update React state
+    setChapters(finalizedChapters);
+    setDraggedChapterId(null);
+    setDragOverChapterId(null);
+    setChapterDropPosition(null);
+    setIsSavingChapterOrder(true);
+
+    try {
+      isMutatingRef.current = true;
+      const orderedIds = finalizedChapters.map((c) => c.id);
+      const res = await reorderChapters(orderedIds);
+      if (res) {
+        toast.showToast('Chapter order updated successfully!', 'success');
+      } else {
+        toast.showToast('Failed to save chapter order', 'error');
+        setChapters(previousChapters);
+      }
+    } catch {
+      toast.showToast('Failed to save chapter order', 'error');
+      setChapters(previousChapters);
+    } finally {
+      setIsSavingChapterOrder(false);
+      isMutatingRef.current = false;
+    }
+  };
+
+  const handleChapterDragStart = (e: React.DragEvent, id: number) => {
+    e.dataTransfer.setData('text/plain', String(id));
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedChapterId(id);
+  };
+
+  const handleChapterDragOver = (e: React.DragEvent, id: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedChapterId === null || draggedChapterId === id) {
+      if (dragOverChapterId === id) {
+        setDragOverChapterId(null);
+        setChapterDropPosition(null);
+      }
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relY = e.clientY - rect.top;
+    const isBelow = relY > rect.height / 2;
+    setDragOverChapterId(id);
+    setChapterDropPosition(isBelow ? 'below' : 'above');
+  };
+
+  const handleChapterDragLeave = (e: React.DragEvent, id: number) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      if (dragOverChapterId === id) {
+        setDragOverChapterId(null);
+        setChapterDropPosition(null);
+      }
+    }
+  };
+
+  const handleChapterDrop = (e: React.DragEvent, targetId: number) => {
+    e.preventDefault();
+    if (draggedChapterId !== null && draggedChapterId !== targetId && chapterDropPosition) {
+      executeReorderChapters(draggedChapterId, targetId, chapterDropPosition);
+    } else {
+      setDraggedChapterId(null);
+      setDragOverChapterId(null);
+      setChapterDropPosition(null);
+    }
+  };
+
+  const handleChapterDragEnd = () => {
+    setDraggedChapterId(null);
+    setDragOverChapterId(null);
+    setChapterDropPosition(null);
+  };
+
+  const handleChapterTouchStart = (e: React.TouchEvent, id: number) => {
+    setDraggedChapterId(id);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(25);
+      } catch {}
+    }
+  };
+
+  const handleChapterTouchMove = (e: React.TouchEvent) => {
+    if (draggedChapterId === null) return;
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const itemEl = el?.closest('div[data-chapter-id]');
+    if (itemEl) {
+      const targetId = Number(itemEl.getAttribute('data-chapter-id'));
+      if (targetId && targetId !== draggedChapterId) {
+        const rect = itemEl.getBoundingClientRect();
+        const isBelow = touch.clientY > rect.top + rect.height / 2;
+        setDragOverChapterId(targetId);
+        setChapterDropPosition(isBelow ? 'below' : 'above');
+      }
+    }
+  };
+
+  const handleChapterTouchEnd = () => {
+    if (draggedChapterId !== null && dragOverChapterId !== null && chapterDropPosition !== null) {
+      executeReorderChapters(draggedChapterId, dragOverChapterId, chapterDropPosition);
+    } else {
+      setDraggedChapterId(null);
+      setDragOverChapterId(null);
+      setChapterDropPosition(null);
+    }
+  };
+
+  const handleChapterTouchCancel = () => {
+    setDraggedChapterId(null);
+    setDragOverChapterId(null);
+    setChapterDropPosition(null);
   };
 
   // Filtered Tests
@@ -983,38 +1320,73 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
             <div className="space-y-1.5 max-h-[600px] overflow-y-auto pr-1">
               {displayedChapters.map((chap, idx) => {
                 const isSelected = selectedChapterId === chap.id;
+                const isBeingDragged = draggedChapterId === chap.id;
+                const isTarget = dragOverChapterId === chap.id && !isBeingDragged;
+
+                let dragClasses = '';
+                if (isBeingDragged) {
+                  dragClasses = 'opacity-35 bg-emerald-50/80 border-2 border-dashed border-emerald-400 select-none scale-[0.99]';
+                } else if (isTarget && chapterDropPosition === 'above') {
+                  dragClasses = 'border-t-2 border-t-emerald-600 bg-emerald-50/40 shadow-xs';
+                } else if (isTarget && chapterDropPosition === 'below') {
+                  dragClasses = 'border-b-2 border-b-emerald-600 bg-emerald-50/40 shadow-xs';
+                }
 
                 return (
                   <div
                     key={chap.id}
+                    data-chapter-id={chap.id}
+                    draggable={!isSavingChapterOrder}
+                    onDragStart={(e) => handleChapterDragStart(e, chap.id)}
+                    onDragOver={(e) => handleChapterDragOver(e, chap.id)}
+                    onDragLeave={(e) => handleChapterDragLeave(e, chap.id)}
+                    onDrop={(e) => handleChapterDrop(e, chap.id)}
+                    onDragEnd={handleChapterDragEnd}
                     onClick={() => handleSelectChapter(chap.id)}
-                    className={`group p-3 rounded-xl border text-left cursor-pointer transition-all flex items-center justify-between gap-2 ${
+                    className={`group p-2.5 sm:p-3 rounded-xl border text-left cursor-pointer transition-all flex items-center justify-between gap-2 ${dragClasses} ${
                       isSelected
                         ? 'border-emerald-600 bg-emerald-50/60 shadow-2xs'
                         : 'border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200'
                     }`}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] font-bold text-slate-400">#{idx + 1}</span>
-                        {chap.sub_category && (
-                          <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 truncate">
-                            {chap.sub_category}
-                          </span>
-                        )}
-                        <h4
-                          className={`text-xs font-bold truncate ${
-                            isSelected ? 'text-emerald-950 font-extrabold' : 'text-slate-800'
-                          }`}
-                        >
-                          {chap.name}
-                        </h4>
+                    {/* Left: Drag Handle & Chapter Info */}
+                    <div className="min-w-0 flex-1 flex items-center gap-2">
+                      <div
+                        onTouchStart={(e) => handleChapterTouchStart(e, chap.id)}
+                        onTouchMove={handleChapterTouchMove}
+                        onTouchEnd={handleChapterTouchEnd}
+                        onTouchCancel={handleChapterTouchCancel}
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1 rounded-md text-slate-400 hover:text-emerald-700 active:text-emerald-800 cursor-grab active:cursor-grabbing hover:bg-emerald-100/70 inline-flex items-center justify-center touch-none select-none shrink-0 transition-colors"
+                        title="Click and drag to reorder chapter"
+                        aria-label={`Drag to reorder ${chap.name}`}
+                      >
+                        <GripVertical className="w-4 h-4 pointer-events-none" />
                       </div>
-                      {chap.hindi_name && (
-                        <p className="text-[10px] text-slate-500 truncate mt-0.5">{chap.hindi_name}</p>
-                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold text-slate-400">#{idx + 1}</span>
+                          {chap.sub_category && (
+                            <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 truncate">
+                              {chap.sub_category}
+                            </span>
+                          )}
+                          <h4
+                            className={`text-xs font-bold truncate ${
+                              isSelected ? 'text-emerald-950 font-extrabold' : 'text-slate-800'
+                            }`}
+                          >
+                            {chap.name}
+                          </h4>
+                        </div>
+                        {chap.hindi_name && (
+                          <p className="text-[10px] text-slate-500 truncate mt-0.5">{chap.hindi_name}</p>
+                        )}
+                      </div>
                     </div>
 
+                    {/* Right: Test count, edit, delete */}
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-600 border border-slate-200">
                         {chap.test_count || 0} {chap.test_count === 1 ? 'test' : 'tests'}
@@ -1025,7 +1397,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
                           e.stopPropagation();
                           openEditChapterModal(chap);
                         }}
-                        className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-white"
+                        className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-white transition-colors"
                         title="Edit Chapter"
                       >
                         <Edit2 className="w-3 h-3" />
@@ -1036,7 +1408,7 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
                           e.stopPropagation();
                           setDeletingChapter(chap);
                         }}
-                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-white"
+                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-white transition-colors"
                         title="Delete Chapter"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -1511,301 +1883,328 @@ export const AdminChapterWiseTestsPage: React.FC = () => {
       {/* CREATE / EDIT CHAPTER TEST MODAL WITH BULK PARSER & QUESTION PREVIEW   */}
       {/* ---------------------------------------------------------------------- */}
       {isTestModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-4xl w-full my-8 p-6 sm:p-8 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-0 bg-slate-900/60 backdrop-blur-xs overflow-y-auto md:overflow-hidden">
+          <div className="bg-white rounded-3xl md:rounded-none max-w-4xl md:max-w-none w-full md:w-screen md:h-screen my-8 md:my-0 p-6 sm:p-8 md:p-0 shadow-2xl border border-slate-100 md:border-0 max-h-[90vh] md:max-h-screen flex flex-col justify-between overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+            <div className="flex items-center justify-between pb-4 md:pb-0 md:px-8 md:py-4 border-b border-slate-100 md:border-slate-200/80 md:bg-white/95 md:backdrop-blur-xs shrink-0">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  {editingTestId ? 'Edit Chapter Test' : 'Create Chapter Wise Test'}
+                <h3 className="text-lg md:text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <span>{editingTestId ? 'Edit Chapter Test' : 'Create Chapter Wise Test'}</span>
+                  <span className="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Full-Screen Creator
+                  </span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Under chapter: <strong>{activeChapter?.name}</strong> ({selectedSubject}{activeChapter?.sub_category ? ` • ${activeChapter.sub_category}` : ''})
+                  Under chapter: <strong className="text-slate-800">{activeChapter?.name}</strong> ({selectedSubject}{activeChapter?.sub_category ? ` • ${activeChapter.sub_category}` : ''})
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsTestModalOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                title="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Scrollable Body */}
-            <form id="chapter-test-form" onSubmit={(e) => handleSaveTest(e)} className="flex-1 overflow-y-auto py-6 space-y-6 pr-1">
-              {/* Basic Specs */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-3">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Test Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={testTitle}
-                    onChange={(e) => setTestTitle(e.target.value)}
-                    placeholder={`e.g. ${activeChapter?.name || 'Chapter'} Test 01`}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+            <form id="chapter-test-form" onSubmit={(e) => handleSaveTest(e)} className="flex-1 overflow-y-auto py-6 md:py-6 md:px-8 space-y-6 pr-1">
+              <div className="max-w-7xl mx-auto w-full space-y-6">
+                {/* 1. Basic Specs */}
+                <div className="bg-white rounded-2xl md:rounded-3xl p-5 md:p-6 border border-slate-200/80 shadow-2xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="sm:col-span-3">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Test Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={testTitle}
+                        onChange={(e) => setTestTitle(e.target.value)}
+                        placeholder={`e.g. ${activeChapter?.name || 'Chapter'} Test 01`}
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Total Marks
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={totalMarks}
+                        onChange={(e) => setTotalMarks(Number(e.target.value))}
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Duration (Minutes)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={durationMinutes}
+                        onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Negative Marking (Per Wrong Answer)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={negativeMarking}
+                        onChange={(e) => setNegativeMarking(Number(e.target.value))}
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3 flex items-center gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="chapter-published-toggle"
+                        checked={published}
+                        onChange={(e) => setPublished(e.target.checked)}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <label htmlFor="chapter-published-toggle" className="text-xs font-bold text-slate-800 cursor-pointer select-none">
+                        Publish this test immediately for students
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Total Marks
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={totalMarks}
-                    onChange={(e) => setTotalMarks(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+                {/* 2. Bulk Question Parsing Section */}
+                <div className="bg-white rounded-2xl md:rounded-3xl p-5 md:p-6 border border-slate-200/80 shadow-2xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-indigo-600" />
+                        <span>Bulk Question Input & Parser</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-600 mt-0.5">
+                        Paste multiple questions at once. System automatically parses questions, options A/B/C/D, answers, and explanations.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleLoadSample}
+                      className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-purple-50/70 border border-purple-200 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-colors shadow-2xs"
+                    >
+                      Load Sample Format
+                    </button>
+                  </div>
+
+                  <textarea
+                    rows={8}
+                    value={bulkInputText}
+                    onChange={(e) => setBulkInputText(e.target.value)}
+                    placeholder={`Q1. Question text in English or Hindi...\nA. Option A\nB. Option B\nC. Option C\nD. Option D\nAnswer: B\nExplanation: (Optional solution note)`}
+                    className="w-full p-4 text-xs sm:text-sm font-mono bg-slate-50/50 md:bg-white border border-slate-200 md:border-indigo-200/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-2xs resize-y h-48 md:h-[220px] min-h-[180px] transition-all"
+                  ></textarea>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                    <span className="text-[11px] text-slate-500">
+                      Supports formats: Q1., 1., (A), A), a., Answer: B, Ans: B, उत्तर: B
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleParseQuestions}
+                      className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 self-end sm:self-auto"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Generate Questions</span>
+                    </button>
+                  </div>
+
+                  {/* Parse Errors List */}
+                  {parseErrors.length > 0 && (
+                    <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-1">
+                      <p className="text-xs font-bold text-rose-800 flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-rose-600" />
+                        Parsing Inconsistencies Detected:
+                      </p>
+                      <ul className="list-disc list-inside text-[11px] text-rose-700 space-y-0.5">
+                        {parseErrors.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Duration (Minutes)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={durationMinutes}
-                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Negative Marking (Per Wrong Answer)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={negativeMarking}
-                    onChange={(e) => setNegativeMarking(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div className="sm:col-span-3 flex items-center gap-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="chapter-published-toggle"
-                    checked={published}
-                    onChange={(e) => setPublished(e.target.checked)}
-                    className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
-                  />
-                  <label htmlFor="chapter-published-toggle" className="text-xs font-bold text-slate-800 cursor-pointer">
-                    Publish this test immediately for students
-                  </label>
-                </div>
-              </div>
-
-              {/* Bulk Question Parsing Section */}
-              <div className="bg-emerald-50/50 rounded-3xl p-5 border border-emerald-100 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <h4 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-emerald-700" />
-                      Bulk Question Input & Parser
+                {/* 3. Parsed Questions List & Preview */}
+                <div className="bg-white rounded-2xl md:rounded-3xl p-5 md:p-6 border border-slate-200/80 shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-indigo-600" />
+                      <span>Question Preview ({parsedQuestions.length} Questions)</span>
                     </h4>
-                    <p className="text-[11px] text-slate-600 mt-0.5">
-                      Paste multiple questions at once. System automatically parses questions, options A/B/C/D, answers, and explanations.
-                    </p>
+
+                    <button
+                      type="button"
+                      onClick={handleAddBlankQuestion}
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Single Question</span>
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleLoadSample}
-                    className="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-white border border-emerald-200 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-colors"
-                  >
-                    Load Sample Format
-                  </button>
-                </div>
+                  {parsedQuestions.length === 0 ? (
+                    <div className="p-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      <p className="text-xs text-slate-500 font-medium">
+                        No questions loaded yet. Paste questions in the bulk box above and click "Generate Questions".
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[420px] md:max-h-[560px] overflow-y-auto pr-1 sm:pr-2 overscroll-contain">
+                      {parsedQuestions.map((q, idx) => (
+                        <div
+                          key={idx}
+                          className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3 relative group hover:border-indigo-200 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-xs text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200">
+                              Question #{idx + 1}
+                            </span>
 
-                <textarea
-                  rows={7}
-                  value={bulkInputText}
-                  onChange={(e) => setBulkInputText(e.target.value)}
-                  placeholder={`Q1. Question text in English or Hindi...\nA. Option A\nB. Option B\nC. Option C\nD. Option D\nAnswer: B\nExplanation: (Optional solution note)`}
-                  className="w-full p-3.5 text-xs font-mono bg-white border border-emerald-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                ></textarea>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">
-                    Supports formats: Q1., 1., (A), A), a., Answer: B, Ans: B, उत्तर: B
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleParseQuestions}
-                    className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Generate Questions</span>
-                  </button>
-                </div>
-
-                {/* Parse Errors List */}
-                {parseErrors.length > 0 && (
-                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-1">
-                    <p className="text-xs font-bold text-rose-800 flex items-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-rose-600" />
-                      Parsing Inconsistencies Detected:
-                    </p>
-                    <ul className="list-disc list-inside text-[11px] text-rose-700 space-y-0.5">
-                      {parseErrors.map((err, i) => (
-                        <li key={i}>{err}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {/* Parsed Questions List & Preview */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-emerald-600" />
-                    <span>Question Preview ({parsedQuestions.length} Questions)</span>
-                  </h4>
-
-                  <button
-                    type="button"
-                    onClick={handleAddBlankQuestion}
-                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Single Question</span>
-                  </button>
-                </div>
-
-                {parsedQuestions.length === 0 ? (
-                  <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                    <p className="text-xs text-slate-500 font-medium">
-                      No questions loaded yet. Paste questions in the bulk box above and click "Generate Questions".
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                    {parsedQuestions.map((q, idx) => (
-                      <div
-                        key={idx}
-                        className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3 relative group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                            Question #{idx + 1}
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteQuestion(idx)}
-                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
-                            title="Delete this question"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        {/* Question Text */}
-                        <textarea
-                          rows={2}
-                          value={q.question_text}
-                          onChange={(e) => handleUpdateQuestion(idx, { question_text: e.target.value })}
-                          className="w-full p-2 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                          placeholder="Question statement..."
-                        ></textarea>
-
-                        {/* Options A, B, C, D */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {(['A', 'B', 'C', 'D'] as const).map((optKey) => {
-                            const fieldKey = `option_${optKey.toLowerCase()}` as keyof ChapterQuestion;
-                            const isCorrect = q.correct_option === optKey;
-                            return (
-                              <div key={optKey} className="flex items-center gap-2">
-                                <span className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                                  {optKey}
-                                </span>
-                                <input
-                                  type="text"
-                                  value={(q[fieldKey] as string) || ''}
-                                  onChange={(e) => handleUpdateQuestion(idx, { [fieldKey]: e.target.value })}
-                                  className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                  placeholder={`Option ${optKey}`}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {/* Correct Answer & Explanation */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-bold text-slate-600">Correct Option:</span>
-                            {(['A', 'B', 'C', 'D'] as const).map((ans) => (
-                              <button
-                                key={ans}
-                                type="button"
-                                onClick={() => handleUpdateQuestion(idx, { correct_option: ans })}
-                                className={`w-6 h-6 rounded-md text-xs font-bold transition-colors ${
-                                  q.correct_option === ans
-                                    ? 'bg-emerald-600 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                }`}
-                              >
-                                {ans}
-                              </button>
-                            ))}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteQuestion(idx)}
+                              className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                              title="Delete this question"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
 
-                          <input
-                            type="text"
-                            value={q.explanation || ''}
-                            onChange={(e) => handleUpdateQuestion(idx, { explanation: e.target.value })}
-                            placeholder="Explanation (Optional)"
-                            className="w-full sm:w-1/2 px-2.5 py-1 text-[11px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"
-                          />
+                          {/* Question Text */}
+                          <textarea
+                            rows={2}
+                            value={q.question_text}
+                            onChange={(e) => handleUpdateQuestion(idx, { question_text: e.target.value })}
+                            className="w-full p-2.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            placeholder="Question statement..."
+                          ></textarea>
+
+                          {/* Options A, B, C, D */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {(['A', 'B', 'C', 'D'] as const).map((optKey) => {
+                              const fieldKey = `option_${optKey.toLowerCase()}` as keyof ChapterQuestion;
+                              const isCorrect = q.correct_option === optKey;
+                              return (
+                                <div key={optKey} className="flex items-center gap-2">
+                                  <span className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${isCorrect ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                                    {optKey}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={(q[fieldKey] as string) || ''}
+                                    onChange={(e) => handleUpdateQuestion(idx, { [fieldKey]: e.target.value })}
+                                    className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    placeholder={`Option ${optKey}`}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Correct Answer & Explanation */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-bold text-slate-600">Correct Option:</span>
+                              {(['A', 'B', 'C', 'D'] as const).map((ans) => (
+                                <button
+                                  key={ans}
+                                  type="button"
+                                  onClick={() => handleUpdateQuestion(idx, { correct_option: ans })}
+                                  className={`w-6 h-6 rounded-md text-xs font-bold transition-colors ${
+                                    q.correct_option === ans
+                                      ? 'bg-indigo-600 text-white'
+                                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                  }`}
+                                >
+                                  {ans}
+                                </button>
+                              ))}
+                            </div>
+
+                            <input
+                              type="text"
+                              value={q.explanation || ''}
+                              onChange={(e) => handleUpdateQuestion(idx, { explanation: e.target.value })}
+                              placeholder="Explanation (Optional)"
+                              className="w-full sm:w-1/2 px-2.5 py-1 text-[11px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </form>
 
             {/* Modal Actions Footer */}
-            <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-end gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsTestModalOpen(false)}
-                disabled={savingTest}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
+            <div className="pt-4 md:pt-0 pb-0 md:px-8 md:py-4 border-t border-slate-100 md:border-slate-200/80 bg-white md:bg-white/95 md:backdrop-blur-xs flex flex-wrap items-center justify-between gap-3 shrink-0 z-10">
+              <div className="hidden sm:flex items-center gap-3 text-xs text-slate-500">
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  Total Questions:
+                  <span className="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">{parsedQuestions.length}</span>
+                </span>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  Total Marks:
+                  <span className="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">{totalMarks}</span>
+                </span>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  Duration:
+                  <span className="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">{durationMinutes} min</span>
+                </span>
+              </div>
 
-              <button
-                type="button"
-                disabled={savingTest}
-                onClick={() => handleSaveTest(undefined, false)}
-                className="px-5 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {savingTest && !published && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>Save Draft</span>
-              </button>
+              <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsTestModalOpen(false)}
+                  disabled={savingTest}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300"
+                >
+                  Cancel
+                </button>
 
-              <button
-                type="button"
-                disabled={savingTest}
-                onClick={() => handleSaveTest(undefined, true)}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                {savingTest && published && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>Publish</span>
-              </button>
+                <button
+                  type="button"
+                  disabled={savingTest}
+                  onClick={() => handleSaveTest(undefined, false)}
+                  className="px-5 py-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  {savingTest && !published && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Save Draft</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={savingTest}
+                  onClick={() => handleSaveTest(undefined, true)}
+                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                >
+                  {savingTest && published && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Publish</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

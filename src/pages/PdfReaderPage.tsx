@@ -373,10 +373,10 @@ export const PdfReaderPage: React.FC = () => {
   const pageWidth = baseWidth > 0 ? baseWidth * (zoom / 100) : undefined;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#e8eaed] flex flex-col font-sans">
+    <div className="fixed inset-0 z-50 bg-[#e8eaed] dark:bg-[#0B0F19] flex flex-col font-sans">
       {/* Auto-hiding Toolbar */}
       <div 
-        className={`absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 bg-white/95 backdrop-blur-md border-b border-slate-200/50 shadow-sm transition-transform duration-300 ${showToolbar ? 'translate-y-0' : '-translate-y-full'}`}
+        className={`absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 bg-white/95 dark:bg-[#141C2E]/95 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/80 shadow-sm transition-transform duration-300 ${showToolbar ? 'translate-y-0' : '-translate-y-full'}`}
       >
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <button 
@@ -387,16 +387,16 @@ export const PdfReaderPage: React.FC = () => {
                 navigate('/notes');
               }
             }}
-            className="p-1.5 sm:p-2 -ml-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+            className="p-1.5 sm:p-2 -ml-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-[#1B263B] text-slate-600 dark:text-slate-300 transition-colors"
             title="Back to previous page"
           >
             <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
           <div className="flex flex-col max-w-[150px] sm:max-w-md md:max-w-xl">
-            <h1 className="text-sm sm:text-base font-bold text-slate-800 truncate leading-tight">
+            <h1 className="text-sm sm:text-base font-bold text-slate-800 dark:text-[#F8FAFC] truncate leading-tight">
               {note.title}
             </h1>
-            <p className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">
+            <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-[#CBD5E1] truncate">
               {note.category?.name || 'Education Concept'}
             </p>
           </div>
@@ -404,36 +404,36 @@ export const PdfReaderPage: React.FC = () => {
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {numPages && (
-            <div className="hidden sm:flex items-center px-3 py-1.5 rounded-full bg-slate-100/80 text-xs font-medium text-slate-600 border border-slate-200/50">
+            <div className="hidden sm:flex items-center px-3 py-1.5 rounded-full bg-slate-100/80 dark:bg-[#1B263B] text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700">
               Page {visiblePage} <span className="text-slate-400 mx-1">/</span> {numPages}
             </div>
           )}
 
-          <div className="hidden md:flex items-center gap-0.5 bg-slate-100/80 rounded-full p-0.5 border border-slate-200/50">
+          <div className="hidden md:flex items-center gap-0.5 bg-slate-100/80 dark:bg-[#1B263B] rounded-full p-0.5 border border-slate-200/50 dark:border-slate-700">
             <button
               onClick={() => setZoom((z) => Math.max(50, z - 15))}
-              className="p-1.5 rounded-full hover:bg-white hover:shadow-xs text-slate-600 transition-all"
+              className="p-1.5 rounded-full hover:bg-white dark:hover:bg-[#141C2E] hover:shadow-xs text-slate-600 dark:text-slate-300 transition-all"
               title="Zoom Out"
             >
               <ZoomOut className="w-4 h-4" />
             </button>
-            <span className="w-10 text-center font-medium text-xs text-slate-600 select-none">
+            <span className="w-10 text-center font-medium text-xs text-slate-600 dark:text-slate-300 select-none">
               {zoom}%
             </span>
             <button
               onClick={() => setZoom((z) => Math.min(250, z + 15))}
-              className="p-1.5 rounded-full hover:bg-white hover:shadow-xs text-slate-600 transition-all"
+              className="p-1.5 rounded-full hover:bg-white dark:hover:bg-[#141C2E] hover:shadow-xs text-slate-600 dark:text-slate-300 transition-all"
               title="Zoom In"
             >
               <ZoomIn className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block"></div>
+          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
 
           <button
             onClick={toggleFullscreen}
-            className="hidden sm:flex p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+            className="hidden sm:flex p-2 rounded-full hover:bg-slate-100 dark:hover:bg-[#1B263B] text-slate-600 dark:text-slate-300 transition-colors"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}

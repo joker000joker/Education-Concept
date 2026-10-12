@@ -326,7 +326,7 @@ export function isValidChapterTestRecord(item: any): boolean {
 export async function fetchChapters(
   subject?: string,
   subCategory?: string,
-  options?: { publishedOnly?: boolean }
+  options?: { publishedOnly?: boolean; skipTestCount?: boolean }
 ): Promise<Chapter[]> {
   let chapters: Chapter[] = [];
   const normalizedSubject = subject ? subject.toLowerCase().trim() : '';
@@ -444,9 +444,18 @@ export async function fetchChapters(
     }
   }
 
-  // Calculate test_count for each chapter
+  // If test count calculation is skipped (e.g. for admin-only operations that do not need counts),
+  // return chapters immediately without running test queries.
+  if (options?.skipTestCount) {
+    return chapters;
+  }
+
+  // Calculate test_count for each chapter, scoping query to the active subject when specified
   const isPublishedOnly = options?.publishedOnly ?? false;
-  const tests = await fetchChapterTests({ publishedOnly: isPublishedOnly });
+  const tests = await fetchChapterTests({
+    subject: normalizedSubject && normalizedSubject !== 'all' ? subject : undefined,
+    publishedOnly: isPublishedOnly
+  });
   const counts: Record<number, number> = {};
   tests.forEach((t) => {
     counts[Number(t.chapter_id)] = (counts[Number(t.chapter_id)] || 0) + 1;

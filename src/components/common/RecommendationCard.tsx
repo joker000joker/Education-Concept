@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { TopRecommendation } from '../../types';
 import {
   FileText, Book, BookOpen, Newspaper, GraduationCap,
-  Library, ArrowRight, ExternalLink
+  Library, ArrowRight
 } from 'lucide-react';
 
 interface RecommendationCardProps {
@@ -98,7 +98,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
       {/* MOBILE VIEW (< lg) */}
       <div
         id={`rec-card-mobile-${recommendation.id}`}
-        className="block lg:hidden group relative bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow active:scale-[0.99]"
+        className="block lg:hidden group relative bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-shadow active:scale-[0.99]"
       >
         <div className="flex items-start gap-3.5">
           <div className={`w-12 h-12 rounded-xl shrink-0 flex items-center justify-center ${meta.iconBg} shadow-xs`}>
@@ -107,30 +107,30 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder} dark:bg-[#1B263B] dark:border-slate-700`}>
                 {meta.label}
               </span>
               {item.category && (
-                <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-[140px]">
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#1B263B] px-2 py-0.5 rounded-md truncate max-w-[140px]">
                   {item.category}
                 </span>
               )}
             </div>
 
             <Link to={item.destination_url} className="block">
-              <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2 hover:text-blue-600 transition-colors">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-[#F8FAFC] leading-snug line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 {item.title}
               </h3>
             </Link>
 
             {item.price !== undefined && item.price > 0 && (
-              <p className="text-xs font-bold text-slate-900 mt-1">₹{item.price}</p>
+              <p className="text-xs font-bold text-slate-900 dark:text-[#F8FAFC] mt-1">₹{item.price}</p>
             )}
 
             <div className="mt-3">
               <Link
                 to={item.destination_url}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-[#0C122A] hover:bg-blue-600 active:bg-blue-700 shadow-sm transition-colors"
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-[#0C122A] dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 active:bg-blue-700 shadow-sm transition-colors"
               >
                 <span>{meta.actionText}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -143,36 +143,36 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
       {/* DESKTOP VIEW (>= lg) */}
       <div
         id={`rec-card-desktop-${recommendation.id}`}
-        className="hidden lg:flex group relative bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all duration-200 flex-col justify-between"
+        className="hidden lg:flex group relative bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow flex-col justify-between"
       >
         <div>
           {/* Header Row: Content Type Badge & Category */}
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.iconBg} group-hover:scale-105 transition-transform`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.iconBg}`}>
                 <IconComponent className="w-5 h-5" />
               </div>
-              <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder} dark:bg-[#1B263B] dark:border-slate-700`}>
                 {meta.label}
               </span>
             </div>
 
             {item.category && (
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[150px]">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#1B263B] px-2 py-0.5 rounded-md truncate max-w-[140px]">
                 {item.category}
               </span>
             )}
           </div>
 
           {/* Title */}
-          <Link to={item.destination_url} className="block group-hover:text-blue-700 transition-colors">
-            <h3 className="text-base font-bold text-slate-900 line-clamp-2 leading-snug">
+          <Link to={item.destination_url} className="block">
+            <h3 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC] line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               {item.title}
             </h3>
           </Link>
 
           {/* Description / Subtitle */}
-          <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mt-2 line-clamp-2 leading-relaxed">
             {item.description || (
               recommendation.content_type === 'exam_patterns'
                 ? `Official syllabus and detailed pattern guide for ${item.title}.`
@@ -184,26 +184,24 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
         </div>
 
         {/* Footer info & action */}
-        <div className="mt-5 pt-4 border-t border-slate-100">
+        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between mb-3">
             {item.price !== undefined && item.price > 0 ? (
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-slate-500">Price:</span>
-                <span className="text-sm font-black text-slate-900">₹{item.price}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Price:</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-[#F8FAFC]">₹{item.price}</span>
               </div>
             ) : (
-              <span className="text-xs font-medium text-slate-400">Recommended Resource</span>
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                Free
+              </span>
             )}
-
-            <span className="text-xs text-blue-600 font-semibold inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
-              Explore <ExternalLink className="w-3 h-3" />
-            </span>
           </div>
 
           <Link
             id={`rec-btn-${recommendation.id}-desktop`}
             to={item.destination_url}
-            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold text-white bg-[#0C122A] hover:bg-blue-600 active:bg-blue-700 shadow-xs transition-colors"
+            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-[#0C122A] dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 active:bg-blue-700 shadow-sm transition-colors"
           >
             <span>{meta.actionText}</span>
             <ArrowRight className="w-3.5 h-3.5" />

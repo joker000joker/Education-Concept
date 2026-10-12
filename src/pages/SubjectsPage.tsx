@@ -110,27 +110,27 @@ export const SubjectsPage: React.FC = () => {
   return (
     <>
       {/* MOBILE UI */}
-      <div className="block lg:hidden px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF]">
+      <div className="block lg:hidden px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF] dark:bg-[#0B0F19]">
         {/* Mobile Header */}
         <div className="flex items-center gap-3 mb-6">
           <button 
             onClick={() => navigate('/')} 
-            className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 text-slate-700 active:scale-95 transition-transform"
+            className="w-10 h-10 flex items-center justify-center bg-white dark:bg-[#141C2E] rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Notes</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight">Notes</h1>
         </div>
 
         {/* Search */}
         <div className="relative mb-8">
-          <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-5 h-5 text-slate-400 dark:text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search subjects..."
-            className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-sm"
+            className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-[#141C2E] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm"
           />
         </div>
 
@@ -159,7 +159,7 @@ export const SubjectsPage: React.FC = () => {
             })}
           </div>
         ) : (
-          <div className="text-center py-12 text-slate-500 text-sm">
+          <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">
             No subjects found.
           </div>
         )}
@@ -170,36 +170,36 @@ export const SubjectsPage: React.FC = () => {
         {/* Top navigation row */}
         <div className="flex items-center justify-between gap-4">
           <BackButton fallbackTo="/" />
-          <span className="text-xs font-semibold text-slate-400">
+          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
             Education Concept Curriculum
           </span>
         </div>
 
         {/* Header and search */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <div className="flex items-center gap-2 text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider mb-1">
               <Library className="w-4 h-4" />
               <span>Academic Disciplines</span>
             </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
               Educational Subjects
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm text-slate-500 dark:text-[#CBD5E1] mt-1">
               Select a discipline to view verified PDF study notes and revision summaries.
             </p>
           </div>
 
           {/* Filter input */}
           <div className="w-full md:w-72 relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               id="subject-search-input"
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Filter subjects..."
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-2xs"
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-[#141C2E] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-2xs"
             />
           </div>
         </div>
@@ -216,15 +216,15 @@ export const SubjectsPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8">
-            <Layers className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-slate-800">No matching subjects found</h3>
-            <p className="text-xs text-slate-500 mt-1">
+          <div className="text-center py-16 bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-8">
+            <Layers className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-slate-800 dark:text-[#F8FAFC]">No matching subjects found</h3>
+            <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mt-1">
               Try adjusting your search keyword or browse all 12 core subjects.
             </p>
             <button
               onClick={() => setSearchTerm('')}
-              className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100"
+              className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60"
             >
               Clear Filter
             </button>

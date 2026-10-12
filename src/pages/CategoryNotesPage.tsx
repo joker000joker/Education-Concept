@@ -106,35 +106,35 @@ export const CategoryNotesPage: React.FC = () => {
   return (
     <>
       {/* MOBILE UI */}
-      <div className="block lg:hidden px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF]">
+      <div className="block lg:hidden px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF] dark:bg-[#0B0F19]">
         {/* Mobile Header */}
         <div className="flex items-center gap-3 mb-6">
           <button 
             onClick={() => navigate('/subjects')} 
-            className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 text-slate-700 active:scale-95 transition-transform"
+            className="w-10 h-10 flex items-center justify-center bg-white dark:bg-[#141C2E] rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">{matchedCategory.name} Notes</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight">{matchedCategory.name} Notes</h1>
         </div>
 
         {/* Search */}
         <div className="relative mb-6">
-          <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-5 h-5 text-slate-400 dark:text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={`Search ${matchedCategory.name}...`}
-            className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-sm"
+            className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-[#141C2E] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm"
           />
         </div>
 
         {/* Notes Grid or Loading / Empty state */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-sm text-slate-500">Loading notes...</p>
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
+            <p className="text-sm text-slate-500 dark:text-slate-400">Loading notes...</p>
           </div>
         ) : filteredNotes.length > 0 ? (
           <div className="grid grid-cols-1 gap-3">
@@ -143,14 +143,14 @@ export const CategoryNotesPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center mt-4">
-            <div className="w-14 h-14 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center mx-auto border border-slate-100 mb-4">
+          <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center mt-4">
+            <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-[#1B263B] text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto border border-slate-100 dark:border-slate-800 mb-4">
               <FileQuestion className="w-7 h-7" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]">
               {searchQuery ? 'No notes matched' : 'No Notes Available'}
             </h3>
-            <p className="text-xs text-slate-500 leading-relaxed mt-2">
+            <p className="text-xs text-slate-500 dark:text-[#CBD5E1] leading-relaxed mt-2">
               {searchQuery
                 ? 'Try a different search term.'
                 : 'Notes will appear here when available.'}
@@ -164,29 +164,29 @@ export const CategoryNotesPage: React.FC = () => {
         {/* Top back navigation */}
         <div className="flex items-center justify-between gap-4">
           <BackButton fallbackTo="/subjects" label="Back to Subjects" />
-          <span className="text-xs font-semibold text-slate-400">
+          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
             Education Concept • {matchedCategory.name}
           </span>
         </div>
 
         {/* Category Hero Header Banner */}
         <div
-          className={`p-6 sm:p-8 rounded-3xl border ${matchedCategory.borderColor} ${matchedCategory.bgColor} relative overflow-hidden`}
+          className={`p-6 sm:p-8 rounded-3xl border ${matchedCategory.borderColor} ${matchedCategory.bgColor} dark:bg-[#141C2E] dark:border-slate-800 relative overflow-hidden`}
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             <div
-              className={`p-4 rounded-2xl bg-white shadow-xs border ${matchedCategory.borderColor} ${matchedCategory.color} shrink-0`}
+              className={`p-4 rounded-2xl bg-white dark:bg-[#1B263B] shadow-xs border ${matchedCategory.borderColor} dark:border-slate-700 ${matchedCategory.color} shrink-0`}
             >
               <DynamicIcon name={matchedCategory.iconName} className="w-8 h-8" />
             </div>
             <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Subject Notes & Study Material
               </span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
                 {matchedCategory.name}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-[#CBD5E1] max-w-2xl">
                 {matchedCategory.description}
               </p>
             </div>
@@ -197,14 +197,14 @@ export const CategoryNotesPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-2">
           {/* Search input */}
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               id="category-notes-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={`Search within ${matchedCategory.name} notes...`}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-2xs"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-[#141C2E] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-2xs"
             />
           </div>
 
@@ -212,7 +212,7 @@ export const CategoryNotesPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <label
               htmlFor="category-sort-select"
-              className="text-xs font-semibold text-slate-500 shrink-0 flex items-center gap-1"
+              className="text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1"
             >
               <ArrowUpDown className="w-3.5 h-3.5" />
               Sort:
@@ -221,7 +221,7 @@ export const CategoryNotesPage: React.FC = () => {
               id="category-sort-select"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-white shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-[#141C2E] shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
@@ -233,8 +233,8 @@ export const CategoryNotesPage: React.FC = () => {
         {/* Notes Grid or Loading / Empty state */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-sm text-slate-500">Loading {matchedCategory.name} notes...</p>
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
+            <p className="text-sm text-slate-500 dark:text-slate-400">Loading {matchedCategory.name} notes...</p>
           </div>
         ) : filteredNotes.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -243,14 +243,14 @@ export const CategoryNotesPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-lg mx-auto space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center mx-auto border border-slate-100">
+          <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center max-w-lg mx-auto space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-[#1B263B] text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto border border-slate-100 dark:border-slate-800">
               <FileQuestion className="w-7 h-7" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]">
               {searchQuery ? 'No notes matched your query' : 'No Notes Available'}
             </h3>
-            <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+            <p className="text-xs text-slate-500 dark:text-[#CBD5E1] leading-relaxed max-w-sm mx-auto">
               {searchQuery
                 ? 'Try searching with different terms or clear the search input.'
                 : 'Notes will appear here when available.'}
@@ -258,14 +258,14 @@ export const CategoryNotesPage: React.FC = () => {
             {searchQuery ? (
               <button
                 onClick={() => setSearchQuery('')}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60"
               >
                 Clear Search
               </button>
             ) : (
               <Link
                 to="/subjects"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-blue-600"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700"
               >
                 <span>Explore Other Subjects</span>
               </Link>

@@ -37,17 +37,17 @@ export const StudyResourcesPage: React.FC = () => {
   };
 
   return (
-    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF]">
+    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF] dark:bg-[#0B0F19]">
       <div className="flex items-center gap-3 mb-8 max-w-4xl mx-auto">
         <button 
           onClick={() => navigate('/')} 
-          className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-xs border border-slate-200 text-slate-700 active:scale-95 transition-transform cursor-pointer"
+          className="w-10 h-10 flex items-center justify-center bg-white dark:bg-[#141C2E] rounded-xl shadow-xs border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform cursor-pointer"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Study Resources</h1>
-          <p className="text-xs text-slate-500">Comprehensive study PDFs, practice sets & quick revision notes</p>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">Study Resources</h1>
+          <p className="text-xs text-slate-500 dark:text-[#CBD5E1]">Comprehensive study PDFs, practice sets & quick revision notes</p>
         </div>
       </div>
 

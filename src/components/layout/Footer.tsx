@@ -10,7 +10,7 @@ export const Footer: React.FC = () => {
   if (!showFooter) return null;
 
   return (
-    <footer className="bg-slate-950 border-t border-slate-800/80 mt-12 md:mt-16">
+    <footer className="bg-slate-950 dark:bg-[#070B13] border-t border-slate-800/80 dark:border-slate-800/90 mt-12 md:mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 md:gap-12">
           

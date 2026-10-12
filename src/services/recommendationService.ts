@@ -358,9 +358,10 @@ export async function fetchExistingContentItems(
   options: {
     categoryFilter?: string;
     searchTerm?: string;
+    signal?: AbortSignal;
   } = {}
 ): Promise<{ id: number; title: string; subtitle?: string; category?: string; published?: boolean }[]> {
-  const { categoryFilter, searchTerm } = options;
+  const { categoryFilter, searchTerm, signal } = options;
 
   switch (contentType) {
     case 'notes': {
@@ -369,6 +370,9 @@ export async function fetchExistingContentItems(
         .select('id, title, category_id, published, category:categories(id, name)')
         .order('id', { ascending: false });
 
+      if (signal) {
+        query = query.abortSignal(signal);
+      }
       if (categoryFilter && categoryFilter !== 'all') {
         query = query.eq('category_id', Number(categoryFilter));
       }
@@ -377,6 +381,9 @@ export async function fetchExistingContentItems(
       }
 
       const { data, error } = await query;
+      if (signal?.aborted || (error && String(error.message).includes('AbortError'))) {
+        return [];
+      }
       if (error) throw error;
       return (data || []).map((n: any) => ({
         id: n.id,
@@ -393,6 +400,9 @@ export async function fetchExistingContentItems(
         .select('id, title, category, price, published')
         .order('id', { ascending: false });
 
+      if (signal) {
+        query = query.abortSignal(signal);
+      }
       if (categoryFilter && categoryFilter !== 'all') {
         query = query.eq('category', categoryFilter);
       }
@@ -401,6 +411,9 @@ export async function fetchExistingContentItems(
       }
 
       const { data, error } = await query;
+      if (signal?.aborted || (error && String(error.message).includes('AbortError'))) {
+        return [];
+      }
       if (error) throw error;
       return (data || []).map((b: any) => ({
         id: b.id,
@@ -417,6 +430,9 @@ export async function fetchExistingContentItems(
         .select('id, title, category, published')
         .order('id', { ascending: false });
 
+      if (signal) {
+        query = query.abortSignal(signal);
+      }
       if (categoryFilter && categoryFilter !== 'all') {
         query = query.eq('category', categoryFilter);
       }
@@ -425,6 +441,9 @@ export async function fetchExistingContentItems(
       }
 
       const { data, error } = await query;
+      if (signal?.aborted || (error && String(error.message).includes('AbortError'))) {
+        return [];
+      }
       if (error) throw error;
       return (data || []).map((b: any) => ({
         id: b.id,
@@ -441,11 +460,17 @@ export async function fetchExistingContentItems(
         .select('id, title, published, created_at')
         .order('id', { ascending: false });
 
+      if (signal) {
+        query = query.abortSignal(signal);
+      }
       if (searchTerm && searchTerm.trim()) {
         query = query.ilike('title', `%${searchTerm.trim()}%`);
       }
 
       const { data, error } = await query;
+      if (signal?.aborted || (error && String(error.message).includes('AbortError'))) {
+        return [];
+      }
       if (error) throw error;
       return (data || []).map((ca: any) => ({
         id: ca.id,
@@ -462,6 +487,9 @@ export async function fetchExistingContentItems(
         .select('id, exam_category, exam_name, published')
         .order('id', { ascending: false });
 
+      if (signal) {
+        query = query.abortSignal(signal);
+      }
       if (categoryFilter && categoryFilter !== 'all') {
         query = query.eq('exam_category', categoryFilter);
       }
@@ -470,6 +498,9 @@ export async function fetchExistingContentItems(
       }
 
       const { data, error } = await query;
+      if (signal?.aborted || (error && String(error.message).includes('AbortError'))) {
+        return [];
+      }
       if (error) throw error;
       return (data || []).map((ep: any) => ({
         id: ep.id,
@@ -486,6 +517,9 @@ export async function fetchExistingContentItems(
         .select('id, title, category, published')
         .order('id', { ascending: false });
 
+      if (signal) {
+        query = query.abortSignal(signal);
+      }
       if (categoryFilter && categoryFilter !== 'all') {
         query = query.eq('category', categoryFilter);
       }
@@ -494,6 +528,9 @@ export async function fetchExistingContentItems(
       }
 
       const { data, error } = await query;
+      if (signal?.aborted || (error && String(error.message).includes('AbortError'))) {
+        return [];
+      }
       if (error) throw error;
       return (data || []).map((sr: any) => ({
         id: sr.id,

@@ -69,15 +69,15 @@ export const AdminStudyResourcesPage = () => (
 );
 
 export const AdminQuestionsPage = () => (
-  <div className="p-8 text-center text-slate-500">Question Bank (Coming Soon)</div>
+  <div className="p-8 text-center text-slate-500 dark:text-slate-400">Question Bank (Coming Soon)</div>
 );
 
 export const AdminTestsPage = () => (
-  <div className="p-8 text-center text-slate-500">Test Management (Coming Soon)</div>
+  <div className="p-8 text-center text-slate-500 dark:text-slate-400">Test Management (Coming Soon)</div>
 );
 
 export const AdminTestPassPage = () => (
-  <div className="p-8 text-center text-slate-500">Test Passes (Coming Soon)</div>
+  <div className="p-8 text-center text-slate-500 dark:text-slate-400">Test Passes (Coming Soon)</div>
 );
 
 export const AdminBannersPage = () => (

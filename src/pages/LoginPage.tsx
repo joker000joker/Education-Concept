@@ -77,23 +77,23 @@ export const LoginPage: React.FC = () => {
         <BackButton fallbackTo="/" label="Back to Home" />
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-md">
+      <div className="bg-white dark:bg-[#141C2E] rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-md dark:shadow-none">
         {/* Header Branding */}
         <div className="text-center space-y-2 mb-8">
           <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto shadow-md overflow-hidden shrink-0 aspect-square">
             <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
             Log in to Education Concept
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-[#CBD5E1]">
             Enter your credentials to access your account and reading materials
           </p>
         </div>
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-3">
+          <div className="mb-6 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-300 text-xs flex items-start gap-3">
             <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
             <div className="flex-1">{errorMessage}</div>
           </div>
@@ -101,7 +101,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Success Alert */}
         {loginSuccess && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-3">
+          <div className="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-3">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             <span>Login verified. Redirecting to your dashboard...</span>
           </div>
@@ -112,12 +112,12 @@ export const LoginPage: React.FC = () => {
           <div className="space-y-1.5">
             <label
               htmlFor="login-email-input"
-              className="text-xs font-semibold text-slate-700 block"
+              className="text-xs font-semibold text-slate-700 dark:text-slate-300 block"
             >
               Email Address
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Mail className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 id="login-email-input"
                 type="email"
@@ -125,7 +125,7 @@ export const LoginPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="student@example.com"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50/50"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50/50 dark:bg-[#1B263B] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
           </div>
@@ -133,12 +133,12 @@ export const LoginPage: React.FC = () => {
           <div className="space-y-1.5">
             <label
               htmlFor="login-password-input"
-              className="text-xs font-semibold text-slate-700 block"
+              className="text-xs font-semibold text-slate-700 dark:text-slate-300 block"
             >
               Password
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Lock className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 id="login-password-input"
                 type={showPassword ? 'text' : 'password'}
@@ -146,12 +146,12 @@ export const LoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50/50"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50/50 dark:bg-[#1B263B] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -177,13 +177,13 @@ export const LoginPage: React.FC = () => {
         </form>
 
         {/* Footer switch to sign up */}
-        <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-          <p className="text-xs text-slate-600">
+        <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
             Don't have an account yet?{' '}
             <Link
               id="goto-signup-link"
               to="/signup"
-              className="font-bold text-blue-600 hover:text-blue-700 underline underline-offset-2"
+              className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2"
             >
               Create Account
             </Link>

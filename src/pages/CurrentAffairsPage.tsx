@@ -102,21 +102,21 @@ export const CurrentAffairsPage: React.FC = () => {
   };
 
   return (
-    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF]">
+    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF] dark:bg-[#0B0F19]">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6 max-w-5xl mx-auto">
         <button
           onClick={() => navigate('/')}
-          className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-xs border border-slate-200 text-slate-700 active:scale-95 transition-transform cursor-pointer"
+          className="w-10 h-10 flex items-center justify-center bg-white dark:bg-[#141C2E] rounded-xl shadow-xs border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform cursor-pointer"
           title="Back to Home"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
             Current Affairs
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-[#CBD5E1]">
             Latest exam-oriented current affairs digests & study PDFs
           </p>
         </div>
@@ -125,31 +125,31 @@ export const CurrentAffairsPage: React.FC = () => {
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-5 h-5 text-slate-400 dark:text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search Current Affairs by title, month, year..."
-            className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-xs"
+            className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-[#141C2E] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-xs"
           />
         </div>
 
         {/* Content Listing */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-sm text-slate-500 font-medium">Loading Current Affairs...</p>
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Loading Current Affairs...</p>
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center shadow-xs mt-6 max-w-md mx-auto">
-            <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-4 border border-blue-100">
+          <div className="bg-white dark:bg-[#141C2E] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center shadow-xs mt-6 max-w-md mx-auto">
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-500 dark:text-blue-400 flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-900">
               <Newspaper className="w-8 h-8" />
             </div>
-            <h2 className="text-lg font-bold text-slate-900 mb-2">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC] mb-2">
               {searchQuery ? 'No Matching Current Affairs' : 'No Current Affairs Available'}
             </h2>
-            <p className="text-sm text-slate-500 leading-relaxed">
+            <p className="text-sm text-slate-500 dark:text-[#CBD5E1] leading-relaxed">
               {searchQuery
                 ? `No digests matched "${searchQuery}". Try a different search term.`
                 : 'Current Affairs PDFs will appear here once published.'}
@@ -170,39 +170,39 @@ export const CurrentAffairsPage: React.FC = () => {
               return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between group"
+                  className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between group"
                 >
                   <div>
                     {/* Badge & Meta */}
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center justify-center shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
                           <FileText className="w-5 h-5" />
                         </div>
-                        <span className="text-[10px] font-bold tracking-wider uppercase text-red-600 bg-red-50 px-2 py-0.5 rounded-md border border-red-100">
+                        <span className="text-[10px] font-bold tracking-wider uppercase text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 px-2 py-0.5 rounded-md border border-red-100 dark:border-red-900/50">
                           PDF
                         </span>
                       </div>
-                      <span className="text-[11px] text-slate-400 font-medium inline-flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-slate-400" />
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium inline-flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-slate-400 dark:text-slate-500" />
                         {formattedDate}
                       </span>
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-[#F8FAFC] leading-snug line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {item.title}
                     </h3>
 
                     {/* File Size & Document Name */}
-                    <div className="flex items-center text-[11px] text-slate-500 mt-2 mb-4">
+                    <div className="flex items-center text-[11px] text-slate-500 dark:text-[#CBD5E1] mt-2 mb-4">
                       <span className="inline-flex items-center gap-1">
-                        <HardDrive className="w-3 h-3 text-slate-400" />
+                        <HardDrive className="w-3 h-3 text-slate-400 dark:text-slate-500" />
                         {formatBytes(item.file_size)}
                       </span>
                       {item.file_name && (
                         <>
-                          <span className="mx-1.5 text-slate-300">•</span>
+                          <span className="mx-1.5 text-slate-300 dark:text-slate-600">•</span>
                           <span className="truncate max-w-[150px]">{item.file_name}</span>
                         </>
                       )}
@@ -210,11 +210,11 @@ export const CurrentAffairsPage: React.FC = () => {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                  <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <button
                       onClick={() => handleRead(item)}
                       disabled={isItemBusy}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-blue-600 active:bg-blue-700 shadow-xs transition-colors disabled:opacity-60 cursor-pointer min-h-[44px]"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold text-white bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 active:bg-blue-700 shadow-xs transition-colors disabled:opacity-60 cursor-pointer min-h-[44px]"
                     >
                       {isItemBusy && actionType === 'read' ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -227,12 +227,12 @@ export const CurrentAffairsPage: React.FC = () => {
                     <button
                       onClick={() => handleDownload(item)}
                       disabled={isItemBusy}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-200 shadow-xs transition-colors disabled:opacity-60 cursor-pointer min-h-[44px]"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-[#1B263B] hover:bg-slate-200 dark:hover:bg-slate-700 active:bg-slate-300 border border-slate-200 dark:border-slate-700 shadow-xs transition-colors disabled:opacity-60 cursor-pointer min-h-[44px]"
                     >
                       {isItemBusy && actionType === 'download' ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
                       ) : (
-                        <Download className="w-3.5 h-3.5 text-slate-600" />
+                        <Download className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
                       )}
                       <span>Download</span>
                     </button>

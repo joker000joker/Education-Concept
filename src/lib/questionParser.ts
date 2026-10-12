@@ -40,8 +40,12 @@ export function parseBulkQuestions(rawText: string): ParseResult {
   const lines = normalized.split('\n');
 
   // Regex patterns
-  // Matches "Q1.", "Q 1.", "Q1)", "Q.1", "1.", "1)", "Question 1:", "प्रश्न 1:"
-  const qStartRegex = /^\s*(?:(?:Q|Question|प्रश्न)[\s\.\:\-]*(\d+)[\.\)\:\-\s]|(\d+)[\.\)\:\-\s])\s*(.*)$/i;
+  // Matches explicit question markers: "Q1.", "Q 1.", "Q1)", "Q.1", "Question 1:", "प्रश्न 1:"
+  const qExplicitRegex = /^\s*(?:Q|Question|प्रश्न)[\s\.\:\-]*(\d+)[\.\)\:\-\s]\s*(.*)$/i;
+
+  // Matches bare number question markers: "1.", "1)", "1:", "1-", "(1)"
+  // Requires explicit delimiter punctuation and prevents false boundaries on decimals (0.8) or unit numbers (80, 300)
+  const qBareRegex = /^\s*(?:(?:\((\d+)\)|(\d+)[\)\:\-])|(\d+)\.(?!\d))\s+(.*)$/;
 
   // Matches option markers: "A.", "A)", "(A)", "[A]", "a.", "a)", "(a)", "A:"
   const optRegex = /^\s*(?:\(?([A-Da-d])\)|\(?([A-Da-d])[\.\:\]\-])\s*(.*)$/;
@@ -62,6 +66,7 @@ export function parseBulkQuestions(rawText: string): ParseResult {
     correct_option: string;
     explanation: string;
     startLine: number;
+    hasExplicitPrefix?: boolean;
   }
 
   let currentQ: TempQuestion | null = null;
@@ -122,29 +127,85 @@ export function parseBulkQuestions(rawText: string): ParseResult {
     }
 
     // Check if new question starts
-    const qMatch = line.match(qStartRegex);
     const isOptionLine = line.match(optRegex);
     const isAnswerLine = line.match(ansRegex);
     const isExpLine = line.match(expRegex);
 
-    if (qMatch && !isOptionLine && !isAnswerLine && !isExpLine) {
-      if (currentQ) {
-        finalizeQuestion(currentQ, questions.length);
+    if (!isOptionLine && !isAnswerLine && !isExpLine) {
+      const explicitMatch = line.match(qExplicitRegex);
+      const bareMatch = line.match(qBareRegex);
+
+      let isNewQ = false;
+      let qNum = NaN;
+      let qText = '';
+      let isExplicit = false;
+
+      if (explicitMatch) {
+        isNewQ = true;
+        qNum = parseInt(explicitMatch[1], 10);
+        qText = explicitMatch[2] ? explicitMatch[2].trim() : '';
+        isExplicit = true;
+      } else if (bareMatch) {
+        const num = parseInt(bareMatch[1] || bareMatch[2] || bareMatch[3], 10);
+        const text = bareMatch[4] ? bareMatch[4].trim() : '';
+
+        if (!currentQ) {
+          isNewQ = true;
+          qNum = num;
+          qText = text;
+        } else if (currentField !== 'question') {
+          // If options/answer already seen, bare number signifies next question
+          isNewQ = true;
+          qNum = num;
+          qText = text;
+        } else {
+          // Still in question body before options:
+          // If current question uses explicit prefix (Q14), bare numbers (1., 2.) are matching list items, not questions.
+          // If current question uses bare numbers, numbers <= current question number or list items before options are not new questions.
+          if (currentQ.hasExplicitPrefix) {
+            isNewQ = false;
+          } else if (num <= (currentQ.parsedNumber ?? 0)) {
+            isNewQ = false;
+          } else {
+            // Check lookahead: if options appear ahead before another question, this is a numbered sub-list
+            let hasOptionsAhead = false;
+            for (let j = lineIdx + 1; j < lines.length; j++) {
+              if (lines[j].match(optRegex)) {
+                hasOptionsAhead = true;
+                break;
+              }
+              if (lines[j].match(qExplicitRegex)) break;
+            }
+            if (hasOptionsAhead) {
+              isNewQ = false;
+            } else {
+              isNewQ = true;
+              qNum = num;
+              qText = text;
+            }
+          }
+        }
       }
-      const num = parseInt(qMatch[1] || qMatch[2], 10);
-      currentQ = {
-        parsedNumber: isNaN(num) ? questions.length + 1 : num,
-        question_text: qMatch[3] ? qMatch[3].trim() : '',
-        option_a: '',
-        option_b: '',
-        option_c: '',
-        option_d: '',
-        correct_option: '',
-        explanation: '',
-        startLine: lineIdx + 1
-      };
-      currentField = 'question';
-      continue;
+
+      if (isNewQ) {
+        if (currentQ) {
+          finalizeQuestion(currentQ, questions.length);
+        }
+        currentQ = {
+          parsedNumber: isNaN(qNum) ? questions.length + 1 : qNum,
+          question_text: qText,
+          option_a: '',
+          option_b: '',
+          option_c: '',
+          option_d: '',
+          correct_option: '',
+          explanation: '',
+          startLine: lineIdx + 1,
+          hasExplicitPrefix: isExplicit
+        };
+        currentField = 'question';
+        continue;
+      }
     }
 
     if (!currentQ) {

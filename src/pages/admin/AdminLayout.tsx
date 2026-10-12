@@ -44,16 +44,16 @@ export const AdminLayout: React.FC = () => {
         onClick={() => setMobileMenuOpen(false)}
         className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
           active 
-            ? 'bg-blue-50 text-blue-700' 
-            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300' 
+            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:bg-slate-50 dark:hover:bg-[#1B263B]'
         }`}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-400'}`} />
+          <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
           <span className="truncate">{label}</span>
         </div>
         {badge && (
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 shrink-0">
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 shrink-0">
             {badge}
           </span>
         )}
@@ -63,7 +63,7 @@ export const AdminLayout: React.FC = () => {
 
   const NavGroup = ({ label, children }) => (
     <div className="mb-6">
-      <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+      <h3 className="px-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
         {label}
       </h3>
       <div className="space-y-0.5">
@@ -73,14 +73,14 @@ export const AdminLayout: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-x-hidden md:overflow-x-visible">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F19] flex flex-col md:flex-row overflow-x-hidden md:overflow-x-visible">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+      <div className="md:hidden bg-white dark:bg-[#141C2E] border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
         <div className="flex items-center gap-3">
           <button 
             id="admin-mobile-menu-toggle-btn"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1.5 -ml-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors focus:outline-hidden"
+            className="p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#1B263B] rounded-lg transition-colors focus:outline-hidden"
             aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -89,7 +89,7 @@ export const AdminLayout: React.FC = () => {
             <div className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden shrink-0 aspect-square">
               <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
             </div>
-            <span className="font-bold text-slate-900 text-sm">Admin Panel</span>
+            <span className="font-bold text-slate-900 dark:text-[#F8FAFC] text-sm">Admin Panel</span>
           </div>
         </div>
       </div>
@@ -98,35 +98,35 @@ export const AdminLayout: React.FC = () => {
       <div 
         id="admin-navigation-drawer"
         className={`
-          fixed md:sticky inset-y-0 left-0 right-auto z-50 md:z-20 h-screen w-64 bg-white border-r border-slate-200 
+          fixed md:sticky inset-y-0 left-0 right-auto z-50 md:z-20 h-screen w-64 bg-white dark:bg-[#141C2E] border-r border-slate-200 dark:border-slate-800 
           flex flex-col shadow-2xl md:shadow-none
           transition-transform duration-200 ease-in-out
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
-        <div className="p-4 border-b border-slate-200">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden shrink-0 aspect-square">
                 <img src="/ec-logo-new-2.png" alt="Education Concept Logo" className="w-full h-full object-cover object-center scale-[1.10]" />
               </div>
-              <span className="text-xs font-extrabold text-slate-900 tracking-tight">EDUCATION CONCEPT</span>
+              <span className="text-xs font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">EDUCATION CONCEPT</span>
             </div>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="md:hidden p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                className="md:hidden p-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#1B263B] rounded-lg transition-colors"
                 aria-label="Close navigation menu"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 border border-blue-100">
-            <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40">
+            <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-blue-900">Admin Active</span>
-              <span className="text-[10px] text-blue-600 truncate max-w-[160px]">{user.email}</span>
+              <span className="text-xs font-bold text-blue-900 dark:text-blue-200">Admin Active</span>
+              <span className="text-[10px] text-blue-600 dark:text-blue-300 truncate max-w-[160px]">{user.email}</span>
             </div>
           </div>
         </div>

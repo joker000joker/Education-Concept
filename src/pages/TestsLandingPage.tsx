@@ -83,9 +83,9 @@ export const TestsLandingPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50">
+    <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50 dark:bg-[#0B0F19]">
       {/* Header Banner */}
-      <div className="bg-gradient-to-b from-blue-700 to-blue-900 text-white py-10 px-4 sm:px-6 lg:px-8 shadow-sm">
+      <div className="bg-gradient-to-b from-blue-700 to-blue-900 dark:from-[#1E3A8A] dark:to-[#0F172A] text-white py-10 px-4 sm:px-6 lg:px-8 shadow-sm">
         <div className="max-w-7xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-semibold mb-3">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-300" />
@@ -94,7 +94,7 @@ export const TestsLandingPage: React.FC = () => {
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
             EC Test Portal
           </h1>
-          <p className="mt-2 text-sm sm:text-base text-blue-100 max-w-2xl mx-auto">
+          <p className="mt-2 text-sm sm:text-base text-blue-100 dark:text-slate-200 max-w-2xl mx-auto">
             Comprehensive exam-simulation mock tests designed with accurate timing, negative marking, and real-time review.
           </p>
         </div>
@@ -104,10 +104,10 @@ export const TestsLandingPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F8FAFC]">
               Test Categories
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-[#CBD5E1] mt-0.5">
               Select a module to practice and prepare
             </p>
           </div>
@@ -122,35 +122,35 @@ export const TestsLandingPage: React.FC = () => {
                 <Link
                   key={card.id}
                   to={card.link}
-                  className={`group block bg-white rounded-2xl border-2 ${card.border} p-6 shadow-sm hover:shadow-xl transition-all duration-200 hover:-translate-y-1 relative overflow-hidden`}
+                  className={`group block bg-white dark:bg-[#141C2E] rounded-2xl border-2 ${card.border} dark:border-slate-800 p-6 shadow-sm dark:shadow-none hover:shadow-xl transition-all duration-200 hover:-translate-y-1 relative overflow-hidden`}
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <div className={`w-14 h-14 rounded-2xl ${card.bg} dark:bg-opacity-20 ${card.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
                       <Icon className="w-8 h-8" />
                     </div>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
                       card.id === 'chapter-wise'
-                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                        : 'bg-purple-100 text-purple-700 border border-purple-200'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                        card.id === 'chapter-wise' ? 'bg-emerald-600' : 'bg-purple-600'
+                        card.id === 'chapter-wise' ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-purple-600 dark:bg-purple-400'
                       }`}></span>
                       {card.badge}
                     </span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-purple-700 transition-colors">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC] group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">
                     {card.title}
                   </h3>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">
+                  <p className="text-xs text-slate-400 dark:text-slate-400 font-medium mt-0.5">
                     {card.hindiTitle}
                   </p>
-                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-[#CBD5E1] mt-2 leading-relaxed">
                     {card.description}
                   </p>
 
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
+                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     <span>Enter {card.title}</span>
                     <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
                   </div>
@@ -163,31 +163,31 @@ export const TestsLandingPage: React.FC = () => {
                 key={card.id}
                 type="button"
                 onClick={() => setComingSoonModal(card.title)}
-                className="text-left bg-white/70 hover:bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs hover:shadow-md transition-all duration-200 relative overflow-hidden group"
+                className="text-left bg-white/70 dark:bg-[#141C2E]/60 hover:bg-white dark:hover:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xs hover:shadow-md transition-all duration-200 relative overflow-hidden group"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} opacity-80 flex items-center justify-center`}>
+                  <div className={`w-14 h-14 rounded-2xl ${card.bg} dark:bg-opacity-20 ${card.color} opacity-80 flex items-center justify-center`}>
                     <Icon className="w-8 h-8" />
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-[#1B263B] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                     <Clock className="w-3 h-3 text-slate-400" />
                     {card.badge}
                   </span>
                 </div>
 
-                <h3 className="text-lg font-bold text-slate-800">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-[#F8FAFC]">
                   {card.title}
                 </h3>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">
+                <p className="text-xs text-slate-400 dark:text-slate-400 font-medium mt-0.5">
                   {card.hindiTitle}
                 </p>
-                <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mt-2 leading-relaxed">
                   {card.description}
                 </p>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400">
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-400 dark:text-slate-500">
                   <span>Under Development</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-slate-100 rounded text-slate-500">Preview</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-slate-100 dark:bg-[#1B263B] rounded text-slate-500 dark:text-slate-400">Preview</span>
                 </div>
               </button>
             );
@@ -197,21 +197,21 @@ export const TestsLandingPage: React.FC = () => {
 
       {/* Coming Soon Modal */}
       {comingSoonModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-100 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-[#141C2E] rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-100 dark:border-slate-800 relative">
             <button
               onClick={() => setComingSoonModal(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-7 h-7" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
               {comingSoonModal}
             </h3>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-[#CBD5E1] mt-2 leading-relaxed">
               This module is currently in development and will be activated in an upcoming update. Currently, <strong>Sectional Test</strong> is live with all 12 core subjects!
             </p>
             <div className="mt-6 flex flex-col gap-2">
@@ -224,7 +224,7 @@ export const TestsLandingPage: React.FC = () => {
               </Link>
               <button
                 onClick={() => setComingSoonModal(null)}
-                className="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-700"
+                className="w-full py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               >
                 Close
               </button>

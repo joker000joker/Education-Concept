@@ -71,6 +71,17 @@ export const AdminSectionalTestsPage: React.FC = () => {
   const [negativeMarking, setNegativeMarking] = useState<number>(0.25);
   const [published, setPublished] = useState<boolean>(true);
 
+  // Prevent background scrolling while Create/Edit test modal is open
+  useEffect(() => {
+    if (isModalOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isModalOpen]);
+
   // Bulk Questions Parser State
   const [bulkInputText, setBulkInputText] = useState('');
   const [parseErrors, setParseErrors] = useState<string[]>([]);
@@ -529,16 +540,16 @@ export const AdminSectionalTestsPage: React.FC = () => {
       </div>
 
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#141C2E] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-wider mb-1">
-            <Layers className="w-3 h-3 text-purple-600" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/60 uppercase tracking-wider mb-1">
+            <Layers className="w-3 h-3 text-purple-600 dark:text-purple-400" />
             EC Test Administration
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
             Sectional Tests Management
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             Create, edit, bulk parse questions, and publish subject-wise mock tests.
           </p>
         </div>
@@ -548,20 +559,20 @@ export const AdminSectionalTestsPage: React.FC = () => {
             type="button"
             onClick={handleRefreshSync}
             disabled={refreshing}
-            className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-60"
+            className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
             title="Sync & refresh sectional tests across devices"
           >
-            <RefreshCw className={`w-4 h-4 text-purple-600 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 text-purple-600 dark:text-purple-400 ${refreshing ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Sync & Refresh</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowSqlNotice(!showSqlNotice)}
-            className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
             title="View Supabase SQL schema"
           >
-            <Database className="w-4 h-4 text-purple-600" />
+            <Database className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             <span>Supabase SQL</span>
           </button>
 
@@ -569,7 +580,7 @@ export const AdminSectionalTestsPage: React.FC = () => {
             type="button"
             id="admin-add-new-test-btn"
             onClick={handleOpenCreateModal}
-            className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-2"
+            className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>+ Add New Test</span>
@@ -579,16 +590,16 @@ export const AdminSectionalTestsPage: React.FC = () => {
 
       {/* SQL Notice Accordion (if admin wants to copy SQL for Supabase) */}
       {showSqlNotice && (
-        <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-5 text-xs text-slate-700 space-y-3">
+        <div className="bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 rounded-2xl p-5 text-xs text-slate-700 dark:text-slate-300 space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="font-bold text-purple-900 flex items-center gap-2 text-sm">
-              <Database className="w-4 h-4 text-purple-700" />
+            <h4 className="font-bold text-purple-900 dark:text-purple-300 flex items-center gap-2 text-sm">
+              <Database className="w-4 h-4 text-purple-700 dark:text-purple-400" />
               Supabase SQL Instructions for Sectional Tests
             </h4>
             <button
               type="button"
               onClick={() => setShowSqlNotice(false)}
-              className="text-slate-400 hover:text-slate-600 p-1"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -600,7 +611,7 @@ export const AdminSectionalTestsPage: React.FC = () => {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-[#141C2E] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <div className="relative flex-1 w-full flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -609,15 +620,15 @@ export const AdminSectionalTestsPage: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search test by title..."
-              className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
             />
           </div>
-          <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">
+          <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/60 whitespace-nowrap">
             {tests.length} Tests Total
           </span>
           {isSavingOrder && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300 animate-pulse whitespace-nowrap">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-700 animate-pulse whitespace-nowrap">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600 dark:text-purple-400" />
               <span>Saving order...</span>
             </span>
           )}
@@ -628,7 +639,7 @@ export const AdminSectionalTestsPage: React.FC = () => {
           <select
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
-            className="px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <option value="All">All Subjects (12)</option>
             {SECTIONAL_SUBJECTS.map((s) => (
@@ -642,7 +653,7 @@ export const AdminSectionalTestsPage: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <option value="all">All Status</option>
             <option value="published">Published</option>
@@ -652,20 +663,20 @@ export const AdminSectionalTestsPage: React.FC = () => {
       </div>
 
       {/* Sectional Tests Table / List */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+      <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-2" />
-            <p className="text-xs font-semibold text-slate-500">Loading Sectional Tests...</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Loading Sectional Tests...</p>
           </div>
         ) : filteredTests.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+              <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                 <tr>
                   <th className="py-3.5 px-3 w-10 text-center" title="Drag to reorder tests">
                     <span className="sr-only">Reorder</span>
-                    <GripVertical className="w-4 h-4 text-slate-300 mx-auto" />
+                    <GripVertical className="w-4 h-4 text-slate-300 dark:text-slate-600 mx-auto" />
                   </th>
                   <th className="py-3.5 px-4">Test Title</th>
                   <th className="py-3.5 px-4">Subject</th>
@@ -677,18 +688,18 @@ export const AdminSectionalTestsPage: React.FC = () => {
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredTests.map((t) => {
                   const isBeingDragged = draggedTestId === t.id;
                   const isTarget = dragOverTestId === t.id && !isBeingDragged;
 
                   let dragClasses = '';
                   if (isBeingDragged) {
-                    dragClasses = 'opacity-35 bg-purple-50/80 border-2 border-dashed border-purple-400 select-none scale-[0.99]';
+                    dragClasses = 'opacity-35 bg-purple-50/80 dark:bg-purple-950/60 border-2 border-dashed border-purple-400 select-none scale-[0.99]';
                   } else if (isTarget && dropPosition === 'above') {
-                    dragClasses = 'border-t-2 border-t-purple-600 bg-purple-50/40 shadow-xs';
+                    dragClasses = 'border-t-2 border-t-purple-600 bg-purple-50/40 dark:bg-purple-950/40 shadow-xs';
                   } else if (isTarget && dropPosition === 'below') {
-                    dragClasses = 'border-b-2 border-b-purple-600 bg-purple-50/40 shadow-xs';
+                    dragClasses = 'border-b-2 border-b-purple-600 bg-purple-50/40 dark:bg-purple-950/40 shadow-xs';
                   }
 
                   return (
@@ -701,7 +712,7 @@ export const AdminSectionalTestsPage: React.FC = () => {
                       onDragLeave={(e) => handleDragLeave(e, t.id)}
                       onDrop={(e) => handleDrop(e, t.id)}
                       onDragEnd={handleDragEnd}
-                      className={`hover:bg-purple-50/30 transition-all ${dragClasses}`}
+                      className={`hover:bg-purple-50/30 dark:hover:bg-purple-950/20 transition-all ${dragClasses}`}
                     >
                       <td className="py-3.5 px-3 text-center">
                         <div
@@ -709,31 +720,31 @@ export const AdminSectionalTestsPage: React.FC = () => {
                           onTouchMove={handleTouchMove}
                           onTouchEnd={handleTouchEnd}
                           onTouchCancel={handleTouchCancel}
-                          className="p-1.5 rounded-md text-slate-400 hover:text-purple-600 active:text-purple-700 cursor-grab active:cursor-grabbing hover:bg-purple-100/60 inline-flex items-center justify-center touch-none select-none transition-colors"
+                          className="p-1.5 rounded-md text-slate-400 hover:text-purple-600 active:text-purple-700 cursor-grab active:cursor-grabbing hover:bg-purple-100/60 dark:hover:bg-purple-900/40 inline-flex items-center justify-center touch-none select-none transition-colors"
                           title="Click and drag to reorder test"
                           aria-label={`Drag to reorder ${t.title}`}
                         >
                           <GripVertical className="w-4 h-4 pointer-events-none" />
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-slate-900 max-w-xs truncate cursor-grab active:cursor-grabbing">
+                      <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-[#F8FAFC] max-w-xs truncate cursor-grab active:cursor-grabbing">
                         {t.title}
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/60">
                           {t.subject}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-center font-bold text-slate-700">
+                      <td className="py-3.5 px-4 text-center font-bold text-slate-700 dark:text-slate-300">
                         {t.total_questions}
                       </td>
-                      <td className="py-3.5 px-4 text-center text-slate-700 font-semibold">
+                      <td className="py-3.5 px-4 text-center text-slate-700 dark:text-slate-300 font-semibold">
                         {t.total_marks}
                       </td>
-                      <td className="py-3.5 px-4 text-center text-slate-600">
+                      <td className="py-3.5 px-4 text-center text-slate-600 dark:text-slate-400">
                         {t.duration_minutes}m
                       </td>
-                      <td className="py-3.5 px-4 text-center text-rose-600 font-semibold">
+                      <td className="py-3.5 px-4 text-center text-rose-600 dark:text-rose-400 font-semibold">
                         -{t.negative_marking}
                       </td>
                       <td className="py-3.5 px-4 text-center">
@@ -742,10 +753,10 @@ export const AdminSectionalTestsPage: React.FC = () => {
                           draggable={false}
                           onMouseDown={(e) => e.stopPropagation()}
                           onClick={() => handleTogglePublish(t)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
                             t.published
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${t.published ? 'bg-emerald-600' : 'bg-slate-400'}`}></span>
@@ -758,17 +769,17 @@ export const AdminSectionalTestsPage: React.FC = () => {
                             to={`/admin/analytics?testId=${t.id}`}
                             draggable={false}
                             onMouseDown={(e) => e.stopPropagation()}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-50 transition-colors inline-flex items-center justify-center"
+                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors inline-flex items-center justify-center"
                             title="Analyse Test (All Students)"
                           >
-                            <BarChart3 className="w-4 h-4 text-purple-600" />
+                            <BarChart3 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                           </Link>
                           <button
                             type="button"
                             draggable={false}
                             onMouseDown={(e) => e.stopPropagation()}
                             onClick={() => handleOpenPreview(t)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors cursor-pointer"
                             title="Preview Questions"
                           >
                             <Eye className="w-4 h-4" />
@@ -778,7 +789,7 @@ export const AdminSectionalTestsPage: React.FC = () => {
                             draggable={false}
                             onMouseDown={(e) => e.stopPropagation()}
                             onClick={() => handleOpenEditModal(t)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
                             title="Edit Test"
                           >
                             <Edit2 className="w-4 h-4" />
@@ -788,7 +799,7 @@ export const AdminSectionalTestsPage: React.FC = () => {
                             draggable={false}
                             onMouseDown={(e) => e.stopPropagation()}
                             onClick={() => setDeletingTest(t)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                             title="Delete Test"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -803,16 +814,16 @@ export const AdminSectionalTestsPage: React.FC = () => {
           </div>
         ) : (
           <div className="p-12 text-center">
-            <FileQuestion className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h4 className="text-base font-bold text-slate-700">No Sectional Tests Found</h4>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            <FileQuestion className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+            <h4 className="text-base font-bold text-slate-700 dark:text-slate-200">No Sectional Tests Found</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
               No sectional tests match the current filter or search criteria.
             </p>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
               <button
                 type="button"
                 onClick={handleOpenCreateModal}
-                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>+ Add Manual Test</span>
@@ -826,318 +837,345 @@ export const AdminSectionalTestsPage: React.FC = () => {
           CREATE / EDIT MODAL WITH BULK PARSER
          ========================================== */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-4xl w-full my-8 p-6 sm:p-8 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-0 bg-slate-900/60 backdrop-blur-xs overflow-y-auto md:overflow-hidden">
+          <div className="bg-white dark:bg-[#141C2E] rounded-3xl md:rounded-none max-w-4xl md:max-w-none w-full md:w-screen md:h-screen my-8 md:my-0 p-6 sm:p-8 md:p-0 shadow-2xl border border-slate-100 dark:border-slate-800 md:border-0 max-h-[90vh] md:max-h-screen flex flex-col justify-between overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+            <div className="flex items-center justify-between pb-4 md:pb-0 md:px-8 md:py-4 border-b border-slate-100 dark:border-slate-800 md:border-slate-200/80 md:bg-white/95 dark:md:bg-[#141C2E]/95 md:backdrop-blur-xs shrink-0">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  {editingTestId ? 'Edit Sectional Test' : 'Create Sectional Test'}
+                <h3 className="text-lg md:text-xl font-bold text-slate-900 dark:text-[#F8FAFC] flex items-center gap-2">
+                  <span>{editingTestId ? 'Edit Sectional Test' : 'Create Sectional Test'}</span>
+                  <span className="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60">
+                    Full-Screen Creator
+                  </span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Configure test settings and bulk paste questions in English or Hindi.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Scrollable Body */}
-            <form id="test-form" onSubmit={(e) => handleSaveTest(e)} className="flex-1 overflow-y-auto py-6 space-y-6 pr-1">
-              {/* Basic Specs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Test Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Mathematics Sectional Test 02 - Speed, Time & Distance"
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
+            <form id="test-form" onSubmit={(e) => handleSaveTest(e)} className="flex-1 overflow-y-auto py-6 md:py-6 md:px-8 space-y-6 pr-1 bg-slate-50/30 dark:bg-slate-900/40">
+              <div className="max-w-7xl mx-auto w-full space-y-6">
+                {/* 1. Basic Specs */}
+                <div className="bg-white dark:bg-[#141C2E] rounded-2xl md:rounded-3xl p-5 md:p-6 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Test Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="e.g. Mathematics Sectional Test 02 - Speed, Time & Distance"
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Subject (12 Core Subjects Only) *
-                  </label>
-                  <select
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value as SectionalSubject)}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    {SECTIONAL_SUBJECTS.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Total Marks
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={totalMarks}
-                    onChange={(e) => setTotalMarks(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Duration (Minutes)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={durationMinutes}
-                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Negative Marking (Per Wrong Answer)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={negativeMarking}
-                    onChange={(e) => setNegativeMarking(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-
-                <div className="sm:col-span-2 flex items-center gap-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="published-toggle"
-                    checked={published}
-                    onChange={(e) => setPublished(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                  />
-                  <label htmlFor="published-toggle" className="text-xs font-bold text-slate-800 cursor-pointer">
-                    Publish this test immediately for students
-                  </label>
-                </div>
-              </div>
-
-              {/* Bulk Question Parsing Section */}
-              <div className="bg-purple-50/50 rounded-3xl p-5 border border-purple-100 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <h4 className="text-sm font-bold text-purple-950 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-700" />
-                      Bulk Question Input & Parser
-                    </h4>
-                    <p className="text-[11px] text-slate-600 mt-0.5">
-                      Paste multiple questions at once. System automatically parses questions, options A/B/C/D, answers, and explanations.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleLoadSample}
-                    className="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-white border border-purple-200 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-colors"
-                  >
-                    Load Sample Format
-                  </button>
-                </div>
-
-                <textarea
-                  rows={7}
-                  value={bulkInputText}
-                  onChange={(e) => setBulkInputText(e.target.value)}
-                  placeholder={`Q1. Question text in English or Hindi...\nA. Option A\nB. Option B\nC. Option C\nD. Option D\nAnswer: B\nExplanation: (Optional solution note)`}
-                  className="w-full p-3.5 text-xs font-mono bg-white border border-purple-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-                ></textarea>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">
-                    Supports formats: Q1., 1., (A), A), a., Answer: B, Ans: B, उत्तर: B
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleParseQuestions}
-                    className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Generate Questions</span>
-                  </button>
-                </div>
-
-                {/* Parse Errors List */}
-                {parseErrors.length > 0 && (
-                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-1">
-                    <p className="text-xs font-bold text-rose-800 flex items-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-rose-600" />
-                      Parsing Inconsistencies Detected:
-                    </p>
-                    <ul className="list-disc list-inside text-[11px] text-rose-700 space-y-0.5">
-                      {parseErrors.map((err, i) => (
-                        <li key={i}>{err}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {/* Parsed Questions List & Preview */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-purple-600" />
-                    <span>Question Preview ({parsedQuestions.length} Questions)</span>
-                  </h4>
-
-                  <button
-                    type="button"
-                    onClick={handleAddBlankQuestion}
-                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Single Question</span>
-                  </button>
-                </div>
-
-                {parsedQuestions.length === 0 ? (
-                  <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                    <p className="text-xs text-slate-500 font-medium">
-                      No questions loaded yet. Paste questions in the bulk box above and click "Generate Questions".
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                    {parsedQuestions.map((q, idx) => (
-                      <div
-                        key={idx}
-                        className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3 relative group"
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Subject (12 Core Subjects Only) *
+                      </label>
+                      <select
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value as SectionalSubject)}
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                            Question #{idx + 1}
-                          </span>
+                        {SECTIONAL_SUBJECTS.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteQuestion(idx)}
-                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
-                            title="Delete this question"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Total Marks
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={totalMarks}
+                        onChange={(e) => setTotalMarks(Number(e.target.value))}
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
 
-                        {/* Question Text */}
-                        <textarea
-                          rows={2}
-                          value={q.question_text}
-                          onChange={(e) => handleUpdateQuestion(idx, { question_text: e.target.value })}
-                          className="w-full p-2 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
-                          placeholder="Question statement..."
-                        ></textarea>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Duration (Minutes)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={durationMinutes}
+                        onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
 
-                        {/* Options A, B, C, D */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {(['A', 'B', 'C', 'D'] as const).map((optKey) => {
-                            const fieldKey = `option_${optKey.toLowerCase()}` as keyof SectionalQuestion;
-                            const isCorrect = q.correct_option === optKey;
-                            return (
-                              <div key={optKey} className="flex items-center gap-2">
-                                <span className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                                  {optKey}
-                                </span>
-                                <input
-                                  type="text"
-                                  value={(q[fieldKey] as string) || ''}
-                                  onChange={(e) => handleUpdateQuestion(idx, { [fieldKey]: e.target.value })}
-                                  className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
-                                  placeholder={`Option ${optKey}`}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Negative Marking (Per Wrong Answer)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={negativeMarking}
+                        onChange={(e) => setNegativeMarking(Number(e.target.value))}
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
 
-                        {/* Correct Answer & Explanation */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-bold text-slate-600">Correct Option:</span>
-                            {(['A', 'B', 'C', 'D'] as const).map((ans) => (
-                              <button
-                                key={ans}
-                                type="button"
-                                onClick={() => handleUpdateQuestion(idx, { correct_option: ans })}
-                                className={`w-6 h-6 rounded-md text-xs font-bold transition-colors ${
-                                  q.correct_option === ans
-                                    ? 'bg-emerald-600 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                }`}
-                              >
-                                {ans}
-                              </button>
-                            ))}
+                    <div className="sm:col-span-2 flex items-center gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="published-toggle"
+                        checked={published}
+                        onChange={(e) => setPublished(e.target.checked)}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <label htmlFor="published-toggle" className="text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer select-none">
+                        Publish this test immediately for students
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Bulk Question Parsing Section */}
+                <div className="bg-white dark:bg-[#141C2E] rounded-2xl md:rounded-3xl p-5 md:p-6 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-[#F8FAFC] flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        <span>Bulk Question Input & Parser</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                        Paste multiple questions at once. System automatically parses questions, options A/B/C/D, answers, and explanations.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleLoadSample}
+                      className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                    >
+                      Load Sample Format
+                    </button>
+                  </div>
+
+                  <textarea
+                    rows={8}
+                    value={bulkInputText}
+                    onChange={(e) => setBulkInputText(e.target.value)}
+                    placeholder={`Q1. Question text in English or Hindi...\nA. Option A\nB. Option B\nC. Option C\nD. Option D\nAnswer: B\nExplanation: (Optional solution note)`}
+                    className="w-full p-4 text-xs sm:text-sm font-mono bg-slate-50/50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs resize-y h-48 md:h-[220px] min-h-[180px] transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                  ></textarea>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Supports formats: Q1., 1., (A), A), a., Answer: B, Ans: B, उत्तर: B
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleParseQuestions}
+                      className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 self-end sm:self-auto cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Generate Questions</span>
+                    </button>
+                  </div>
+
+                  {/* Parse Errors List */}
+                  {parseErrors.length > 0 && (
+                    <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl space-y-1">
+                      <p className="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                        Parsing Inconsistencies Detected:
+                      </p>
+                      <ul className="list-disc list-inside text-[11px] text-rose-700 dark:text-rose-300 space-y-0.5">
+                        {parseErrors.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Parsed Questions List & Preview */}
+                <div className="bg-white dark:bg-[#141C2E] rounded-2xl md:rounded-3xl p-5 md:p-6 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#F8FAFC] flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      <span>Question Preview ({parsedQuestions.length} Questions)</span>
+                    </h4>
+
+                    <button
+                      type="button"
+                      onClick={handleAddBlankQuestion}
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Single Question</span>
+                    </button>
+                  </div>
+
+                  {parsedQuestions.length === 0 ? (
+                    <div className="p-10 text-center bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        No questions loaded yet. Paste questions in the bulk box above and click "Generate Questions".
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[420px] md:max-h-[560px] overflow-y-auto pr-1 sm:pr-2 overscroll-contain">
+                      {parsedQuestions.map((q, idx) => (
+                        <div
+                          key={idx}
+                          className="p-4 rounded-2xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 shadow-2xs space-y-3 relative group hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800/60">
+                              Question #{idx + 1}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteQuestion(idx)}
+                              className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+                              title="Delete this question"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
 
-                          <input
-                            type="text"
-                            value={q.explanation || ''}
-                            onChange={(e) => handleUpdateQuestion(idx, { explanation: e.target.value })}
-                            placeholder="Explanation (Optional)"
-                            className="w-full sm:w-1/2 px-2.5 py-1 text-[11px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"
-                          />
+                          {/* Question Text */}
+                          <textarea
+                            rows={2}
+                            value={q.question_text}
+                            onChange={(e) => handleUpdateQuestion(idx, { question_text: e.target.value })}
+                            className="w-full p-2.5 text-xs font-medium bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
+                            placeholder="Question statement..."
+                          ></textarea>
+
+                          {/* Options A, B, C, D */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {(['A', 'B', 'C', 'D'] as const).map((optKey) => {
+                              const fieldKey = `option_${optKey.toLowerCase()}` as keyof SectionalQuestion;
+                              const isCorrect = q.correct_option === optKey;
+                              return (
+                                <div key={optKey} className="flex items-center gap-2">
+                                  <span className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${isCorrect ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                                    {optKey}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={(q[fieldKey] as string) || ''}
+                                    onChange={(e) => handleUpdateQuestion(idx, { [fieldKey]: e.target.value })}
+                                    className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
+                                    placeholder={`Option ${optKey}`}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Correct Answer & Explanation */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Correct Option:</span>
+                              {(['A', 'B', 'C', 'D'] as const).map((ans) => (
+                                <button
+                                  key={ans}
+                                  type="button"
+                                  onClick={() => handleUpdateQuestion(idx, { correct_option: ans })}
+                                  className={`w-6 h-6 rounded-md text-xs font-bold transition-colors cursor-pointer ${
+                                    q.correct_option === ans
+                                      ? 'bg-indigo-600 text-white'
+                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                  }`}
+                                >
+                                  {ans}
+                                </button>
+                              ))}
+                            </div>
+
+                            <input
+                              type="text"
+                              value={q.explanation || ''}
+                              onChange={(e) => handleUpdateQuestion(idx, { explanation: e.target.value })}
+                              placeholder="Explanation (Optional)"
+                              className="w-full sm:w-1/2 px-2.5 py-1 text-[11px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </form>
 
             {/* Modal Actions Footer */}
-            <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-end gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                disabled={saving}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
+            <div className="pt-4 md:pt-0 pb-0 md:px-8 md:py-4 border-t border-slate-100 dark:border-slate-800 md:border-slate-200/80 bg-white dark:bg-[#141C2E] md:bg-white/95 dark:md:bg-[#141C2E]/95 md:backdrop-blur-xs flex flex-wrap items-center justify-between gap-3 shrink-0 z-10">
+              <div className="hidden sm:flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  Total Questions:
+                  <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">{parsedQuestions.length}</span>
+                </span>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  Total Marks:
+                  <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">{totalMarks}</span>
+                </span>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  Duration:
+                  <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">{durationMinutes} min</span>
+                </span>
+              </div>
 
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => handleSaveTest(undefined, false)}
-                className="px-5 py-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {saving && !published && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>Save Draft</span>
-              </button>
+              <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={saving}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300 cursor-pointer"
+                >
+                  Cancel
+                </button>
 
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => handleSaveTest(undefined, true)}
-                className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                {saving && published && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>Publish</span>
-              </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => handleSaveTest(undefined, false)}
+                  className="px-5 py-2.5 rounded-xl border border-purple-200 dark:border-purple-800/60 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"
+                >
+                  {saving && !published && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Save Draft</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => handleSaveTest(undefined, true)}
+                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
+                >
+                  {saving && published && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Publish</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1148,20 +1186,20 @@ export const AdminSectionalTestsPage: React.FC = () => {
          ========================================== */}
       {previewTest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col justify-between">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+          <div className="bg-white dark:bg-[#141C2E] rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col justify-between">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800/60">
                   {previewTest.subject}
                 </span>
-                <h3 className="text-base font-bold text-slate-900 mt-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC] mt-1">
                   {previewTest.title}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setPreviewTest(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1171,26 +1209,26 @@ export const AdminSectionalTestsPage: React.FC = () => {
               {loadingPreview ? (
                 <div className="py-12 text-center">
                   <Loader2 className="w-6 h-6 text-purple-600 animate-spin mx-auto mb-2" />
-                  <p className="text-xs text-slate-500">Loading questions...</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Loading questions...</p>
                 </div>
               ) : previewQuestions.length > 0 ? (
                 previewQuestions.map((q, idx) => (
-                  <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs">
-                    <p className="font-bold text-slate-900">
+                  <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2 text-xs">
+                    <p className="font-bold text-slate-900 dark:text-[#F8FAFC]">
                       Q{idx + 1}. {q.question_text}
                     </p>
-                    <div className="grid grid-cols-2 gap-1.5 text-slate-700">
+                    <div className="grid grid-cols-2 gap-1.5 text-slate-700 dark:text-slate-300">
                       <div>A. {q.option_a}</div>
                       <div>B. {q.option_b}</div>
                       <div>C. {q.option_c}</div>
                       <div>D. {q.option_d}</div>
                     </div>
-                    <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px]">
-                      <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/60">
                         Answer: {q.correct_option}
                       </span>
                       {q.explanation && (
-                        <span className="text-slate-500 italic max-w-xs truncate">
+                        <span className="text-slate-500 dark:text-slate-400 italic max-w-xs truncate">
                           {q.explanation}
                         </span>
                       )}
@@ -1198,17 +1236,17 @@ export const AdminSectionalTestsPage: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-slate-500 text-center py-8">
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-8">
                   No questions found for this test.
                 </p>
               )}
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end shrink-0">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end shrink-0">
               <button
                 type="button"
                 onClick={() => setPreviewTest(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold"
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
               >
                 Close Preview
               </button>

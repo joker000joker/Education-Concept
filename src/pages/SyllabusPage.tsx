@@ -13,15 +13,15 @@ export const SyllabusPage: React.FC = () => {
   ];
 
   return (
-    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF]">
+    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF] dark:bg-[#0B0F19]">
       <div className="flex items-center gap-3 mb-8">
         <button 
           onClick={() => navigate('/')} 
-          className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 text-slate-700 active:scale-95 transition-transform"
+          className="w-10 h-10 flex items-center justify-center bg-white dark:bg-[#141C2E] rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Exam Pattern & Syllabus</h1>
+        <h1 className="text-xl font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight">Exam Pattern & Syllabus</h1>
       </div>
 
       <div className="grid grid-cols-1 gap-4">

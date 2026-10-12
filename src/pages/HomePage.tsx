@@ -7,6 +7,7 @@ import { fetchPublicRecommendations } from '../services/recommendationService';
 import { CategoryCard } from '../components/common/CategoryCard';
 import { NoteCard } from '../components/common/NoteCard';
 import { RecommendationCard } from '../components/common/RecommendationCard';
+import { useTheme } from '../context/ThemeContext';
 import {
   Search,
   BookOpen,
@@ -457,6 +458,7 @@ const Carousel = ({
 };
 
 export const HomePage: React.FC = () => {
+  const { isDark } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState<'notes' | 'test'>(tabParam === 'test' ? 'test' : 'notes');
@@ -721,11 +723,9 @@ export const HomePage: React.FC = () => {
   const renderDesktopServices = () => (
     <section className="mb-10">
       <div className="flex items-center justify-between mb-5">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-            EC Notes
-          </h2>
-        </div>
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+          EC Notes
+        </h2>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
         {SERVICES.map((service) => {
@@ -734,13 +734,12 @@ export const HomePage: React.FC = () => {
             <Link
               key={service.id}
               to={service.path}
-              className="group relative flex flex-col items-center justify-center text-center p-5 sm:p-6 min-h-[148px] bg-white rounded-2xl border border-slate-200/70 shadow-[0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_12px_24px_rgba(15,23,42,0.08)] hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 w-full"
+              className="relative aspect-square w-full flex flex-col items-center justify-center text-center p-3 sm:p-4 bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200/80 dark:border-slate-800/90 shadow-xs hover:-translate-y-1.5 hover:border-indigo-300/90 dark:hover:border-indigo-400/80 hover:shadow-[0_12px_28px_-6px_rgba(79,70,229,0.18),0_6px_16px_-4px_rgba(37,99,235,0.14)] dark:hover:shadow-[0_14px_30px_-6px_rgba(79,70,229,0.35),0_6px_16px_-4px_rgba(37,99,235,0.25)] transition-all duration-300 ease-out group"
             >
-              {/* Softer refined icon container */}
-              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-3.5 ${service.bg} ${service.color} group-hover:scale-105 transition-transform duration-300 shadow-2xs`}>
-                <Icon className="w-8 h-8 sm:w-9 sm:h-9" />
+              <div className={`w-16 h-16 xl:w-[68px] xl:h-[68px] rounded-2xl flex items-center justify-center mb-3 shrink-0 ${service.bg} dark:bg-opacity-25 ${service.color} transition-transform duration-300 group-hover:scale-105`}>
+                <Icon className="w-9.5 h-9.5 xl:w-10 xl:h-10" />
               </div>
-              <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-snug">
+              <h3 className="text-[13px] xl:text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 px-1 leading-snug">
                 {service.title}
               </h3>
             </Link>
@@ -824,46 +823,47 @@ export const HomePage: React.FC = () => {
   };
 
   const renderDesktopTests = () => (
-    <section id="ec-test" className="pt-8 border-t border-slate-200/80">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-            EC Test Series
-          </h2>
-        </div>
+    <section id="ec-test" className="pt-8 border-t border-slate-200/80 dark:border-slate-800/80 mb-6">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+          EC Test Series
+        </h2>
       </div>
 
-      {/* Compact 6 Test Modules Grid matching EC Notes service-card layout */}
+      {/* 6 Test Modules Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
         {DESKTOP_TEST_MODULES.map((module) => {
           const Icon = module.icon;
-          const cardInner = (
+          const isSectional = module.id === 'sectional';
+          const isChapterWise = module.id === 'chapter-wise';
+          const cardBorder = isSectional || isChapterWise
+            ? 'border-purple-200 dark:border-purple-900/60 hover:border-purple-400 dark:hover:border-purple-400'
+            : 'border-slate-200/80 dark:border-slate-800/90 hover:border-indigo-300/90 dark:hover:border-indigo-400/80';
+
+          const cardContent = (
             <>
-              {/* Status State Badge */}
+              {/* Badge */}
               <span
-                className={`absolute top-2.5 right-2.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${module.badgeColor}`}
+                className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                  module.isActive
+                    ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 flex items-center gap-1 shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 border border-transparent dark:border-slate-700/60 font-medium'
+                }`}
               >
-                {module.isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse" />
-                )}
+                {module.isActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                 {module.badge}
               </span>
 
-              {/* Softer refined icon container */}
               <div
-                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-3.5 ${module.bg} ${module.color} group-hover:scale-105 transition-transform duration-300 shadow-2xs`}
-              >
-                <Icon className="w-8 h-8 sm:w-9 sm:h-9" />
-              </div>
-
-              {/* Title */}
-              <h3
-                className={`text-xs sm:text-sm font-bold ${
+                className={`w-16 h-16 xl:w-[68px] xl:h-[68px] rounded-2xl flex items-center justify-center mb-3 shrink-0 ${
                   module.isActive
-                    ? 'text-slate-800 group-hover:text-purple-600'
-                    : 'text-slate-700 group-hover:text-slate-900'
-                } transition-colors leading-snug`}
+                    ? `${module.bg} dark:bg-opacity-25 ${module.color}`
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                } transition-transform duration-300 group-hover:scale-105`}
               >
+                <Icon className="w-9.5 h-9.5 xl:w-10 xl:h-10" />
+              </div>
+              <h3 className="text-[13px] xl:text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 px-1 leading-snug">
                 {module.title}
               </h3>
             </>
@@ -874,9 +874,9 @@ export const HomePage: React.FC = () => {
               <Link
                 key={module.id}
                 to={module.link}
-                className="group relative flex flex-col items-center justify-center text-center p-5 sm:p-6 min-h-[148px] bg-white rounded-2xl border border-purple-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_12px_24px_rgba(147,51,234,0.12)] hover:border-purple-400 hover:-translate-y-1 transition-all duration-300 cursor-pointer w-full"
+                className={`relative aspect-square w-full flex flex-col items-center justify-center text-center p-3 sm:p-4 bg-white dark:bg-[#131B2E] rounded-2xl border ${cardBorder} shadow-xs hover:-translate-y-1.5 hover:shadow-[0_12px_28px_-6px_rgba(79,70,229,0.18),0_6px_16px_-4px_rgba(37,99,235,0.14)] dark:hover:shadow-[0_14px_30px_-6px_rgba(79,70,229,0.35),0_6px_16px_-4px_rgba(37,99,235,0.25)] transition-all duration-300 ease-out group`}
               >
-                {cardInner}
+                {cardContent}
               </Link>
             );
           }
@@ -886,9 +886,9 @@ export const HomePage: React.FC = () => {
               key={module.id}
               type="button"
               onClick={() => setComingSoonModal(module.title)}
-              className="group relative flex flex-col items-center justify-center text-center p-5 sm:p-6 min-h-[148px] bg-white rounded-2xl border border-slate-200/70 shadow-[0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_12px_24px_rgba(15,23,42,0.06)] hover:border-slate-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer w-full text-slate-800"
+              className={`relative aspect-square w-full flex flex-col items-center justify-center text-center p-3 sm:p-4 bg-white dark:bg-[#131B2E] rounded-2xl border ${cardBorder} shadow-xs hover:-translate-y-1.5 hover:shadow-[0_12px_28px_-6px_rgba(79,70,229,0.18),0_6px_16px_-4px_rgba(37,99,235,0.14)] dark:hover:shadow-[0_14px_30px_-6px_rgba(79,70,229,0.35),0_6px_16px_-4px_rgba(37,99,235,0.25)] transition-all duration-300 ease-out group text-left cursor-pointer`}
             >
-              {cardInner}
+              {cardContent}
             </button>
           );
         })}
@@ -976,7 +976,10 @@ export const HomePage: React.FC = () => {
   );
 
   return (
-    <div className="lg:bg-slate-50/50 min-h-screen pb-6" style={{ backgroundColor: '#F4F8FF' }}>
+    <div
+      className="min-h-screen pb-6 transition-colors duration-300"
+      style={{ backgroundColor: isDark ? '#0B0F19' : '#F4F8FF' }}
+    >
       {/* Mobile Pill Switch (Normal page flow below navbar) */}
       <div className="lg:hidden bg-white border-b border-[#E2ECFF] px-4 py-3">
         <div className="flex bg-[#EEF5FF] lg:bg-slate-100 p-1 rounded-xl">
@@ -1024,7 +1027,7 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Desktop View */}
-        <div className="hidden lg:block space-y-10">
+        <div className="hidden lg:block space-y-12">
           {renderDesktopServices()}
           {renderDesktopTests()}
         </div>
@@ -1035,17 +1038,17 @@ export const HomePage: React.FC = () => {
       {/* Coming Soon Modal for Pending Test Modules */}
       {comingSoonModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 max-w-xs w-full shadow-2xl border border-slate-100 text-center animate-in fade-in zoom-in-95 duration-150">
-            <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-3">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-xs w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto mb-3">
               <Sparkles className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 mb-1">{comingSoonModal}</h3>
-            <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">{comingSoonModal}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
               This module is currently being finalized for competitive examination preparation and will be available soon. Sectional Tests are live now!
             </p>
             <button
               onClick={() => setComingSoonModal(null)}
-              className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors"
+              className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
               Got it
             </button>

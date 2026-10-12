@@ -246,10 +246,10 @@ export const AdminCurrentAffairsPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
             Current Affairs Management
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Upload and manage monthly, weekly, or special Current Affairs PDF digests for students.
           </p>
         </div>
@@ -263,7 +263,7 @@ export const AdminCurrentAffairsPage: React.FC = () => {
       </div>
 
       {/* Search & Filter Controls */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
+      <div className="bg-white dark:bg-[#141C2E] rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -272,7 +272,7 @@ export const AdminCurrentAffairsPage: React.FC = () => {
               placeholder="Search Current Affairs by title..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
             />
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -281,7 +281,7 @@ export const AdminCurrentAffairsPage: React.FC = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="w-full sm:w-auto px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                className="w-full sm:w-auto px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 dark:text-slate-200"
               >
                 <option value="all">All Status</option>
                 <option value="published">Published</option>
@@ -294,7 +294,7 @@ export const AdminCurrentAffairsPage: React.FC = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="w-full sm:w-auto px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                className="w-full sm:w-auto px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 dark:text-slate-200"
               >
                 <option value="order">Sort: Display Order</option>
                 <option value="newest">Sort: Newest First</option>
@@ -306,15 +306,15 @@ export const AdminCurrentAffairsPage: React.FC = () => {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-2xs">
+        <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-2xs">
           <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-2" />
-          <p className="text-sm text-slate-500 font-medium">Loading Current Affairs...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Loading Current Affairs...</p>
         </div>
       ) : filteredAffairs.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-2xs">
-          <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <p className="font-bold text-slate-800 text-base">No Current Affairs records found</p>
-          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+        <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-2xs">
+          <FileText className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+          <p className="font-bold text-slate-800 dark:text-slate-200 text-base">No Current Affairs records found</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
             {searchTerm || statusFilter !== 'all'
               ? 'Try changing your search keywords or filter settings.'
               : 'Add your first Current Affairs PDF to publish study material for students.'}
@@ -322,7 +322,7 @@ export const AdminCurrentAffairsPage: React.FC = () => {
           {!searchTerm && statusFilter === 'all' && (
             <button
               onClick={handleOpenAdd}
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 font-bold text-xs rounded-xl transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               Add Current Affairs
@@ -332,10 +332,10 @@ export const AdminCurrentAffairsPage: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {/* Desktop Table View (Hidden on mobile) */}
-          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div className="hidden md:block bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
                   <tr>
                     <th className="px-6 py-4">Title & Document</th>
                     <th className="px-6 py-4">File Size</th>
@@ -345,26 +345,26 @@ export const AdminCurrentAffairsPage: React.FC = () => {
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredAffairs.map((ca) => (
-                    <tr key={ca.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={ca.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
                             <FileText className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="font-bold text-slate-900 line-clamp-1 max-w-[280px]">
+                            <p className="font-bold text-slate-900 dark:text-[#F8FAFC] line-clamp-1 max-w-[280px]">
                               {ca.title}
                             </p>
-                            <p className="text-[11px] text-slate-500 mt-0.5 max-w-[280px] truncate">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 max-w-[280px] truncate">
                               {ca.file_name || 'Document.pdf'}
                             </p>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 text-slate-600 text-xs font-medium">
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-xs font-medium">
                         {formatBytes(ca.file_size)}
                       </td>
 
@@ -373,8 +373,8 @@ export const AdminCurrentAffairsPage: React.FC = () => {
                           onClick={() => handleTogglePublish(ca)}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                             ca.published
-                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
-                              : 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300'
+                              ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800/60'
+                              : 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-800/60'
                           }`}
                           title="Click to toggle published status"
                         >
@@ -386,11 +386,11 @@ export const AdminCurrentAffairsPage: React.FC = () => {
                         </button>
                       </td>
 
-                      <td className="px-6 py-4 text-slate-600 font-semibold text-xs">
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 font-semibold text-xs">
                         {ca.display_order ?? 0}
                       </td>
 
-                      <td className="px-6 py-4 text-slate-500 text-xs">
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
                         {new Date(ca.created_at).toLocaleDateString('en-IN', {
                           day: 'numeric',
                           month: 'short',
@@ -402,14 +402,14 @@ export const AdminCurrentAffairsPage: React.FC = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleOpenEdit(ca)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
                             title="Edit Current Affairs"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setDeletingItem(ca)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                             title="Delete Current Affairs"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -428,28 +428,28 @@ export const AdminCurrentAffairsPage: React.FC = () => {
             {filteredAffairs.map((ca) => (
               <div
                 key={ca.id}
-                className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-3"
+                className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs space-y-3"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center justify-center shrink-0">
+                  <div className="w-11 h-11 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-slate-900 text-sm break-words leading-snug">
+                    <h3 className="font-bold text-slate-900 dark:text-[#F8FAFC] text-sm break-words leading-snug">
                       {ca.title}
                     </h3>
-                    <p className="text-[11px] text-slate-500 mt-1 break-words">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 break-words">
                       {ca.file_name || 'Document.pdf'} • {formatBytes(ca.file_size)}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs flex-wrap">
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs flex-wrap">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] text-slate-500 font-medium">
-                      Order: <strong className="text-slate-800">{ca.display_order ?? 0}</strong>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                      Order: <strong className="text-slate-800 dark:text-slate-200">{ca.display_order ?? 0}</strong>
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
                       {new Date(ca.created_at).toLocaleDateString('en-IN', {
                         day: 'numeric',
                         month: 'short',
@@ -462,8 +462,8 @@ export const AdminCurrentAffairsPage: React.FC = () => {
                     onClick={() => handleTogglePublish(ca)}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer min-h-[32px] ${
                       ca.published
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                        : 'bg-amber-100 text-amber-800 border border-amber-300'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/60'
+                        : 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800/60'
                     }`}
                   >
                     {ca.published ? (
@@ -474,17 +474,17 @@ export const AdminCurrentAffairsPage: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                   <button
                     onClick={() => handleOpenEdit(ca)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors min-h-[44px]"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors min-h-[44px]"
                   >
-                    <Edit2 className="w-3.5 h-3.5 text-blue-600" />
+                    <Edit2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                     <span>Edit</span>
                   </button>
                   <button
                     onClick={() => setDeletingItem(ca)}
-                    className="flex items-center justify-center p-2.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-colors min-w-[44px] min-h-[44px]"
+                    className="flex items-center justify-center p-2.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl border border-rose-200 dark:border-rose-900/60 transition-colors min-w-[44px] min-h-[44px]"
                     title="Delete Current Affairs"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -498,36 +498,36 @@ export const AdminCurrentAffairsPage: React.FC = () => {
 
       {/* Add / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141C2E] rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
                 {editingItem ? 'Edit Current Affairs' : 'Add Current Affairs'}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
+            <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50 dark:bg-slate-900/50">
               <form id="ca-form" onSubmit={handleSave} className="space-y-5">
                 {/* PDF File Upload */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                     PDF Document {!editingItem && <span className="text-rose-500">*</span>}
                   </label>
-                  <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-blue-400 transition-colors bg-white">
+                  <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-4 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors bg-white dark:bg-slate-900">
                     <input
                       type="file"
                       accept="application/pdf,.pdf"
                       onChange={handlePdfFileChange}
-                      className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                      className="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 dark:file:bg-blue-950/60 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 cursor-pointer"
                     />
                     {editingItem && !pdfFile && (
-                      <p className="text-[10px] text-emerald-600 mt-2 font-medium">
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
                         Keep existing: {editingItem.file_name || 'Document.pdf'}
                       </p>
                     )}
@@ -536,7 +536,7 @@ export const AdminCurrentAffairsPage: React.FC = () => {
 
                 {/* Title */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                     Title <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -548,16 +548,16 @@ export const AdminCurrentAffairsPage: React.FC = () => {
                       setHasManuallyEditedTitle(true);
                     }}
                     placeholder="e.g. Current Affairs September 2026"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                   />
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">
                     Auto-filled from filename when you select a PDF, or enter your custom title.
                   </p>
                 </div>
 
                 {/* Display Order */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                     Display Order
                   </label>
                   <input
@@ -565,9 +565,9 @@ export const AdminCurrentAffairsPage: React.FC = () => {
                     value={displayOrder}
                     onChange={(e) => setDisplayOrder(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="e.g. 1"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                   />
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">
                     Lower numbers appear first on the student page.
                   </p>
                 </div>
@@ -582,11 +582,11 @@ export const AdminCurrentAffairsPage: React.FC = () => {
                         onChange={(e) => setPublished(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-10 h-5 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                      <div className="w-10 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
                     </div>
                     <div>
-                      <span className="text-sm font-bold text-slate-800 block">Publish to Students</span>
-                      <span className="text-[11px] text-slate-400 block">
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200 block">Publish to Students</span>
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 block">
                         If checked, this Current Affairs PDF will immediately appear on the student-facing page.
                       </span>
                     </div>
@@ -595,11 +595,11 @@ export const AdminCurrentAffairsPage: React.FC = () => {
               </form>
             </div>
 
-            <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white rounded-b-2xl">
+            <div className="p-5 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-white dark:bg-[#141C2E] rounded-b-2xl">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>

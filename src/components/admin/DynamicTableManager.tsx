@@ -60,7 +60,7 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
       const { error } = await supabase.from(tableName).delete().eq(primaryKey, item[primaryKey]);
       if (error) throw error;
       toast.success('Item deleted successfully');
-      loadData();
+      setData(prev => prev.filter(row => row[primaryKey] !== item[primaryKey]));
     } catch (e: any) {
       toast.error('Delete failed: ' + e.message);
     } finally {
@@ -133,17 +133,38 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
       }
 
       if (editingId) {
-        const { error } = await supabase.from(tableName).update(toSave).eq(primaryKey, editingId);
+        const { data: updatedRows, error } = await supabase
+          .from(tableName)
+          .update(toSave)
+          .eq(primaryKey, editingId)
+          .select();
         if (error) throw error;
         toast.success('Updated successfully');
+
+        if (updatedRows && updatedRows.length > 0) {
+          const savedRow = updatedRows[0];
+          setData(prev => prev.map(row => row[primaryKey] === editingId ? { ...row, ...savedRow } : row));
+        } else {
+          setData(prev => prev.map(row => row[primaryKey] === editingId ? { ...row, ...toSave } : row));
+        }
       } else {
-        const { error } = await supabase.from(tableName).insert([toSave]);
+        const { data: insertedRows, error } = await supabase
+          .from(tableName)
+          .insert([toSave])
+          .select();
         if (error) throw error;
         toast.success('Created successfully');
+
+        if (insertedRows && insertedRows.length > 0) {
+          const newRow = insertedRows[0];
+          // Since data is sorted by created_at DESC, new record belongs at top
+          setData(prev => [newRow, ...prev]);
+        } else {
+          await loadData();
+        }
       }
 
       setIsModalOpen(false);
-      loadData();
     } catch (err: any) {
       toast.error('Save failed: ' + err.message);
     } finally {
@@ -192,7 +213,7 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
         <BackButton fallbackTo="/admin" label="Back to Dashboard" forceFallback={true} />
       </div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-[#F8FAFC]">{title}</h1>
         <button 
           onClick={openAdd}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-semibold"
@@ -203,7 +224,7 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
       </div>
 
       {dbError && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl mb-6">
+        <div className="bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 px-4 py-3 rounded-xl mb-6">
           <p className="font-semibold mb-1">Database Error</p>
           <p className="text-sm">{dbError}</p>
           {dbError.includes('schema cache') && (
@@ -214,8 +235,8 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-4 border-b border-slate-200 bg-slate-50">
+      <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#1B263B]">
           <div className="relative max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -223,7 +244,7 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm"
+              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-[#141C2E] border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-[#F8FAFC] placeholder-slate-400"
             />
           </div>
         </div>
@@ -231,7 +252,7 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+            <thead className="bg-slate-50 dark:bg-[#1B263B] border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="px-6 py-3 font-medium">Title/Identifier</th>
                 {fields.filter(f => f.type === 'select' || f.type === 'number').slice(0,2).map(f => (
@@ -241,7 +262,7 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
                 <th className="px-6 py-3 font-medium text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">
@@ -250,37 +271,37 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                     No records found. Note: Ensure you have executed schema.sql in Supabase.
                   </td>
                 </tr>
               ) : (
                 filteredData.map((item) => (
-                  <tr key={item[primaryKey] || Math.random()} className="hover:bg-slate-50">
+                  <tr key={item[primaryKey] || Math.random()} className="hover:bg-slate-50 dark:hover:bg-[#1B263B]/60">
                     <td className="px-6 py-4">
-                      <p className="font-medium text-slate-900 max-w-xs truncate">{item.title || item.question_text || item.exam_name || item.key || item[primaryKey]}</p>
+                      <p className="font-medium text-slate-900 dark:text-[#F8FAFC] max-w-xs truncate">{item.title || item.question_text || item.exam_name || item.key || item[primaryKey]}</p>
                     </td>
                     {fields.filter(f => f.type === 'select' || f.type === 'number').slice(0,2).map(f => (
-                      <td key={f.name} className="px-6 py-4 text-slate-600">{item[f.name]}</td>
+                      <td key={f.name} className="px-6 py-4 text-slate-600 dark:text-slate-300">{item[f.name]}</td>
                     ))}
                     <td className="px-6 py-4">
                       {item.published !== undefined && (
-                        <span className={`inline-flex px-2 py-1 rounded-md text-xs font-medium ${item.published ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                        <span className={`inline-flex px-2 py-1 rounded-md text-xs font-medium ${item.published ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-[#1B263B] text-slate-600 dark:text-slate-300'}`}>
                           {item.published ? 'Published' : 'Draft'}
                         </span>
                       )}
                       {item.is_active !== undefined && (
-                         <span className={`inline-flex px-2 py-1 rounded-md text-xs font-medium ${item.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                         <span className={`inline-flex px-2 py-1 rounded-md text-xs font-medium ${item.is_active ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-[#1B263B] text-slate-600 dark:text-slate-300'}`}>
                           {item.is_active ? 'Active' : 'Inactive'}
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end items-center gap-2">
-                        <button onClick={() => openEdit(item)} className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 cursor-pointer" title="Edit">
+                        <button onClick={() => openEdit(item)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/50 cursor-pointer" title="Edit">
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDeleteClick(item)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer" title="Delete">
+                        <button onClick={() => handleDeleteClick(item)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer" title="Delete">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -297,58 +318,58 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
           {loading ? (
             <div className="py-12 text-center">
               <Loader2 className="w-6 h-6 animate-spin text-blue-500 mx-auto mb-2" />
-              <p className="text-xs text-slate-500">Loading records...</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Loading records...</p>
             </div>
           ) : filteredData.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 text-sm">
+            <div className="py-12 text-center text-slate-500 dark:text-slate-400 text-sm">
               No records found.
             </div>
           ) : (
             filteredData.map((item) => (
               <div
                 key={item[primaryKey] || Math.random()}
-                className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs space-y-2.5"
+                className="bg-white dark:bg-[#1B263B] rounded-xl border border-slate-200 dark:border-slate-700 p-3.5 shadow-2xs space-y-2.5"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 text-sm break-words">
+                    <p className="font-bold text-slate-900 dark:text-[#F8FAFC] text-sm break-words">
                       {item.title || item.question_text || item.exam_name || item.key || item[primaryKey]}
                     </p>
                   </div>
                   {item.published !== undefined && (
-                    <span className={`shrink-0 inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold ${item.published ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                    <span className={`shrink-0 inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold ${item.published ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                       {item.published ? 'Published' : 'Draft'}
                     </span>
                   )}
                   {item.is_active !== undefined && (
-                    <span className={`shrink-0 inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold ${item.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                    <span className={`shrink-0 inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold ${item.is_active ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                       {item.is_active ? 'Active' : 'Inactive'}
                     </span>
                   )}
                 </div>
 
                 {fields.filter(f => f.type === 'select' || f.type === 'number').slice(0, 3).length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap text-xs text-slate-600 pt-1 border-t border-slate-100">
+                  <div className="flex items-center gap-2 flex-wrap text-xs text-slate-600 dark:text-slate-300 pt-1 border-t border-slate-100 dark:border-slate-800">
                     {fields.filter(f => f.type === 'select' || f.type === 'number').slice(0, 3).map(f => (
-                      <span key={f.name} className="inline-flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded text-[11px]">
+                      <span key={f.name} className="inline-flex items-center gap-1 bg-slate-50 dark:bg-[#141C2E] px-2 py-0.5 rounded text-[11px]">
                         <span className="text-slate-400 font-medium">{f.label}:</span>
-                        <strong className="text-slate-700">{item[f.name] ?? '-'}</strong>
+                        <strong className="text-slate-700 dark:text-slate-200">{item[f.name] ?? '-'}</strong>
                       </span>
                     ))}
                   </div>
                 )}
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                   <button
                     onClick={() => openEdit(item)}
-                    className="flex-1 flex items-center justify-center gap-1 py-2 px-3 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 min-h-[44px]"
+                    className="flex-1 flex items-center justify-center gap-1 py-2 px-3 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-[#141C2E] hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 min-h-[44px]"
                   >
-                    <Edit2 className="w-3.5 h-3.5 text-blue-600" />
+                    <Edit2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                     <span>Edit</span>
                   </button>
                   <button
                     onClick={() => handleDeleteClick(item)}
-                    className="flex items-center justify-center p-2.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 min-w-[44px] min-h-[44px]"
+                    className="flex items-center justify-center p-2.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-xl border border-rose-200 dark:border-rose-900/50 min-w-[44px] min-h-[44px]"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -362,32 +383,32 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">{editingId ? 'Edit' : 'Add'} {title}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5"/></button>
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141C2E] rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 dark:border-slate-800">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-[#F8FAFC]">{editingId ? 'Edit' : 'Add'} {title}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><X className="w-5 h-5"/></button>
             </div>
             <div className="p-6 overflow-y-auto flex-1">
               <form id="crud-form" onSubmit={handleSave} className="space-y-4">
                 {fields.map(f => (
                   <div key={f.name} className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-slate-700">{f.label} {f.required && '*'}</label>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">{f.label} {f.required && '*'}</label>
                     
                     {f.type === 'text' && (
-                      <input type="text" required={f.required} value={formData[f.name] || ''} onChange={e => setFormData({...formData, [f.name]: e.target.value})} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm" />
+                      <input type="text" required={f.required} value={formData[f.name] || ''} onChange={e => setFormData({...formData, [f.name]: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-[#1B263B] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-[#F8FAFC] rounded-xl text-sm" />
                     )}
                     
                     {f.type === 'textarea' && (
-                      <textarea required={f.required} rows={3} value={formData[f.name] || ''} onChange={e => setFormData({...formData, [f.name]: e.target.value})} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm" />
+                      <textarea required={f.required} rows={3} value={formData[f.name] || ''} onChange={e => setFormData({...formData, [f.name]: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-[#1B263B] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-[#F8FAFC] rounded-xl text-sm" />
                     )}
                     
                     {f.type === 'number' && (
-                      <input type="number" required={f.required} value={formData[f.name] || ''} onChange={e => setFormData({...formData, [f.name]: Number(e.target.value)})} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm" />
+                      <input type="number" required={f.required} value={formData[f.name] || ''} onChange={e => setFormData({...formData, [f.name]: Number(e.target.value)})} className="w-full px-3 py-2 bg-white dark:bg-[#1B263B] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-[#F8FAFC] rounded-xl text-sm" />
                     )}
                     
                     {f.type === 'select' && f.options && (
-                      <select required={f.required} value={formData[f.name] || ''} onChange={e => setFormData({...formData, [f.name]: e.target.value})} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm">
+                      <select required={f.required} value={formData[f.name] || ''} onChange={e => setFormData({...formData, [f.name]: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-[#1B263B] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-[#F8FAFC] rounded-xl text-sm">
                         <option value="">Select...</option>
                         {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
@@ -395,23 +416,23 @@ export const DynamicTableManager: React.FC<Props> = ({ tableName, title, fields,
                     
                     {f.type === 'boolean' && (
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={formData[f.name] || false} onChange={e => setFormData({...formData, [f.name]: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300" />
-                        <span className="text-sm text-slate-600">{f.label}</span>
+                        <input type="checkbox" checked={formData[f.name] || false} onChange={e => setFormData({...formData, [f.name]: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600" />
+                        <span className="text-sm text-slate-600 dark:text-slate-300">{f.label}</span>
                       </label>
                     )}
                     
                     {(f.type === 'file_pdf' || f.type === 'file_image') && (
-                      <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center">
-                        <input type="file" accept={f.type === 'file_pdf' ? '.pdf' : 'image/*'} onChange={e => handleFileChange(f.name, e.target.files?.[0] || null)} className="text-sm" />
-                        {formData[f.name] && !files[f.name] && <p className="text-xs text-emerald-600 mt-2">Current file stored securely.</p>}
+                      <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-4 text-center">
+                        <input type="file" accept={f.type === 'file_pdf' ? '.pdf' : 'image/*'} onChange={e => handleFileChange(f.name, e.target.files?.[0] || null)} className="text-sm text-slate-600 dark:text-slate-300" />
+                        {formData[f.name] && !files[f.name] && <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">Current file stored securely.</p>}
                       </div>
                     )}
                   </div>
                 ))}
               </form>
             </div>
-            <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 rounded-b-2xl">
-              <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl">Cancel</button>
+            <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50 dark:bg-[#1B263B] rounded-b-2xl">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl">Cancel</button>
               <button type="submit" form="crud-form" disabled={saving} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl flex items-center gap-2 disabled:opacity-50">
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                 Save

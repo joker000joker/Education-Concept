@@ -429,14 +429,14 @@ export const AdminBannersPage: React.FC = () => {
             <BackButton fallbackTo="/admin" label="Back to Admin Dashboard" forceFallback={true} />
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
               <ImageIcon className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
                 Home Banners
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                 Manage promotional 16:9 carousel banners for EC Notes and EC Test.
               </p>
             </div>
@@ -453,24 +453,24 @@ export const AdminBannersPage: React.FC = () => {
       </div>
 
       {/* 16:9 Standard Format Notice Banner */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50/60 rounded-2xl border border-blue-100 p-4 sm:p-5 text-xs text-blue-900 shadow-2xs">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50/60 dark:from-blue-950/40 dark:to-indigo-950/30 rounded-2xl border border-blue-100 dark:border-blue-900/50 p-4 sm:p-5 text-xs text-blue-900 dark:text-blue-200 shadow-2xs">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
             16:9
           </div>
           <div className="space-y-1">
-            <div className="font-bold text-sm text-blue-950">
+            <div className="font-bold text-sm text-blue-950 dark:text-blue-100">
               Standard Banner Aspect Ratio: 16:9
             </div>
-            <p className="text-blue-800 leading-relaxed">
-              Recommended upload size is <span className="font-bold text-blue-900">1920 × 1080 px</span>. Supported formats: <span className="font-semibold">JPG, JPEG, PNG, WEBP</span> (up to 10MB). All student-facing banners maintain their 16:9 ratio without stretching or distortion.
+            <p className="text-blue-800 dark:text-blue-300 leading-relaxed">
+              Recommended upload size is <span className="font-bold text-blue-900 dark:text-blue-100">1920 × 1080 px</span>. Supported formats: <span className="font-semibold">JPG, JPEG, PNG, WEBP</span> (up to 10MB). All student-facing banners maintain their 16:9 ratio without stretching or distortion.
             </p>
           </div>
         </div>
       </div>
 
       {/* Search, Filter & Sort Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-4">
+      <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-4">
         <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -478,7 +478,7 @@ export const AdminBannersPage: React.FC = () => {
             placeholder="Search banners by title, link, section, or filename..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400"
+            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -487,7 +487,7 @@ export const AdminBannersPage: React.FC = () => {
           <select
             value={sectionFilter}
             onChange={(e) => setSectionFilter(e.target.value as any)}
-            className="text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 cursor-pointer"
+            className="text-xs font-semibold px-3 py-2 bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 dark:text-slate-200 cursor-pointer"
           >
             <option value="all">All Sections ({banners.length})</option>
             <option value="EC Notes">EC Notes ({banners.filter((b) => b.section !== 'EC Test').length})</option>
@@ -498,7 +498,7 @@ export const AdminBannersPage: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 cursor-pointer"
+            className="text-xs font-semibold px-3 py-2 bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 dark:text-slate-200 cursor-pointer"
           >
             <option value="all">All Status ({banners.length})</option>
             <option value="active">Active Only ({banners.filter((b) => b.is_active).length})</option>
@@ -509,7 +509,7 @@ export const AdminBannersPage: React.FC = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 cursor-pointer"
+            className="text-xs font-semibold px-3 py-2 bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 dark:text-slate-200 cursor-pointer"
           >
             <option value="order">Sort: Display Order</option>
             <option value="newest">Sort: Newest First</option>
@@ -519,21 +519,21 @@ export const AdminBannersPage: React.FC = () => {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-xs">
+        <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-16 text-center shadow-xs">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-slate-700">Loading home banners...</p>
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Loading home banners...</p>
         </div>
       ) : filteredBanners.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center shadow-xs max-w-md mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white dark:bg-[#141C2E] rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-xs max-w-md mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/50 flex items-center justify-center mx-auto mb-4">
             <ImageIcon className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC] mb-1">
             {searchTerm || sectionFilter !== 'all' || statusFilter !== 'all'
               ? 'No Matching Banners Found'
               : 'No banners added yet.'}
           </h3>
-          <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
             {searchTerm || sectionFilter !== 'all' || statusFilter !== 'all'
               ? 'Try adjusting your search query, section, or status filters.'
               : 'Add 16:9 promotional banners for EC Notes or EC Test series directly from the admin panel.'}
@@ -549,11 +549,11 @@ export const AdminBannersPage: React.FC = () => {
       ) : (
         <>
           {/* Desktop Table View (hidden on mobile) */}
-          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="hidden md:block bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/75 dark:bg-[#0B1120]/75 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     <th className="py-3 px-4 w-40">Preview</th>
                     <th className="py-3 px-4">Title</th>
                     <th className="py-3 px-4 w-32">Section</th>
@@ -563,7 +563,7 @@ export const AdminBannersPage: React.FC = () => {
                     <th className="py-3 px-4 w-28 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                   {filteredBanners.map((item) => {
                     const preview = previewUrls[item.id];
                     const fileName = getFileNameFromPath(item.image_path);
@@ -577,10 +577,10 @@ export const AdminBannersPage: React.FC = () => {
                       : '—';
 
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                         {/* 1. Preview */}
                         <td className="py-3.5 px-4">
-                          <div className="w-36 aspect-video rounded-lg overflow-hidden bg-slate-900 border border-slate-200 relative group">
+                          <div className="w-36 aspect-video rounded-lg overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-700 relative group">
                             {preview ? (
                               <img
                                 src={preview}
@@ -608,11 +608,11 @@ export const AdminBannersPage: React.FC = () => {
 
                         {/* 2. Title & Links */}
                         <td className="py-3.5 px-4">
-                          <div className="font-bold text-slate-900 text-sm mb-0.5 line-clamp-1">
+                          <div className="font-bold text-slate-900 dark:text-[#F8FAFC] text-sm mb-0.5 line-clamp-1">
                             {item.title || fileName}
                           </div>
-                          <div className="flex flex-col gap-0.5 text-[11px] text-slate-500">
-                            <span className="font-mono text-slate-600 truncate max-w-[220px]">
+                          <div className="flex flex-col gap-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span className="font-mono text-slate-600 dark:text-slate-300 truncate max-w-[220px]">
                               {fileName}
                             </span>
                             {item.link_url && (
@@ -620,7 +620,7 @@ export const AdminBannersPage: React.FC = () => {
                                 href={item.link_url}
                                 target={item.link_url.startsWith('http') ? '_blank' : '_self'}
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-xs truncate max-w-[220px]"
+                                className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-xs truncate max-w-[220px]"
                                 title={item.link_url}
                               >
                                 <span className="truncate">{item.link_url}</span>
@@ -635,8 +635,8 @@ export const AdminBannersPage: React.FC = () => {
                           <span
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
                               isTest
-                                ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                                ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/60'
+                                : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60'
                             }`}
                           >
                             <span
@@ -654,8 +654,8 @@ export const AdminBannersPage: React.FC = () => {
                             onClick={() => handleToggleStatus(item)}
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
                               item.is_active
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                                : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
                             }`}
                             title="Click to toggle publish status"
                           >
@@ -670,14 +670,14 @@ export const AdminBannersPage: React.FC = () => {
 
                         {/* 5. Display Order */}
                         <td className="py-3.5 px-4 text-center">
-                          <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200">
+                          <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700">
                             #{item.display_order ?? 0}
                           </span>
                         </td>
 
                         {/* 6. Created Date */}
-                        <td className="py-3.5 px-4 text-slate-500 text-xs">
-                          <span className="inline-flex items-center gap-1 text-slate-500">
+                        <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 text-xs">
+                          <span className="inline-flex items-center gap-1 text-slate-500 dark:text-slate-400">
                             <Calendar className="w-3 h-3 text-slate-400" />
                             {formattedDate}
                           </span>
@@ -688,14 +688,14 @@ export const AdminBannersPage: React.FC = () => {
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => handleOpenEdit(item)}
-                              className="p-1.5 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
                               title="Edit Banner"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setDeletingItem(item)}
-                              className="p-1.5 rounded-lg text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                               title="Delete Banner"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -727,10 +727,10 @@ export const AdminBannersPage: React.FC = () => {
               return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3"
+                  className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs space-y-3"
                 >
                   {/* 16:9 Image Preview */}
-                  <div className="w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 relative">
+                  <div className="w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-800 relative">
                     {preview ? (
                       <img
                         src={preview}
@@ -761,31 +761,31 @@ export const AdminBannersPage: React.FC = () => {
 
                   {/* Title & Details */}
                   <div className="space-y-1">
-                    <h3 className="font-bold text-slate-900 text-sm break-words">
+                    <h3 className="font-bold text-slate-900 dark:text-[#F8FAFC] text-sm break-words">
                       {item.title || fileName}
                     </h3>
-                    <div className="text-[11px] text-slate-500 truncate">
-                      File: <span className="font-mono text-slate-700">{fileName}</span>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      File: <span className="font-mono text-slate-700 dark:text-slate-300">{fileName}</span>
                     </div>
                     {item.link_url && (
-                      <div className="text-[11px] text-blue-600 truncate flex items-center gap-1 pt-0.5">
+                      <div className="text-[11px] text-blue-600 dark:text-blue-400 truncate flex items-center gap-1 pt-0.5">
                         <ExternalLink className="w-3 h-3 shrink-0" />
                         <span className="truncate">{item.link_url}</span>
                       </div>
                     )}
-                    <div className="text-[11px] text-slate-400 pt-0.5">
+                    <div className="text-[11px] text-slate-400 dark:text-slate-500 pt-0.5">
                       Created: {formattedDate}
                     </div>
                   </div>
 
                   {/* Actions & Status Row */}
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                     <button
                       onClick={() => handleToggleStatus(item)}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all min-h-[44px] ${
                         item.is_active
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-slate-100 text-slate-600 border border-slate-200'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                       }`}
                     >
                       <span
@@ -799,14 +799,14 @@ export const AdminBannersPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleOpenEdit(item)}
-                        className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-200 min-h-[44px]"
+                        className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:bg-slate-300 border border-slate-200 dark:border-slate-700 min-h-[44px]"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                         <span>Edit</span>
                       </button>
                       <button
                         onClick={() => setDeletingItem(item)}
-                        className="inline-flex items-center justify-center p-2.5 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 min-w-[44px] min-h-[44px]"
+                        className="inline-flex items-center justify-center p-2.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 min-w-[44px] min-h-[44px]"
                         title="Delete Banner"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -823,21 +823,21 @@ export const AdminBannersPage: React.FC = () => {
       {/* Add / Edit Banner Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-xl my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white dark:bg-[#141C2E] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-xl my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
                   {editingItem ? 'Edit Banner' : 'Add Banner'}
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   16:9 ratio banner (1920 × 1080 recommended)
                 </p>
               </div>
               <button
                 onClick={() => !saving && setIsModalOpen(false)}
                 disabled={saving}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -847,7 +847,7 @@ export const AdminBannersPage: React.FC = () => {
             <form onSubmit={handleSave} className="p-6 space-y-5">
               {/* 1. Image Upload Area */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                   Banner Image {editingItem ? '(Leave blank to keep existing)' : <span className="text-rose-500">*</span>}
                 </label>
 
@@ -856,15 +856,15 @@ export const AdminBannersPage: React.FC = () => {
                   htmlFor="banner-image-input"
                   className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-4 sm:p-5 cursor-pointer transition-all ${
                     imageFile
-                      ? 'border-blue-300 bg-blue-50/40'
-                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300'
+                      ? 'border-blue-400 dark:border-blue-500 bg-blue-50/40 dark:bg-blue-950/30'
+                      : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:border-slate-300 dark:hover:border-slate-600'
                   }`}
                 >
-                  <UploadCloud className={`w-8 h-8 mb-2 ${imageFile ? 'text-blue-600' : 'text-slate-400'}`} />
-                  <span className="text-xs font-bold text-slate-800">
+                  <UploadCloud className={`w-8 h-8 mb-2 ${imageFile ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     {imageFile ? 'Change Selected Image' : 'Select Banner Image'}
                   </span>
-                  <span className="text-[11px] text-slate-400 mt-0.5">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                     16:9 Aspect Ratio (1920 × 1080 px) • JPG, PNG, WEBP up to 10MB
                   </span>
                   <input
@@ -881,26 +881,26 @@ export const AdminBannersPage: React.FC = () => {
                   <div className="mt-3 space-y-2">
                     {/* Dimension & Aspect Ratio Badges */}
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
                         {validationInfo.width} × {validationInfo.height} px
                       </span>
                       {imageFile && (
-                        <span className="text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                        <span className="text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
                           {formatBytes(imageFile.size)}
                         </span>
                       )}
-                      <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         Valid 16:9 Ratio
                       </span>
                     </div>
 
                     {/* Preview Box */}
                     <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         16:9 Preview
                       </span>
-                      <div className="w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200">
+                      <div className="w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-800">
                         <img
                           src={validationInfo.previewUrl}
                           alt="Selected banner preview"
@@ -914,10 +914,10 @@ export const AdminBannersPage: React.FC = () => {
                 {/* Existing Image Preview (if editing and no new file selected) */}
                 {!imageFile && existingImageUrl && (
                   <div className="mt-3 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Current Banner Image
                     </span>
-                    <div className="w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200">
+                    <div className="w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-800">
                       <img
                         src={existingImageUrl}
                         alt="Current banner"
@@ -930,26 +930,26 @@ export const AdminBannersPage: React.FC = () => {
 
               {/* 2. Section Selector (REQUIRED) */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Section <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={section}
                   onChange={(e) => setSection(e.target.value as 'EC Notes' | 'EC Test')}
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-800"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all font-medium text-slate-800 dark:text-slate-200"
                   required
                 >
                   <option value="EC Notes">EC Notes</option>
                   <option value="EC Test">EC Test</option>
                 </select>
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                   Every banner belongs to exactly one section and will show only in that designated area.
                 </p>
               </div>
 
               {/* 3. Title / Label (with auto-fill support) */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Title (Optional)
                 </label>
                 <input
@@ -957,16 +957,16 @@ export const AdminBannersPage: React.FC = () => {
                   placeholder="e.g. Welcome to Education Concept"
                   value={title}
                   onChange={handleTitleChange}
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                   Auto-filled from filename on selection. You can manually customize it.
                 </p>
               </div>
 
               {/* 4. Link URL / Action (Optional) */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Destination Link URL (Optional)
                 </label>
                 <input
@@ -974,9 +974,9 @@ export const AdminBannersPage: React.FC = () => {
                   placeholder="e.g. /notes, /paid-ebooks, or https://..."
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                   When students click the banner, they will navigate to this route or URL.
                 </p>
               </div>
@@ -984,7 +984,7 @@ export const AdminBannersPage: React.FC = () => {
               {/* 5. Row: Display Order & Status */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                     Display Order <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -992,17 +992,17 @@ export const AdminBannersPage: React.FC = () => {
                     min="0"
                     value={displayOrder}
                     onChange={(e) => setDisplayOrder(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                     placeholder="0"
                     required
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                     Lower numbers appear first in the banner carousel.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                     Publish Status
                   </label>
                   <div className="pt-1.5">
@@ -1011,9 +1011,9 @@ export const AdminBannersPage: React.FC = () => {
                         type="checkbox"
                         checked={isActive}
                         onChange={(e) => setIsActive(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 rounded-sm border-slate-300 focus:ring-blue-500"
+                        className="w-4 h-4 text-blue-600 rounded-sm border-slate-300 dark:border-slate-700 focus:ring-blue-500"
                       />
-                      <span className="text-xs font-semibold text-slate-800">
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                         {isActive ? 'Active (Visible to Students)' : 'Draft (Hidden from Students)'}
                       </span>
                     </label>
@@ -1022,12 +1022,12 @@ export const AdminBannersPage: React.FC = () => {
               </div>
 
               {/* Modal Actions */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   disabled={saving}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer min-h-[44px]"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer min-h-[44px]"
                 >
                   Cancel
                 </button>

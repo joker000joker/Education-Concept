@@ -42,6 +42,7 @@ export const AdminRecommendationsPage: React.FC = () => {
   const [selectedType, setSelectedType] = useState<RecommendationContentType>('notes');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [itemSearch, setItemSearch] = useState('');
+  const [debouncedItemSearch, setDebouncedItemSearch] = useState('');
   const [availableItems, setAvailableItems] = useState<{
     id: number;
     title: string;
@@ -101,28 +102,56 @@ export const AdminRecommendationsPage: React.FC = () => {
     }
   };
 
+  // 300 ms debounce for item search input to prevent database queries on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedItemSearch(itemSearch);
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [itemSearch]);
+
   // Load items for the selected content type in Add Modal
+  // Cancels/ignores outdated pending searches when input changes or modal unmounts
   useEffect(() => {
     if (!isAddModalOpen) return;
-    loadAvailableContentItems();
-  }, [isAddModalOpen, selectedType, categoryFilter, itemSearch]);
 
-  const loadAvailableContentItems = async () => {
-    try {
-      setLoadingItems(true);
-      const items = await fetchExistingContentItems(selectedType, {
-        categoryFilter,
-        searchTerm: itemSearch,
-      });
-      setAvailableItems(items);
-    } catch (err: any) {
-      console.error('Error loading content items:', err);
-      toast.error('Could not load existing content: ' + (err.message || 'Unknown error'));
-      setAvailableItems([]);
-    } finally {
-      setLoadingItems(false);
-    }
-  };
+    let isCancelled = false;
+    const abortController = new AbortController();
+
+    const loadItems = async () => {
+      try {
+        setLoadingItems(true);
+        const items = await fetchExistingContentItems(selectedType, {
+          categoryFilter,
+          searchTerm: debouncedItemSearch,
+          signal: abortController.signal,
+        });
+        if (!isCancelled) {
+          setAvailableItems(items);
+        }
+      } catch (err: any) {
+        if (!isCancelled && !String(err?.message).includes('AbortError')) {
+          console.error('Error loading content items:', err);
+          toast.error('Could not load existing content: ' + (err.message || 'Unknown error'));
+          setAvailableItems([]);
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoadingItems(false);
+        }
+      }
+    };
+
+    loadItems();
+
+    return () => {
+      isCancelled = true;
+      abortController.abort();
+    };
+  }, [isAddModalOpen, selectedType, categoryFilter, debouncedItemSearch]);
 
   // Set default display order when opening add modal
   const handleOpenAddModal = () => {
@@ -134,6 +163,7 @@ export const AdminRecommendationsPage: React.FC = () => {
     setSelectedType('notes');
     setCategoryFilter('all');
     setItemSearch('');
+    setDebouncedItemSearch('');
     setSelectedItemId(null);
     setNewIsActive(true);
     setIsAddModalOpen(true);
@@ -403,11 +433,11 @@ export const AdminRecommendationsPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <BackButton fallbackTo="/admin" label="Back to Dashboard" />
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight flex items-center gap-2">
               <Star className="w-6 h-6 text-amber-500 fill-amber-400" />
               Top Recommendations
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               Select existing uploaded content from modules to feature on the homepage.
             </p>
           </div>
@@ -421,7 +451,7 @@ export const AdminRecommendationsPage: React.FC = () => {
               loadRecommendations();
             }}
             disabled={refreshing || loading}
-            className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-xs transition-colors disabled:opacity-50"
+            className="p-2.5 rounded-xl bg-white dark:bg-[#141C2E] border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs transition-colors disabled:opacity-50"
             title="Refresh list"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-blue-600' : ''}`} />
@@ -430,7 +460,7 @@ export const AdminRecommendationsPage: React.FC = () => {
           <button
             id="add-recommendation-btn"
             onClick={handleOpenAddModal}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0C122A] hover:bg-blue-600 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0C122A] dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Recommendation</span>
@@ -440,30 +470,30 @@ export const AdminRecommendationsPage: React.FC = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-xs font-semibold text-slate-500">Total Recommendations</p>
-          <p className="text-xl sm:text-2xl font-black text-slate-900 mt-1">{recommendations.length}</p>
+        <div className="bg-white dark:bg-[#141C2E] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Recommendations</p>
+          <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-[#F8FAFC] mt-1">{recommendations.length}</p>
         </div>
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-xs font-semibold text-slate-500">Published (Active)</p>
-          <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1">
+        <div className="bg-white dark:bg-[#141C2E] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Published (Active)</p>
+          <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
             {recommendations.filter((r) => r.is_active).length}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-xs font-semibold text-slate-500">Draft (Unpublished)</p>
-          <p className="text-xl sm:text-2xl font-black text-slate-500 mt-1">
+        <div className="bg-white dark:bg-[#141C2E] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Draft (Unpublished)</p>
+          <p className="text-xl sm:text-2xl font-black text-slate-500 dark:text-slate-400 mt-1">
             {recommendations.filter((r) => !r.is_active).length}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-xs font-semibold text-slate-500">Supported Modules</p>
-          <p className="text-xl sm:text-2xl font-black text-blue-600 mt-1">6 Types</p>
+        <div className="bg-white dark:bg-[#141C2E] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Supported Modules</p>
+          <p className="text-xl sm:text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">6 Types</p>
         </div>
       </div>
 
       {/* Search & Filters Controls */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs mb-6 space-y-3">
+      <div className="bg-white dark:bg-[#141C2E] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs mb-6 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Title / Category Search */}
           <div className="relative">
@@ -474,7 +504,7 @@ export const AdminRecommendationsPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search recommendations..."
-              className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
           </div>
 
@@ -484,7 +514,7 @@ export const AdminRecommendationsPage: React.FC = () => {
               id="filter-content-type-select"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700"
+              className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 dark:text-slate-200"
             >
               <option value="all">All Content Types</option>
               {SUPPORTED_CONTENT_TYPES.map((t) => (
@@ -501,7 +531,7 @@ export const AdminRecommendationsPage: React.FC = () => {
               id="filter-status-select"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700"
+              className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 dark:text-slate-200"
             >
               <option value="all">All Statuses</option>
               <option value="published">Published (Active)</option>
@@ -515,7 +545,7 @@ export const AdminRecommendationsPage: React.FC = () => {
               id="sort-order-select"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700"
+              className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 dark:text-slate-200"
             >
               <option value="order_asc">Display Order (Ascending)</option>
               <option value="order_desc">Display Order (Descending)</option>
@@ -527,19 +557,19 @@ export const AdminRecommendationsPage: React.FC = () => {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs">
+        <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-xs">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
-          <p className="text-sm font-medium text-slate-600">Loading recommendations...</p>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Loading recommendations...</p>
         </div>
       ) : filteredRecommendations.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 text-center shadow-xs">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 border border-amber-100 flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center shadow-xs">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 border border-amber-100 dark:border-amber-900/50 flex items-center justify-center mx-auto mb-4">
             <Star className="w-8 h-8" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F8FAFC] mb-1">
             {recommendations.length === 0 ? 'No Recommendations Yet' : 'No Matching Recommendations'}
           </h3>
-          <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mb-6">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
             {recommendations.length === 0
               ? 'Click "Add Recommendation" to select an existing item from Notes, E-Books, Syllabus, or Resources to feature on the homepage.'
               : 'Try clearing your search query or filters to find what you are looking for.'}
@@ -547,7 +577,7 @@ export const AdminRecommendationsPage: React.FC = () => {
           {recommendations.length === 0 && (
             <button
               onClick={handleOpenAddModal}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0C122A] hover:bg-blue-600 text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0C122A] dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Add Your First Recommendation</span>
@@ -567,8 +597,10 @@ export const AdminRecommendationsPage: React.FC = () => {
               <div
                 key={rec.id}
                 id={`admin-rec-item-${rec.id}`}
-                className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs transition-all ${
-                  !rec.is_active ? 'border-slate-200 opacity-75 bg-slate-50/50' : 'border-slate-200 hover:border-slate-300'
+                className={`rounded-2xl border p-4 sm:p-5 shadow-xs transition-all ${
+                  !rec.is_active
+                    ? 'border-slate-200 dark:border-slate-800 opacity-75 bg-slate-50/50 dark:bg-[#0B1120]/50'
+                    : 'bg-white dark:bg-[#141C2E] border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -579,14 +611,14 @@ export const AdminRecommendationsPage: React.FC = () => {
                       <button
                         onClick={() => handleMoveOrder(rec, 'up')}
                         disabled={index === 0 || reorderingId === rec.id}
-                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 transition-colors"
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition-colors"
                         title="Move Up in order"
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
                       </button>
 
                       <span
-                        className="text-xs font-extrabold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md"
+                        className="text-xs font-extrabold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md"
                         title={`Order position: #${rec.display_order}`}
                       >
                         #{rec.display_order}
@@ -595,7 +627,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                       <button
                         onClick={() => handleMoveOrder(rec, 'down')}
                         disabled={index === filteredRecommendations.length - 1 || reorderingId === rec.id}
-                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 transition-colors"
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition-colors"
                         title="Move Down in order"
                       >
                         <ArrowDown className="w-3.5 h-3.5" />
@@ -615,41 +647,41 @@ export const AdminRecommendationsPage: React.FC = () => {
                         </span>
 
                         {item?.category && (
-                          <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                             {item.category}
                           </span>
                         )}
 
                         {rec.is_active ? (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
                             Published
                           </span>
                         ) : (
-                          <span className="text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                          <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-md">
                             Draft / Hidden
                           </span>
                         )}
 
                         {isMissing && (
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                          <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
                             Referenced content missing or deleted (ID #{rec.content_id})
                           </span>
                         )}
                       </div>
 
-                      <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug break-words">
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-[#F8FAFC] leading-snug break-words">
                         {item ? item.title : `Missing item reference (ID: ${rec.content_id})`}
                       </h3>
 
                       {item && (
-                        <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
-                          <span className="text-[11px] text-slate-400">
-                            Destination: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600">{item.destination_url}</code>
+                        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1 flex-wrap">
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                            Destination: <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-slate-600 dark:text-slate-300">{item.destination_url}</code>
                           </span>
                           {item.price !== undefined && item.price > 0 && (
-                            <span className="font-semibold text-slate-700">₹{item.price}</span>
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">₹{item.price}</span>
                           )}
                         </div>
                       )}
@@ -657,7 +689,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                   </div>
 
                   {/* Right block: Action Buttons */}
-                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 w-full sm:w-auto justify-end">
+                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-3 sm:pt-0 w-full sm:w-auto justify-end">
                     {/* Toggle publish button */}
                     <button
                       id={`toggle-status-rec-${rec.id}`}
@@ -665,8 +697,8 @@ export const AdminRecommendationsPage: React.FC = () => {
                       disabled={togglingId === rec.id}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
                         rec.is_active
-                          ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                          : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                          ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/60'
+                          : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
                       }`}
                     >
                       {togglingId === rec.id ? (
@@ -682,7 +714,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                     <button
                       id={`edit-rec-${rec.id}`}
                       onClick={() => handleOpenEdit(rec)}
-                      className="p-2 rounded-xl text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                       title="Edit display order and status"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -692,7 +724,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                     <button
                       id={`delete-rec-${rec.id}`}
                       onClick={() => setDeletingRec(rec)}
-                      className="p-2 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl text-red-600 dark:text-rose-400 bg-red-50 dark:bg-rose-950/40 hover:bg-red-100 dark:hover:bg-rose-900/60 border border-red-200 dark:border-rose-900/50 transition-colors cursor-pointer"
                       title="Delete recommendation (keeps original content safe)"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -709,22 +741,22 @@ export const AdminRecommendationsPage: React.FC = () => {
       {/* ADD RECOMMENDATION MODAL                                                  */}
       {/* ========================================================================= */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl border border-slate-100 my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white dark:bg-[#141C2E] rounded-3xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl border border-slate-100 dark:border-slate-800 my-8">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                   <Star className="w-5 h-5 fill-amber-400" />
                 </div>
                 <div>
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900">Add Top Recommendation</h2>
-                  <p className="text-xs text-slate-500">Step 1: Select Type • Step 2: Select Uploaded Item</p>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">Add Top Recommendation</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Step 1: Select Type • Step 2: Select Uploaded Item</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -733,7 +765,7 @@ export const AdminRecommendationsPage: React.FC = () => {
             <div className="py-4 space-y-5">
               {/* STEP 1: SELECT CONTENT TYPE */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
                   1. Select Content Type
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -750,19 +782,20 @@ export const AdminRecommendationsPage: React.FC = () => {
                           setSelectedType(type.id);
                           setCategoryFilter('all');
                           setItemSearch('');
+                          setDebouncedItemSearch('');
                           setSelectedItemId(null);
                         }}
                         className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
-                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                            ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
+                            : 'bg-white dark:bg-[#141C2E] border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'
                         }`}
                       >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${meta.iconBg}`}>
                           <Icon className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
-                          <p className={`text-xs font-bold leading-tight ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>
+                          <p className={`text-xs font-bold leading-tight ${isSelected ? 'text-blue-900 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'}`}>
                             {type.label}
                           </p>
                         </div>
@@ -775,10 +808,10 @@ export const AdminRecommendationsPage: React.FC = () => {
               {/* STEP 2: SELECT EXISTING UPLOADED ITEM */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                     2. Select Existing Uploaded Item
                   </label>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">
                     {availableItems.length} item(s) found
                   </span>
                 </div>
@@ -790,7 +823,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                       <select
                         value={categoryFilter}
                         onChange={(e) => setCategoryFilter(e.target.value)}
-                        className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 text-slate-700"
+                        className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 text-slate-700 dark:text-slate-200"
                       >
                         <option value="all">All Categories</option>
                         {currentTypeCategoryOptions.map((cat) => (
@@ -810,24 +843,24 @@ export const AdminRecommendationsPage: React.FC = () => {
                         value={itemSearch}
                         onChange={(e) => setItemSearch(e.target.value)}
                         placeholder={`Search existing ${SUPPORTED_CONTENT_TYPES.find((t) => t.id === selectedType)?.label || 'content'}...`}
-                        className="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Item List Container */}
-                <div className="border border-slate-200 rounded-2xl max-h-56 overflow-y-auto p-2 bg-slate-50/50 space-y-1.5">
+                <div className="border border-slate-200 dark:border-slate-800 rounded-2xl max-h-56 overflow-y-auto p-2 bg-slate-50/50 dark:bg-[#0B1120]/50 space-y-1.5">
                   {loadingItems ? (
                     <div className="p-8 text-center">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-600 mx-auto mb-2" />
-                      <p className="text-xs text-slate-500">Loading existing items from database...</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Loading existing items from database...</p>
                     </div>
                   ) : availableItems.length === 0 ? (
                     <div className="p-8 text-center">
-                      <AlertCircle className="w-6 h-6 text-slate-300 mx-auto mb-1" />
-                      <p className="text-xs font-bold text-slate-700">No items available in this category</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
+                      <AlertCircle className="w-6 h-6 text-slate-300 dark:text-slate-600 mx-auto mb-1" />
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No items available in this category</p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                         Upload content in the corresponding module first.
                       </p>
                     </div>
@@ -846,30 +879,30 @@ export const AdminRecommendationsPage: React.FC = () => {
                           }}
                           className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
                             isAlreadyAdded
-                              ? 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed'
+                              ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-60 cursor-not-allowed'
                               : isSelected
-                              ? 'bg-blue-50 border-blue-500 shadow-xs cursor-pointer'
-                              : 'bg-white border-slate-200 hover:bg-slate-50 cursor-pointer'
+                              ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 shadow-xs cursor-pointer'
+                              : 'bg-white dark:bg-[#141C2E] border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'
                           }`}
                         >
                           <div className="min-w-0 flex-1 pr-3">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {item.category && (
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                                   {item.category}
                                 </span>
                               )}
                               {item.published === false && (
-                                <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                                <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded">
                                   Draft
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs font-bold text-slate-900 leading-snug line-clamp-1 mt-0.5">
+                            <p className="text-xs font-bold text-slate-900 dark:text-[#F8FAFC] leading-snug line-clamp-1 mt-0.5">
                               {item.title}
                             </p>
                             {item.subtitle && (
-                              <p className="text-[10px] text-slate-400 line-clamp-1">
+                              <p className="text-[10px] text-slate-400 dark:text-slate-500 line-clamp-1">
                                 {item.subtitle}
                               </p>
                             )}
@@ -877,7 +910,7 @@ export const AdminRecommendationsPage: React.FC = () => {
 
                           <div className="shrink-0">
                             {isAlreadyAdded ? (
-                              <span className="text-[10px] font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded">
+                              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded">
                                 Already Added
                               </span>
                             ) : isSelected ? (
@@ -885,7 +918,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                                 <Check className="w-3 h-3 stroke-[3]" />
                               </div>
                             ) : (
-                              <div className="w-5 h-5 rounded-full border border-slate-300" />
+                              <div className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-600" />
                             )}
                           </div>
                         </div>
@@ -896,9 +929,9 @@ export const AdminRecommendationsPage: React.FC = () => {
               </div>
 
               {/* STEP 3: ORDER & PUBLISH SETTINGS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     Display Order Position
                   </label>
                   <input
@@ -906,15 +939,15 @@ export const AdminRecommendationsPage: React.FC = () => {
                     min="0"
                     value={newDisplayOrder}
                     onChange={(e) => setNewDisplayOrder(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                     Lower numbers appear earlier on the homepage.
                   </p>
                 </div>
 
                 <div className="flex flex-col justify-end">
-                  <label className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+                  <label className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={newIsActive}
@@ -922,8 +955,8 @@ export const AdminRecommendationsPage: React.FC = () => {
                       className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                     />
                     <div>
-                      <p className="text-xs font-bold text-slate-800">Publish Immediately</p>
-                      <p className="text-[10px] text-slate-500">Make visible on the student homepage</p>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Publish Immediately</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Make visible on the student homepage</p>
                     </div>
                   </label>
                 </div>
@@ -931,12 +964,12 @@ export const AdminRecommendationsPage: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
                 disabled={savingAdd}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 Cancel
               </button>
@@ -944,7 +977,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                 type="button"
                 onClick={handleSaveAdd}
                 disabled={!selectedItemId || savingAdd}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#0C122A] hover:bg-blue-600 text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#0C122A] dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {savingAdd ? (
                   <>
@@ -967,31 +1000,31 @@ export const AdminRecommendationsPage: React.FC = () => {
       {/* EDIT RECOMMENDATION MODAL                                                 */}
       {/* ========================================================================= */}
       {editingRec && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h2 className="text-base font-bold text-slate-900">Edit Recommendation Settings</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="bg-white dark:bg-[#141C2E] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <h2 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]">Edit Recommendation Settings</h2>
               <button
                 onClick={() => setEditingRec(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="py-4 space-y-4">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <p className="text-[10px] uppercase font-bold text-slate-400">Referenced Content</p>
-                <p className="text-xs font-bold text-slate-900 mt-0.5">
+              <div className="p-3 bg-slate-50 dark:bg-[#0B1120] rounded-xl border border-slate-200 dark:border-slate-800">
+                <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Referenced Content</p>
+                <p className="text-xs font-bold text-slate-900 dark:text-[#F8FAFC] mt-0.5">
                   {editingRec.resolved_item?.title || `ID #${editingRec.content_id}`}
                 </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   Type: {getTypeMeta(editingRec.content_type).label}
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Display Order Position
                 </label>
                 <input
@@ -999,12 +1032,12 @@ export const AdminRecommendationsPage: React.FC = () => {
                   min="0"
                   value={editDisplayOrder}
                   onChange={(e) => setEditDisplayOrder(parseInt(e.target.value) || 0)}
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 
               <div>
-                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={editIsActive}
@@ -1012,8 +1045,8 @@ export const AdminRecommendationsPage: React.FC = () => {
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                   <div>
-                    <p className="text-xs font-bold text-slate-800">Published to Homepage</p>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Published to Homepage</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
                       When checked, students can view this recommendation on the homepage.
                     </p>
                   </div>
@@ -1021,12 +1054,12 @@ export const AdminRecommendationsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setEditingRec(null)}
                 disabled={savingEdit}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 Cancel
               </button>
@@ -1034,7 +1067,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                 type="button"
                 onClick={handleSaveEdit}
                 disabled={savingEdit}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#0C122A] hover:bg-blue-600 text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#0C122A] dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {savingEdit ? (
                   <>

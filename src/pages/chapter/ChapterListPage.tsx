@@ -170,35 +170,56 @@ export const ChapterListPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* DESKTOP HEADER (hidden md:block) */}
       {/* ========================================================================= */}
-      <div className="hidden md:block bg-white border-b border-[#E2ECFF] md:border-slate-200">
+      <div className="hidden md:block bg-white dark:bg-[#131B2E] border-b border-[#E2ECFF] md:border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               {isSubCategoryLevel || !subCategories ? (
-                <BackButton to="/tests/chapter-wise" forceFallback label="All Subjects" />
+                <BackButton
+                  to="/tests/chapter-wise"
+                  forceFallback
+                  label="All Subjects"
+                  className="dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white shrink-0"
+                />
               ) : (
                 <button
                   onClick={() => setSearchParams({})}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-colors shrink-0"
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-colors shrink-0 cursor-pointer"
                 >
-                  <ArrowLeft className="w-4 h-4 text-slate-500" />
+                  <ArrowLeft className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   <span>Sub-categories</span>
                 </button>
               )}
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <div
-                  className={`w-10 h-10 rounded-xl ${subjectMeta.bg} ${subjectMeta.color} flex items-center justify-center shrink-0`}
+                  className={`w-10 h-10 rounded-xl ${subjectMeta.bg} dark:bg-opacity-25 ${subjectMeta.color} flex items-center justify-center shrink-0`}
                 >
                   <Icon className="w-6 h-6" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-0.5">
-                    <Link to="/tests/chapter-wise" className="hover:text-blue-600">
+                <div className="min-w-0">
+                  {/* First: Main Heading */}
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                    <span>
+                      {isSubCategoryLevel
+                        ? `${subjectMeta.name} Sub-categories`
+                        : activeSubCategory
+                        ? `${activeSubCategory} Chapters`
+                        : `${subjectMeta.name} Chapters`}
+                    </span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 shrink-0">
+                      {subjectMeta.hindiName}
+                    </span>
+                  </h1>
+
+                  {/* Second: Breadcrumb directly below the main heading */}
+                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 dark:text-slate-400 mt-0.5">
+                    <Link to="/tests/chapter-wise" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                       Chapter Wise
                     </Link>
                     <span>/</span>
-                    <span className={activeSubCategory ? 'hover:text-blue-600 cursor-pointer' : 'text-slate-700 font-bold'}
+                    <span
+                      className={activeSubCategory ? 'hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors' : 'text-slate-700 dark:text-slate-300 font-bold'}
                       onClick={() => activeSubCategory && setSearchParams({})}
                     >
                       {subjectMeta.name}
@@ -206,41 +227,24 @@ export const ChapterListPage: React.FC = () => {
                     {activeSubCategory && (
                       <>
                         <span>/</span>
-                        <span className="text-slate-700 font-bold">{activeSubCategory}</span>
+                        <span className="text-slate-700 dark:text-slate-200 font-bold">{activeSubCategory}</span>
                       </>
                     )}
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                    {isSubCategoryLevel
-                      ? `${subjectMeta.name} Sub-categories`
-                      : activeSubCategory
-                      ? `${activeSubCategory} Chapters`
-                      : `${subjectMeta.name} Chapters`}
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      {subjectMeta.hindiName}
-                    </span>
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-500">
-                    {isSubCategoryLevel
-                      ? `Select a sub-category in ${subjectMeta.name} to view its dedicated chapters`
-                      : activeSubCategory
-                      ? `Select a chapter in ${activeSubCategory} to practice chapter-wise assessment tests`
-                      : 'Select a chapter to practice dedicated chapter-wise assessment tests'}
-                  </p>
                 </div>
               </div>
             </div>
 
             {/* Search Bar (Only shown at chapter level) */}
             {!isSubCategoryLevel && (
-              <div className="relative max-w-xs w-full">
+              <div className="relative max-w-xs w-full shrink-0">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search chapter..."
-                  className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-slate-50 md:bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-slate-50 md:bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
             )}

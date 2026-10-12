@@ -192,29 +192,29 @@ export const AdminWhatsAppPage: React.FC = () => {
       <div className="flex items-center gap-4">
         <BackButton to="/admin" />
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <MessageCircle className="w-6 h-6 text-emerald-600" />
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight flex items-center gap-2.5">
+            <MessageCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             WhatsApp
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             Manage the WhatsApp Channel destination URL used by the website's WhatsApp navigation button.
           </p>
         </div>
       </div>
 
       {/* Main Settings Card */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 sm:p-8">
+      <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs p-6 sm:p-8">
         <form onSubmit={handleSave} className="space-y-6">
           <div>
             <label
               htmlFor="whatsapp-channel-url"
-              className="block text-sm font-semibold text-slate-800 mb-2"
+              className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2"
             >
               WhatsApp Channel URL
             </label>
             {loading ? (
-              <div className="flex items-center gap-3 h-11 px-4 border border-slate-200 rounded-xl bg-slate-50 text-slate-400 text-sm">
-                <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+              <div className="flex items-center gap-3 h-11 px-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-[#0B1120] text-slate-400 dark:text-slate-500 text-sm">
+                <Loader2 className="w-4 h-4 animate-spin text-slate-500 dark:text-slate-400" />
                 <span>Loading saved URL...</span>
               </div>
             ) : (
@@ -228,7 +228,7 @@ export const AdminWhatsAppPage: React.FC = () => {
                   setSuccessMsg(null);
                 }}
                 placeholder="https://whatsapp.com/channel/..."
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-hidden transition-all text-sm text-slate-800 placeholder-slate-400"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B1120] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-hidden transition-all text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
                 disabled={saving}
               />
             )}
@@ -236,16 +236,16 @@ export const AdminWhatsAppPage: React.FC = () => {
 
           {/* Error Feedback Banner */}
           {errorMsg && (
-            <div className="flex items-start gap-2.5 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 p-3.5 bg-red-50 dark:bg-rose-950/40 border border-red-200 dark:border-rose-900/50 rounded-xl text-red-700 dark:text-rose-300 text-sm">
+              <AlertCircle className="w-5 h-5 text-red-500 dark:text-rose-400 shrink-0 mt-0.5" />
               <span className="leading-snug">{errorMsg}</span>
             </div>
           )}
 
           {/* Success Feedback Banner */}
           {successMsg && (
-            <div className="flex items-start gap-2.5 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-emerald-800 dark:text-emerald-300 text-sm">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
               <span className="leading-snug">{successMsg}</span>
             </div>
           )}

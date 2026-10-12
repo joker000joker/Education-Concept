@@ -453,16 +453,16 @@ export const SectionalTestTakePage: React.FC = () => {
 
   if (!test) {
     return (
-      <div className="min-h-screen p-8 bg-[#F4F8FF] md:bg-slate-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-2xl max-w-md w-full text-center shadow-lg border border-slate-100">
+      <div className="min-h-screen p-8 bg-[#F4F8FF] md:bg-slate-50 dark:bg-[#0B0F19] flex items-center justify-center">
+        <div className="bg-white dark:bg-[#141C2E] p-8 rounded-2xl max-w-md w-full text-center shadow-lg dark:shadow-none border border-slate-100 dark:border-slate-800">
           <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-slate-900">Test Not Found</h2>
-          <p className="text-xs text-slate-500 mt-2 mb-6">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-[#F8FAFC]">Test Not Found</h2>
+          <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mt-2 mb-6">
             The requested test could not be located or has been unpublished.
           </p>
           <Link
             to="/tests/sectional"
-            className="inline-flex items-center justify-center px-5 py-2.5 bg-purple-600 text-white text-xs font-bold rounded-xl"
+            className="inline-flex items-center justify-center px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl"
           >
             Back to Sectional Tests
           </Link>
@@ -482,56 +482,56 @@ export const SectionalTestTakePage: React.FC = () => {
     const availableTestsUrl = `/tests/sectional/${subjectSlug}`;
 
     return (
-      <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50">
-        <div className="bg-white border-b border-[#E2ECFF] md:border-slate-200">
+      <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50 dark:bg-[#0B0F19]">
+        <div className="bg-white dark:bg-[#141C2E] border-b border-[#E2ECFF] md:border-slate-200 dark:border-slate-800">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
             <BackButton to={availableTestsUrl} forceFallback label="Available Tests" />
           </div>
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-[#141C2E] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm dark:shadow-none overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-purple-700 to-indigo-800 text-white p-6 sm:p-8">
+            <div className="bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-[#1E1B4B] dark:to-[#1E293B] text-white p-6 sm:p-8">
               <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white border border-white/30 mb-3">
                 {test.subject} Sectional Test
               </span>
               <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight">
                 {test.title}
               </h1>
-              <p className="text-xs sm:text-sm text-purple-100 mt-1">
+              <p className="text-xs sm:text-sm text-purple-100 dark:text-slate-300 mt-1">
                 Read all instructions carefully before beginning the examination.
               </p>
             </div>
 
             {/* Test Specs Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 bg-slate-50/70 border-b border-slate-100 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800 bg-slate-50/70 dark:bg-[#1B263B] border-b border-slate-100 dark:border-slate-800 text-center">
               <div className="p-4">
                 <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Questions</p>
-                <p className="text-lg font-extrabold text-slate-800 mt-0.5">{questions.length}</p>
+                <p className="text-lg font-extrabold text-slate-800 dark:text-[#F8FAFC] mt-0.5">{questions.length}</p>
               </div>
               <div className="p-4">
                 <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Duration</p>
-                <p className="text-lg font-extrabold text-slate-800 mt-0.5">{test.duration_minutes} Mins</p>
+                <p className="text-lg font-extrabold text-slate-800 dark:text-[#F8FAFC] mt-0.5">{test.duration_minutes} Mins</p>
               </div>
               <div className="p-4">
                 <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Marks</p>
-                <p className="text-lg font-extrabold text-slate-800 mt-0.5">{test.total_marks}</p>
+                <p className="text-lg font-extrabold text-slate-800 dark:text-[#F8FAFC] mt-0.5">{test.total_marks}</p>
               </div>
               <div className="p-4">
                 <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Negative Mark</p>
-                <p className="text-lg font-extrabold text-rose-600 mt-0.5">-{test.negative_marking}</p>
+                <p className="text-lg font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">-{test.negative_marking}</p>
               </div>
             </div>
 
             {/* Rules and Guidelines */}
             <div className="p-6 sm:p-8 space-y-6">
               <div>
-                <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-purple-600" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC] mb-3 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   Exam Guidelines & Marking Scheme
                 </h3>
-                <ul className="space-y-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed list-disc list-inside">
+                <ul className="space-y-2.5 text-xs sm:text-sm text-slate-600 dark:text-[#CBD5E1] leading-relaxed list-disc list-inside">
                   <li>This test contains <strong>{questions.length} objective questions</strong>, each having four options (A, B, C, D) with only one correct choice.</li>
                   <li>Every correct answer awards <strong>+{marksPerQ} marks</strong>.</li>
                   <li>Every incorrect answer incurs a penalty deduction of <strong>-{test.negative_marking} marks</strong>.</li>
@@ -543,42 +543,42 @@ export const SectionalTestTakePage: React.FC = () => {
               </div>
 
               {/* Palette Legend Preview */}
-              <div className="bg-purple-50/50 rounded-2xl p-4 border border-purple-100">
-                <h4 className="text-xs font-bold text-purple-900 uppercase tracking-wider mb-2.5">
+              <div className="bg-purple-50/50 dark:bg-purple-950/30 rounded-2xl p-4 border border-purple-100 dark:border-purple-900/50">
+                <h4 className="text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider mb-2.5">
                   Question Palette Indicator Legend
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-5 h-5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center">1</span>
-                    <span className="text-slate-700">Answered</span>
+                    <span className="text-slate-700 dark:text-slate-300">Answered</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-5 h-5 rounded-lg bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center">2</span>
-                    <span className="text-slate-700">Marked for Review</span>
+                    <span className="text-slate-700 dark:text-slate-300">Marked for Review</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-lg bg-slate-200 text-slate-700 font-bold text-[10px] flex items-center justify-center">3</span>
-                    <span className="text-slate-700">Not Attempted</span>
+                    <span className="w-5 h-5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[10px] flex items-center justify-center">3</span>
+                    <span className="text-slate-700 dark:text-slate-300">Not Attempted</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-lg bg-white border-2 border-blue-600 text-blue-600 font-bold text-[10px] flex items-center justify-center">4</span>
-                    <span className="text-slate-700">Current Question</span>
+                    <span className="w-5 h-5 rounded-lg bg-white dark:bg-[#141C2E] border-2 border-blue-600 text-blue-600 font-bold text-[10px] flex items-center justify-center">4</span>
+                    <span className="text-slate-700 dark:text-slate-300">Current Question</span>
                   </div>
                 </div>
               </div>
 
               {/* Previous Completed Result Banner if present */}
               {existingResult && (
-                <div className="p-4 rounded-2xl bg-purple-50/80 border border-purple-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="p-4 rounded-2xl bg-purple-50/80 dark:bg-[#1B263B] border border-purple-200 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-100 px-2 py-0.5 rounded">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 px-2 py-0.5 rounded">
                       <Award className="w-3 h-3" />
                       Previous Completion Found
                     </span>
-                    <p className="text-xs sm:text-sm font-bold text-purple-950 mt-1">
+                    <p className="text-xs sm:text-sm font-bold text-purple-950 dark:text-purple-200 mt-1">
                       Latest Score: {existingResult.score} / {existingResult.total_marks} ({existingResult.percentage ?? (existingResult.total_marks > 0 ? Math.round((existingResult.score / existingResult.total_marks) * 100) : 0)}%) • Accuracy: {existingResult.accuracy}%
                     </p>
-                    <p className="text-[11px] text-purple-700">
+                    <p className="text-[11px] text-purple-700 dark:text-purple-400">
                       Submitting a new attempt will update your latest result.
                     </p>
                   </div>
@@ -609,7 +609,7 @@ export const SectionalTestTakePage: React.FC = () => {
                         setUserAnswers(existingResult.answers?.userAnswers || {});
                         setMode('result');
                       }}
-                      className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white border border-purple-300 hover:bg-purple-100 text-purple-700 font-bold text-xs shadow-2xs transition-colors"
+                      className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white dark:bg-[#141C2E] border border-purple-300 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-bold text-xs shadow-2xs transition-colors"
                     >
                       View Analysis
                     </button>
@@ -618,8 +618,8 @@ export const SectionalTestTakePage: React.FC = () => {
               )}
 
               {/* Start Button */}
-              <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
-                <p className="text-xs text-slate-400">
+              <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-slate-400 dark:text-slate-500">
                   By clicking {existingResult ? 'Start Reattempt' : 'Start Test'}, you agree to take the assessment under timed conditions.
                 </p>
                 <button
@@ -865,19 +865,18 @@ export const SectionalTestTakePage: React.FC = () => {
         </div>
 
         {/* ============================================================== */}
-        {/* ============================================================== */}
         {/* DESKTOP EXAM INTERFACE (hidden md:flex flex-col min-h-screen)  */}
         {/* ============================================================== */}
-        <div className="hidden md:flex flex-col min-h-screen bg-slate-100">
+        <div className="hidden md:flex flex-col min-h-screen bg-slate-100 dark:bg-[#0B0F19]">
           {/* Sticky Exam Top Bar */}
-          <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs px-4 sm:px-6 lg:px-8 py-2.5">
+          <header className="sticky top-0 z-30 bg-white dark:bg-[#141C2E] border-b border-slate-200 dark:border-slate-800 shadow-xs px-4 sm:px-6 lg:px-8 py-2.5">
             <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
               {/* TOP-LEFT: Back arrow + Subject badge + Test Title */}
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   type="button"
                   onClick={() => setShowExitModal(true)}
-                  className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200/80 transition-colors shrink-0"
+                  className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 transition-colors shrink-0"
                   aria-label="Exit examination"
                   title="Leave Examination"
                 >
@@ -885,12 +884,12 @@ export const SectionalTestTakePage: React.FC = () => {
                 </button>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 shrink-0">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800 shrink-0">
                       {test.subject}
                     </span>
                     <span className="text-xs text-slate-400 font-medium">· Sectional Test</span>
                   </div>
-                  <h2 className="text-sm sm:text-base font-bold text-slate-900 truncate max-w-md sm:max-w-xl mt-0.5 leading-snug">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-[#F8FAFC] truncate max-w-md sm:max-w-xl mt-0.5 leading-snug">
                     {test.title}
                   </h2>
                 </div>
@@ -901,17 +900,17 @@ export const SectionalTestTakePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={toggleFullscreen}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#1B263B] hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
                   title={isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen'}
                 >
                   {isFullscreen ? (
                     <>
-                      <Minimize2 className="w-3.5 h-3.5 text-slate-600" />
+                      <Minimize2 className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
                       <span className="hidden sm:inline">Exit Fullscreen</span>
                     </>
                   ) : (
                     <>
-                      <Maximize2 className="w-3.5 h-3.5 text-slate-600" />
+                      <Maximize2 className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
                       <span className="hidden sm:inline">Fullscreen</span>
                     </>
                   )}
@@ -920,15 +919,15 @@ export const SectionalTestTakePage: React.FC = () => {
                 <div
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-mono text-xs sm:text-sm font-extrabold border transition-colors ${
                     isCriticalTime
-                      ? 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse'
+                      ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 animate-pulse'
                       : isWarningTime
-                      ? 'bg-amber-50 text-amber-800 border-amber-300'
-                      : 'bg-slate-50 text-slate-800 border-slate-200'
+                      ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                      : 'bg-slate-50 dark:bg-[#1B263B] text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                   }`}
                 >
                   <Clock
                     className={`w-4 h-4 ${
-                      isCriticalTime ? 'text-rose-600' : isWarningTime ? 'text-amber-600' : 'text-purple-600'
+                      isCriticalTime ? 'text-rose-600' : isWarningTime ? 'text-amber-600' : 'text-purple-600 dark:text-purple-400'
                     }`}
                   />
                   <span>{formatTime(timeRemainingSeconds)}</span>
@@ -947,18 +946,18 @@ export const SectionalTestTakePage: React.FC = () => {
           </header>
 
           {/* Status Bar with Progress Indicator */}
-          <div className="bg-slate-50 border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-2.5">
+          <div className="bg-slate-50 dark:bg-[#141C2E] border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 lg:px-8 py-2.5">
             <div className="max-w-[1400px] mx-auto flex items-center justify-between text-xs gap-4 flex-wrap">
               <div className="flex items-center gap-4 sm:gap-6 font-semibold">
-                <span className="text-emerald-700 flex items-center gap-1.5">
+                <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0"></span>
                   Attempted: <strong>{attemptedCount}</strong>
                 </span>
-                <span className="text-purple-700 flex items-center gap-1.5">
+                <span className="text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-purple-600 shrink-0"></span>
                   Marked: <strong>{markedCount}</strong>
                 </span>
-                <span className="text-slate-600 flex items-center gap-1.5">
+                <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span>
                   Unattempted: <strong>{unattemptedCount}</strong>
                 </span>
@@ -966,12 +965,12 @@ export const SectionalTestTakePage: React.FC = () => {
 
               {/* Visual Progress Indicator */}
               <div className="flex items-center gap-3">
-                <div className="text-xs font-semibold text-slate-700 whitespace-nowrap">
-                  <span className="font-bold text-slate-900">{attemptedCount}</span>
+                <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  <span className="font-bold text-slate-900 dark:text-[#F8FAFC]">{attemptedCount}</span>
                   <span className="text-slate-400"> / </span>
                   <span>{questions.length} Answered</span>
                 </div>
-                <div className="w-24 sm:w-36 h-2 rounded-full bg-slate-200 overflow-hidden relative">
+                <div className="w-24 sm:w-36 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden relative">
                   <div
                     className="h-full rounded-full bg-emerald-500 transition-all duration-300 ease-out"
                     style={{
@@ -979,7 +978,7 @@ export const SectionalTestTakePage: React.FC = () => {
                     }}
                   />
                 </div>
-                <span className="text-[11px] font-bold text-slate-500 min-w-[32px] text-right">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 min-w-[32px] text-right">
                   {questions.length > 0 ? Math.round((attemptedCount / questions.length) * 100) : 0}%
                 </span>
               </div>
@@ -989,12 +988,12 @@ export const SectionalTestTakePage: React.FC = () => {
           {/* Main Test Layout (Question + Question Palette) */}
           <div className="flex-1 max-w-[1400px] w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Question Panel (9 cols on desktop: wider, primary focus) */}
-            <div className="lg:col-span-9 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7 lg:p-8 min-h-[580px] lg:min-h-[620px]">
+            <div className="lg:col-span-9 flex flex-col bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm p-6 sm:p-7 lg:p-8 min-h-[580px] lg:min-h-[620px]">
               {/* Question Header */}
-              <div className="shrink-0 flex items-center justify-between pb-3.5 border-b border-slate-100 mb-5">
+              <div className="shrink-0 flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800 mb-5">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+                    <span className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
                       Question {currentIndex + 1}
                     </span>
                     <span className="text-xs font-semibold text-slate-400">
@@ -1002,25 +1001,25 @@ export const SectionalTestTakePage: React.FC = () => {
                     </span>
                   </div>
                   {isMarked && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-[11px] font-bold">
-                      <Bookmark className="w-3 h-3 fill-purple-600 text-purple-600" />
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[11px] font-bold">
+                      <Bookmark className="w-3 h-3 fill-purple-600 text-purple-600 dark:text-purple-400" />
                       Marked for Review
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200/60">
-                  <span className="text-slate-600 font-semibold">Marks:</span>
-                  <span className="text-emerald-700 font-bold">+{marksPerQ}</span>
-                  <span className="text-slate-300">/</span>
-                  <span className="text-rose-600 font-bold">-{test.negative_marking}</span>
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#1B263B] px-3 py-1 rounded-lg border border-slate-200/60 dark:border-slate-700">
+                  <span className="text-slate-600 dark:text-slate-300 font-semibold">Marks:</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-bold">+{marksPerQ}</span>
+                  <span className="text-slate-300 dark:text-slate-600">/</span>
+                  <span className="text-rose-600 dark:text-rose-400 font-bold">-{test.negative_marking}</span>
                 </div>
               </div>
 
               {/* Question Content Area (Flex-1 to absorb vertical space and stabilize height) */}
               <div className="flex-1 flex flex-col justify-start">
                 {/* Question Text */}
-                <div className="text-[15px] sm:text-base font-semibold text-slate-900 leading-relaxed whitespace-pre-line mb-5 tracking-normal select-text">
+                <div className="text-[15px] sm:text-base font-semibold text-slate-900 dark:text-[#F8FAFC] leading-relaxed whitespace-pre-line mb-5 tracking-normal select-text">
                   {currentQ.question_text}
                 </div>
 
@@ -1052,20 +1051,20 @@ export const SectionalTestTakePage: React.FC = () => {
                         onClick={() => handleSelectOption(opt.key)}
                         className={`w-full text-left p-3.5 sm:p-4 rounded-xl border-2 transition-all flex items-start gap-3.5 cursor-pointer select-none group min-h-[54px] ${
                           isSelected
-                            ? 'border-purple-600 bg-purple-50/70 shadow-xs ring-2 ring-purple-500/20'
-                            : 'border-slate-200/90 bg-white hover:bg-slate-50/90 hover:border-slate-300'
+                            ? 'border-purple-600 dark:border-purple-500 bg-purple-50/70 dark:bg-purple-950/40 shadow-xs ring-2 ring-purple-500/20'
+                            : 'border-slate-200/90 dark:border-slate-700 bg-white dark:bg-[#141C2E] hover:bg-slate-50/90 dark:hover:bg-[#1B263B] hover:border-slate-300 dark:hover:border-slate-600'
                         }`}
                       >
                         <span
                           className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 transition-colors ${
                             isSelected
                               ? 'bg-purple-600 text-white shadow-xs'
-                              : 'bg-slate-100 text-slate-700 group-hover:bg-purple-50 group-hover:text-purple-700'
+                              : 'bg-slate-100 dark:bg-[#1B263B] text-slate-700 dark:text-slate-300 group-hover:bg-purple-50 dark:group-hover:bg-purple-950/60 group-hover:text-purple-700 dark:group-hover:text-purple-300'
                           }`}
                         >
                           {opt.key}
                         </span>
-                        <span className={`text-xs sm:text-sm pt-0.5 leading-relaxed break-words flex-1 select-text ${isSelected ? 'font-bold text-purple-950' : 'text-slate-800'}`}>
+                        <span className={`text-xs sm:text-sm pt-0.5 leading-relaxed break-words flex-1 select-text ${isSelected ? 'font-bold text-purple-950 dark:text-purple-200' : 'text-slate-800 dark:text-slate-200'}`}>
                           {opt.text}
                         </span>
                       </button>
@@ -1075,18 +1074,18 @@ export const SectionalTestTakePage: React.FC = () => {
               </div>
 
               {/* Bottom Actions Bar (Firmly pinned to consistent bottom position) */}
-              <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 shrink-0">
+              <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={handleToggleMarkForReview}
                     className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border transition-colors flex items-center gap-1.5 ${
                       isMarked
-                        ? 'bg-purple-50 border-purple-300 text-purple-800 hover:bg-purple-100'
-                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                        ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-300 dark:border-purple-800 text-purple-800 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/60'
+                        : 'bg-white dark:bg-[#1B263B] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300'
                     }`}
                   >
-                    <Bookmark className={`w-3.5 h-3.5 ${isMarked ? 'fill-purple-600 text-purple-600' : 'text-slate-500'}`} />
+                    <Bookmark className={`w-3.5 h-3.5 ${isMarked ? 'fill-purple-600 text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-slate-400'}`} />
                     <span>{isMarked ? 'Unmark Review' : 'Mark for Review'}</span>
                   </button>
 
@@ -1094,7 +1093,7 @@ export const SectionalTestTakePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleClearResponse}
-                      className="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-colors"
+                      className="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-transparent hover:border-rose-100 dark:hover:border-rose-900/40 transition-colors"
                     >
                       Clear Response
                     </button>
@@ -1106,7 +1105,7 @@ export const SectionalTestTakePage: React.FC = () => {
                     type="button"
                     onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
                     disabled={currentIndex === 0}
-                    className="px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-40 transition-colors flex items-center gap-1"
+                    className="px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-[#1B263B] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition-colors flex items-center gap-1"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     <span>Previous</span>
@@ -1139,26 +1138,26 @@ export const SectionalTestTakePage: React.FC = () => {
             </div>
 
             {/* Question Palette (Desktop: 3 cols, compact & secondary) */}
-            <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col sticky top-24">
+            <div className="lg:col-span-3 bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm p-4 sm:p-5 flex flex-col sticky top-24">
               <div>
-                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100">
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-purple-600" />
+                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-[#F8FAFC] flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     <span>Question Palette</span>
                   </h3>
-                  <span className="text-[11px] font-semibold text-slate-500">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                     {questions.length} Questions
                   </span>
                 </div>
 
                 {/* Grid of question numbers with subtle polished scrollbar */}
-                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 max-h-[350px] overflow-y-auto p-1 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-400">
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 max-h-[350px] overflow-y-auto p-1 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent] dark:[scrollbar-color:#334155_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 dark:hover:[&::-webkit-scrollbar-thumb]:bg-slate-600">
                   {questions.map((q, idx) => {
                     const answered = Boolean(userAnswers[q.question_order]);
                     const marked = Boolean(markedForReview[q.question_order]);
                     const isCurrent = idx === currentIndex;
 
-                    let btnStyle = 'bg-slate-100 text-slate-700 hover:bg-slate-200/80 border border-slate-200/80';
+                    let btnStyle = 'bg-slate-100 dark:bg-[#1B263B] text-slate-700 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700';
                     if (marked && answered) {
                       // Combined: Answered + Marked for Review
                       btnStyle = 'bg-purple-600 text-white font-bold ring-2 ring-emerald-500 shadow-2xs';
@@ -1176,13 +1175,13 @@ export const SectionalTestTakePage: React.FC = () => {
                         type="button"
                         onClick={() => setCurrentIndex(idx)}
                         className={`h-8 sm:h-8.5 rounded-lg text-xs font-bold transition-all relative flex items-center justify-center ${btnStyle} ${
-                          isCurrent ? 'ring-2 ring-blue-600 ring-offset-2 z-10 scale-105 font-black' : ''
+                          isCurrent ? 'ring-2 ring-blue-600 ring-offset-2 dark:ring-offset-slate-900 z-10 scale-105 font-black' : ''
                         }`}
                       >
                         {idx + 1}
                         {marked && answered && (
                           <span
-                            className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-white shadow-xs"
+                            className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-white dark:border-slate-900 shadow-xs"
                             title="Answered & Marked for Review"
                           />
                         )}
@@ -1193,8 +1192,8 @@ export const SectionalTestTakePage: React.FC = () => {
               </div>
 
               {/* Status Legend in Palette */}
-              <div className="pt-3.5 border-t border-slate-100 mt-3.5">
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-600 mb-3.5">
+              <div className="pt-3.5 border-t border-slate-100 dark:border-slate-800 mt-3.5">
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-3.5">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-md bg-emerald-600 shrink-0"></span>
                     <span className="truncate">Answered ({attemptedCount})</span>
@@ -1210,11 +1209,11 @@ export const SectionalTestTakePage: React.FC = () => {
                     <span className="truncate">Ans & Marked</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-md bg-slate-100 border border-slate-300 shrink-0"></span>
+                    <span className="w-2.5 h-2.5 rounded-md bg-slate-100 dark:bg-[#1B263B] border border-slate-300 dark:border-slate-700 shrink-0"></span>
                     <span className="truncate">Unanswered ({unattemptedCount})</span>
                   </div>
                   <div className="col-span-2 flex items-center gap-1.5 pt-0.5">
-                    <span className="w-2.5 h-2.5 rounded-md ring-2 ring-blue-600 bg-white shrink-0"></span>
+                    <span className="w-2.5 h-2.5 rounded-md ring-2 ring-blue-600 bg-white dark:bg-[#141C2E] shrink-0"></span>
                     <span>Current Question</span>
                   </div>
                 </div>
@@ -1350,14 +1349,14 @@ export const SectionalTestTakePage: React.FC = () => {
         {/* ============================================================== */}
         {showExitModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
-            <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-100">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3">
+            <div className="bg-white dark:bg-[#141C2E] rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-100 dark:border-slate-800">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-3">
                 <AlertTriangle className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]">
                 Leave Examination?
               </h3>
-              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mt-1.5 leading-relaxed">
                 Your test session is in progress. Your answers will remain saved in this browser, but the examination timer will continue running.
               </p>
               <div className="grid grid-cols-2 gap-2.5 mt-5">
@@ -1375,7 +1374,7 @@ export const SectionalTestTakePage: React.FC = () => {
                     const subjectSlug = getSubjectByName(test.subject)?.slug || encodeURIComponent(test.subject.toLowerCase().replace(/\s+/g, '-'));
                     navigate(`/tests/sectional/${subjectSlug}`);
                   }}
-                  className="py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold text-xs"
+                  className="py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs"
                 >
                   Exit Exam
                 </button>
@@ -1389,34 +1388,34 @@ export const SectionalTestTakePage: React.FC = () => {
         {/* ============================================================== */}
         {showSubmitModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 text-center shadow-2xl border border-slate-100 relative">
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+            <div className="bg-white dark:bg-[#141C2E] rounded-3xl max-w-md w-full p-6 sm:p-8 text-center shadow-2xl border border-slate-100 dark:border-slate-800 relative">
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4">
                 <Send className="w-7 h-7" />
               </div>
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
                 Submit Test?
               </h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mt-1">
                 Please review your exam progress summary before submitting.
               </p>
 
               {/* Progress Summary */}
-              <div className="grid grid-cols-3 gap-2 py-4 my-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+              <div className="grid grid-cols-3 gap-2 py-4 my-4 bg-slate-50 dark:bg-[#1B263B] rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
                 <div className="p-2">
                   <p className="text-[10px] font-semibold text-slate-400 uppercase">Attempted</p>
-                  <p className="text-base font-extrabold text-emerald-600 mt-0.5">{attemptedCount}</p>
+                  <p className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">{attemptedCount}</p>
                 </div>
                 <div className="p-2">
                   <p className="text-[10px] font-semibold text-slate-400 uppercase">Unattempted</p>
-                  <p className="text-base font-extrabold text-slate-700 mt-0.5">{unattemptedCount}</p>
+                  <p className="text-base font-extrabold text-slate-700 dark:text-slate-300 mt-0.5">{unattemptedCount}</p>
                 </div>
                 <div className="p-2">
                   <p className="text-[10px] font-semibold text-slate-400 uppercase">Marked</p>
-                  <p className="text-base font-extrabold text-amber-600 mt-0.5">{markedCount}</p>
+                  <p className="text-base font-extrabold text-amber-600 dark:text-amber-400 mt-0.5">{markedCount}</p>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-500 mb-6">
+              <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mb-6">
                 Are you sure you want to submit? Once submitted, you cannot change your answers.
               </p>
 
@@ -1424,7 +1423,7 @@ export const SectionalTestTakePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowSubmitModal(false)}
-                  className="w-1/2 py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
+                  className="w-1/2 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Cancel
                 </button>
@@ -1452,17 +1451,17 @@ export const SectionalTestTakePage: React.FC = () => {
     const availableTestsUrl = `/tests/sectional/${resultSubjectSlug}`;
 
     return (
-      <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50">
-        <div className="bg-white border-b border-[#E2ECFF] md:border-slate-200">
+      <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50 dark:bg-[#0B0F19]">
+        <div className="bg-white dark:bg-[#141C2E] border-b border-[#E2ECFF] md:border-slate-200 dark:border-slate-800">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
             <BackButton to={availableTestsUrl} forceFallback label="Available Tests" />
           </div>
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-[#141C2E] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm dark:shadow-none overflow-hidden">
             {/* Score Banner */}
-            <div className={`p-8 text-center text-white ${isPass ? 'bg-gradient-to-r from-purple-700 to-indigo-800' : 'bg-gradient-to-r from-slate-800 to-slate-900'}`}>
+            <div className={`p-8 text-center text-white ${isPass ? 'bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-[#1E1B4B] dark:to-[#1E293B]' : 'bg-gradient-to-r from-slate-800 to-slate-900'}`}>
               <div className="w-16 h-16 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mx-auto mb-4 backdrop-blur-xs">
                 <Award className="w-9 h-9 text-white" />
               </div>
@@ -1489,48 +1488,48 @@ export const SectionalTestTakePage: React.FC = () => {
 
             {/* Performance Metrics Grid */}
             <div className="p-6 sm:p-8">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-[#F8FAFC] uppercase tracking-wider mb-4">
                 Detailed Performance Breakdown
               </h3>
 
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-8">
-                <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 text-center">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
-                  <p className="text-[11px] font-semibold text-emerald-800 uppercase">Correct</p>
-                  <p className="text-xl font-extrabold text-emerald-700 mt-0.5">{result.correctCount}</p>
+                <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60 text-center">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mx-auto mb-1" />
+                  <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase">Correct</p>
+                  <p className="text-xl font-extrabold text-emerald-700 dark:text-emerald-400 mt-0.5">{result.correctCount}</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-100 text-center">
-                  <XCircle className="w-5 h-5 text-rose-600 mx-auto mb-1" />
-                  <p className="text-[11px] font-semibold text-rose-800 uppercase">Incorrect</p>
-                  <p className="text-xl font-extrabold text-rose-700 mt-0.5">{result.incorrectCount}</p>
+                <div className="p-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/60 text-center">
+                  <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 mx-auto mb-1" />
+                  <p className="text-[11px] font-semibold text-rose-800 dark:text-rose-300 uppercase">Incorrect</p>
+                  <p className="text-xl font-extrabold text-rose-700 dark:text-rose-400 mt-0.5">{result.incorrectCount}</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 text-center">
-                  <HelpCircle className="w-5 h-5 text-slate-500 mx-auto mb-1" />
-                  <p className="text-[11px] font-semibold text-slate-600 uppercase">Unattempted</p>
-                  <p className="text-xl font-extrabold text-slate-700 mt-0.5">{result.unattemptedCount}</p>
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#1B263B] border border-slate-200/70 dark:border-slate-700 text-center">
+                  <HelpCircle className="w-5 h-5 text-slate-500 dark:text-slate-400 mx-auto mb-1" />
+                  <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase">Unattempted</p>
+                  <p className="text-xl font-extrabold text-slate-700 dark:text-slate-200 mt-0.5">{result.unattemptedCount}</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-100 text-center">
-                  <Percent className="w-5 h-5 text-amber-600 mx-auto mb-1" />
-                  <p className="text-[11px] font-semibold text-amber-800 uppercase">Negative Marks</p>
-                  <p className="text-xl font-extrabold text-amber-700 mt-0.5">
+                <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900/60 text-center">
+                  <Percent className="w-5 h-5 text-amber-600 dark:text-amber-400 mx-auto mb-1" />
+                  <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 uppercase">Negative Marks</p>
+                  <p className="text-xl font-extrabold text-amber-700 dark:text-amber-400 mt-0.5">
                     -{result.negativeMarksTotal !== undefined ? result.negativeMarksTotal : (result.incorrectCount * result.negativeMarking).toFixed(2)}
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-center col-span-2 sm:col-span-1">
-                  <Timer className="w-5 h-5 text-indigo-600 mx-auto mb-1" />
-                  <p className="text-[11px] font-semibold text-indigo-800 uppercase">Time Taken</p>
-                  <p className="text-base font-extrabold text-indigo-900 mt-0.5">
+                <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 text-center col-span-2 sm:col-span-1">
+                  <Timer className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mx-auto mb-1" />
+                  <p className="text-[11px] font-semibold text-indigo-800 dark:text-indigo-300 uppercase">Time Taken</p>
+                  <p className="text-base font-extrabold text-indigo-900 dark:text-indigo-200 mt-0.5">
                     {Math.floor(result.timeTakenSeconds / 60)}m {result.timeTakenSeconds % 60}s
                   </p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setMode('review')}
@@ -1543,7 +1542,7 @@ export const SectionalTestTakePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleStartTest}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white dark:bg-[#1B263B] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold transition-colors flex items-center justify-center gap-2"
                 >
                   <RotateCcw className="w-4 h-4" />
                   <span>Reattempt Test</span>
@@ -1551,7 +1550,7 @@ export const SectionalTestTakePage: React.FC = () => {
 
                 <Link
                   to={availableTestsUrl}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold text-center transition-colors"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-100 dark:bg-[#1B263B] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold text-center transition-colors"
                 >
                   Back to Available Tests
                 </Link>
@@ -1582,24 +1581,24 @@ export const SectionalTestTakePage: React.FC = () => {
     });
 
     return (
-      <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50">
+      <div className="min-h-screen pb-16 bg-[#F4F8FF] md:bg-slate-50 dark:bg-[#0B0F19]">
         {/* Sticky Header */}
-        <div className="sticky top-0 z-30 bg-white border-b border-[#E2ECFF] md:border-slate-200 shadow-2xs">
+        <div className="sticky top-0 z-30 bg-white dark:bg-[#141C2E] border-b border-[#E2ECFF] md:border-slate-200 dark:border-slate-800 shadow-2xs">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setMode('result')}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1"
+                className="p-2 rounded-xl bg-slate-100 dark:bg-[#1B263B] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Result</span>
               </button>
               <div>
-                <h2 className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-[#F8FAFC] truncate">
                   Answer Review: {result.testTitle}
                 </h2>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-slate-500 dark:text-[#CBD5E1]">
                   Score: {result.score}/{result.totalMarks} • {result.correctCount} Correct, {result.incorrectCount} Incorrect
                 </p>
               </div>
@@ -1607,7 +1606,7 @@ export const SectionalTestTakePage: React.FC = () => {
 
             <Link
               to={`/tests/sectional/${encodeURIComponent(result.subject.toLowerCase())}`}
-              className="px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-bold transition-colors"
+              className="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-xs font-bold transition-colors"
             >
               Finish Review
             </Link>
@@ -1629,7 +1628,7 @@ export const SectionalTestTakePage: React.FC = () => {
                   className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
                     reviewFilter === tab.key
                       ? 'bg-purple-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-slate-100 dark:bg-[#1B263B] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   {tab.label}
@@ -1649,33 +1648,33 @@ export const SectionalTestTakePage: React.FC = () => {
             return (
               <div
                 key={q.question_order}
-                className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-6 sm:p-8"
+                className="bg-white dark:bg-[#141C2E] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs p-6 sm:p-8"
               >
                 {/* Top Question Status */}
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                  <span className="font-extrabold text-xs sm:text-sm text-slate-800">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+                  <span className="font-extrabold text-xs sm:text-sm text-slate-800 dark:text-[#F8FAFC]">
                     Question {q.question_order} of {questions.length}
                   </span>
 
                   {isCorrect ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                      <Check className="w-3.5 h-3.5 text-emerald-700" />
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                      <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                       Correct (+{reviewMarksPerQ})
                     </span>
                   ) : isAttempted ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
-                      <X className="w-3.5 h-3.5 text-rose-700" />
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300">
+                      <X className="w-3.5 h-3.5 text-rose-700 dark:text-rose-400" />
                       Incorrect (-{reviewNegMark})
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-[#1B263B] text-slate-600 dark:text-slate-300">
                       Unattempted (0.0)
                     </span>
                   )}
                 </div>
 
                 {/* Question Text */}
-                <p className="text-sm sm:text-base font-semibold text-slate-900 leading-relaxed whitespace-pre-line mb-5">
+                <p className="text-sm sm:text-base font-semibold text-slate-900 dark:text-[#F8FAFC] leading-relaxed whitespace-pre-line mb-5">
                   {q.question_text}
                 </p>
 
@@ -1690,14 +1689,14 @@ export const SectionalTestTakePage: React.FC = () => {
                     const isRightOption = opt.key.toUpperCase() === q.correct_option.toUpperCase();
                     const isChosenByStudent = studentAns === opt.key;
 
-                    let rowStyle = 'border-slate-200 bg-white text-slate-800';
-                    let badgeStyle = 'bg-slate-100 text-slate-700';
+                    let rowStyle = 'border-slate-200 dark:border-slate-700 bg-white dark:bg-[#141C2E] text-slate-800 dark:text-slate-200';
+                    let badgeStyle = 'bg-slate-100 dark:bg-[#1B263B] text-slate-700 dark:text-slate-300';
 
                     if (isRightOption) {
-                      rowStyle = 'border-emerald-500 bg-emerald-50/70 font-semibold text-emerald-950 ring-1 ring-emerald-500';
+                      rowStyle = 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 font-semibold text-emerald-950 dark:text-emerald-200 ring-1 ring-emerald-500';
                       badgeStyle = 'bg-emerald-600 text-white';
                     } else if (isChosenByStudent && !isRightOption) {
-                      rowStyle = 'border-rose-400 bg-rose-50/70 text-rose-950 font-semibold ring-1 ring-rose-400';
+                      rowStyle = 'border-rose-400 bg-rose-50/70 dark:bg-rose-950/40 text-rose-950 dark:text-rose-200 font-semibold ring-1 ring-rose-400';
                       badgeStyle = 'bg-rose-600 text-white';
                     }
 
@@ -1715,12 +1714,12 @@ export const SectionalTestTakePage: React.FC = () => {
 
                         <div className="shrink-0 text-right">
                           {isRightOption && (
-                            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider px-2 py-0.5 bg-emerald-100 rounded">
+                            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 rounded">
                               Correct Answer
                             </span>
                           )}
                           {isChosenByStudent && !isRightOption && (
-                            <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider px-2 py-0.5 bg-rose-100 rounded">
+                            <span className="text-[10px] font-bold text-rose-700 dark:text-rose-300 uppercase tracking-wider px-2 py-0.5 bg-rose-100 dark:bg-rose-950/60 rounded">
                               Your Choice
                             </span>
                           )}
@@ -1732,12 +1731,12 @@ export const SectionalTestTakePage: React.FC = () => {
 
                 {/* Explanation */}
                 {q.explanation && (
-                  <div className="mt-5 p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs sm:text-sm text-slate-800 leading-relaxed">
-                    <p className="font-bold text-amber-900 mb-1 flex items-center gap-1.5">
-                      <BookOpen className="w-4 h-4 text-amber-700" />
+                  <div className="mt-5 p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
+                    <p className="font-bold text-amber-900 dark:text-amber-300 mb-1 flex items-center gap-1.5">
+                      <BookOpen className="w-4 h-4 text-amber-700 dark:text-amber-400" />
                       Explanation / व्याख्या:
                     </p>
-                    <p className="whitespace-pre-line text-slate-700">{q.explanation}</p>
+                    <p className="whitespace-pre-line text-slate-700 dark:text-slate-300">{q.explanation}</p>
                   </div>
                 )}
               </div>
@@ -1745,8 +1744,8 @@ export const SectionalTestTakePage: React.FC = () => {
           })}
 
           {filteredQuestions.length === 0 && (
-            <div className="bg-white rounded-3xl p-10 text-center border border-slate-200">
-              <p className="text-sm font-semibold text-slate-500">
+            <div className="bg-white dark:bg-[#141C2E] rounded-3xl p-10 text-center border border-slate-200 dark:border-slate-800">
+              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                 No questions found under the "{reviewFilter}" filter.
               </p>
             </div>

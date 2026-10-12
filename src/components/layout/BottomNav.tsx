@@ -268,7 +268,7 @@ export const BottomNav: React.FC = () => {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/98 backdrop-blur-xl border-t border-slate-200/80 shadow-[0_-4px_25px_rgba(0,0,0,0.06)] pb-[max(0.35rem,env(safe-area-inset-bottom))]">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/98 dark:bg-[#141C2E]/98 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 shadow-[0_-4px_25px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.4)] pb-[max(0.35rem,env(safe-area-inset-bottom))]">
       <div className="grid grid-cols-4 h-[64px] sm:h-[68px] px-1">
         {navItems.map((item) => {
           const isExternal = item.href.startsWith('http');
@@ -286,8 +286,8 @@ export const BottomNav: React.FC = () => {
               <div 
                 className={`relative flex items-center justify-center w-[54px] h-[32px] mb-0.5 rounded-full transition-all duration-200 ease-out ${
                   item.isActive 
-                    ? 'bg-blue-50/90 text-blue-600 ring-1 ring-blue-500/15 shadow-2xs' 
-                    : 'bg-transparent text-slate-400 group-hover:bg-slate-50/60'
+                    ? 'bg-blue-50/90 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/15 dark:ring-blue-400/30 shadow-2xs' 
+                    : 'bg-transparent text-slate-400 dark:text-slate-500 group-hover:bg-slate-50/60 dark:group-hover:bg-slate-800/60'
                 }`}
               >
                 <item.icon isActive={item.isActive} />
@@ -295,8 +295,8 @@ export const BottomNav: React.FC = () => {
               <span 
                 className={`text-[10px] tracking-tight transition-colors duration-200 leading-tight ${
                   item.isActive 
-                    ? 'text-blue-700 font-bold' 
-                    : 'text-slate-500 font-medium group-hover:text-slate-700'
+                    ? 'text-blue-700 dark:text-blue-400 font-bold' 
+                    : 'text-slate-500 dark:text-slate-400 font-medium group-hover:text-slate-700 dark:group-hover:text-slate-200'
                 }`}
               >
                 {item.label}

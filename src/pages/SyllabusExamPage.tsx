@@ -90,55 +90,55 @@ export const SyllabusExamPage: React.FC = () => {
   };
 
   return (
-    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF]">
+    <div className="px-4 py-6 pb-24 min-h-screen bg-[#F4F8FF] dark:bg-[#0B0F19]">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <button 
           onClick={() => navigate(`/syllabus/${category}`)} 
-          className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 text-slate-700 active:scale-95 transition-transform cursor-pointer"
+          className="w-10 h-10 flex items-center justify-center bg-white dark:bg-[#141C2E] rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform cursor-pointer"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div className="min-w-0">
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight line-clamp-1">{decodedExam}</h1>
-          <p className="text-xs text-slate-500">Official Exam Pattern & Syllabus Guidelines</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight line-clamp-1">{decodedExam}</h1>
+          <p className="text-xs text-slate-500 dark:text-[#CBD5E1]">Official Exam Pattern & Syllabus Guidelines</p>
         </div>
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
-          <p className="text-sm text-slate-500 font-medium">Loading exam details...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Loading exam details...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {/* SECTION 1: EXAM PATTERN */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between space-y-5">
+          <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs flex flex-col justify-between space-y-5">
             <div>
               <div className="flex items-center justify-between gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600 border border-emerald-100">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50">
                   <Briefcase className="w-6 h-6" />
                 </div>
                 {examData?.pattern_file_path ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     Available
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#1B263B] px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700">
                     Not Available Yet
                   </span>
                 )}
               </div>
 
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">1. Exam Pattern</h2>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight">1. Exam Pattern</h2>
+              <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mt-1 leading-relaxed">
                 Official marking scheme, section weightage, exam duration, and structure.
               </p>
 
               {!examData?.pattern_file_path && (
-                <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center">
-                  <p className="text-xs text-slate-400 font-medium">
+                <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-[#1B263B] border border-dashed border-slate-200 dark:border-slate-700 text-center">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                     The exam pattern document for {decodedExam} has not been uploaded yet.
                   </p>
                 </div>
@@ -158,7 +158,7 @@ export const SyllabusExamPage: React.FC = () => {
                 <button
                   onClick={() => handleDownloadDocument(examData.pattern_file_path!, 'pattern')}
                   disabled={downloadingPattern}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition-colors cursor-pointer min-h-[44px] disabled:opacity-50"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-50 dark:bg-[#1B263B] hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer min-h-[44px] disabled:opacity-50"
                 >
                   {downloadingPattern ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                   <span>Download</span>
@@ -167,7 +167,7 @@ export const SyllabusExamPage: React.FC = () => {
             ) : (
               <button
                 disabled
-                className="w-full py-2.5 px-4 bg-slate-100 text-slate-400 rounded-xl text-xs font-semibold cursor-not-allowed min-h-[44px]"
+                className="w-full py-2.5 px-4 bg-slate-100 dark:bg-[#1B263B] text-slate-400 dark:text-slate-500 rounded-xl text-xs font-semibold cursor-not-allowed min-h-[44px]"
               >
                 Document Not Available Yet
               </button>
@@ -175,32 +175,32 @@ export const SyllabusExamPage: React.FC = () => {
           </div>
 
           {/* SECTION 2: SYLLABUS */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between space-y-5">
+          <div className="bg-white dark:bg-[#141C2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs flex flex-col justify-between space-y-5">
             <div>
               <div className="flex items-center justify-between gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 text-blue-600 border border-blue-100">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
                   <FileText className="w-6 h-6" />
                 </div>
                 {examData?.syllabus_file_path ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     Available
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#1B263B] px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700">
                     Not Available Yet
                   </span>
                 )}
               </div>
 
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">2. Syllabus</h2>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight">2. Syllabus</h2>
+              <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mt-1 leading-relaxed">
                 Detailed topic-wise syllabus, subject breakdowns, and preparation references.
               </p>
 
               {!examData?.syllabus_file_path && (
-                <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center">
-                  <p className="text-xs text-slate-400 font-medium">
+                <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-[#1B263B] border border-dashed border-slate-200 dark:border-slate-700 text-center">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                     The syllabus document for {decodedExam} has not been uploaded yet.
                   </p>
                 </div>
@@ -220,7 +220,7 @@ export const SyllabusExamPage: React.FC = () => {
                 <button
                   onClick={() => handleDownloadDocument(examData.syllabus_file_path!, 'syllabus')}
                   disabled={downloadingSyllabus}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition-colors cursor-pointer min-h-[44px] disabled:opacity-50"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-50 dark:bg-[#1B263B] hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer min-h-[44px] disabled:opacity-50"
                 >
                   {downloadingSyllabus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                   <span>Download</span>
@@ -229,7 +229,7 @@ export const SyllabusExamPage: React.FC = () => {
             ) : (
               <button
                 disabled
-                className="w-full py-2.5 px-4 bg-slate-100 text-slate-400 rounded-xl text-xs font-semibold cursor-not-allowed min-h-[44px]"
+                className="w-full py-2.5 px-4 bg-slate-100 dark:bg-[#1B263B] text-slate-400 dark:text-slate-500 rounded-xl text-xs font-semibold cursor-not-allowed min-h-[44px]"
               >
                 Document Not Available Yet
               </button>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
 import { BackButton } from '../components/common/BackButton';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { ChangePasswordModal } from '../components/profile/ChangePasswordModal';
@@ -16,10 +17,13 @@ import {
   ShieldCheck,
   ArrowRight,
   LogOut,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { user, profile, isAdmin, signOut } = useAuth();
+  const { isDark, setTheme } = useTheme();
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -59,36 +63,73 @@ export const SettingsPage: React.FC = () => {
         <span className="text-xs font-semibold text-slate-400">Settings</span>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs space-y-8">
-        <div className="flex items-center gap-3.5 pb-6 border-b border-slate-100">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-xs space-y-8 transition-colors">
+        <div className="flex items-center gap-3.5 pb-6 border-b border-slate-100 dark:border-slate-800">
+          <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center">
             <Settings className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Application Settings</h1>
-            <p className="text-xs text-slate-500">
-              Customize your PDF reader view and manage account credentials
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Application Settings</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Customize your display theme, PDF reader view, and manage account credentials
             </p>
+          </div>
+        </div>
+
+        {/* Appearance & Display Theme */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            {isDark ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+            Appearance & Theme
+          </h2>
+
+          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <label className="text-xs font-bold text-slate-800 dark:text-white block">Theme Palette</label>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Switch between standard light view and high-contrast dark palette</p>
+            </div>
+            <div className="flex items-center gap-1.5 bg-slate-200/70 dark:bg-slate-700/80 p-1 rounded-xl self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  !isDark ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
+                <span>Light</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  isDark ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Dark</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Reader Preferences */}
         <div className="space-y-4">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <BookOpen className="w-4 h-4 text-blue-600" />
+            <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             PDF Reader & Viewer Controls
           </h2>
 
-          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-4">
+          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <label className="text-xs font-bold text-slate-800 block">Default PDF Zoom</label>
-                <p className="text-xs text-slate-500">Initial display magnification when opening notes</p>
+                <label className="text-xs font-bold text-slate-800 dark:text-white block">Default PDF Zoom</label>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Initial display magnification when opening notes</p>
               </div>
               <select
                 value={pdfZoom}
                 onChange={(e) => setPdfZoom(e.target.value)}
-                className="px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white focus:outline-hidden"
+                className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 focus:outline-hidden"
               >
                 <option value="75">75% (Compact)</option>
                 <option value="100">100% (Standard Default)</option>
@@ -97,10 +138,10 @@ export const SettingsPage: React.FC = () => {
               </select>
             </div>
 
-            <div className="pt-3 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <label className="text-xs font-bold text-slate-800 block">Download Safety Check</label>
-                <p className="text-xs text-slate-500">Display confirmation modal before initiating large file downloads</p>
+                <label className="text-xs font-bold text-slate-800 dark:text-white block">Download Safety Check</label>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Display confirmation modal before initiating large file downloads</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer self-start sm:self-auto">
                 <input
@@ -109,7 +150,7 @@ export const SettingsPage: React.FC = () => {
                   onChange={(e) => setConfirmDownload(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-10 h-5 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-10 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
           </div>
@@ -118,7 +159,7 @@ export const SettingsPage: React.FC = () => {
             <button
               type="button"
               onClick={handleClearCachedData}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-slate-100 transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Reset to Defaults</span>
@@ -136,9 +177,9 @@ export const SettingsPage: React.FC = () => {
 
         {/* Account & Security Section */}
         {user && (
-          <div className="space-y-4 pt-4 border-t border-slate-100">
+          <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <Shield className="w-4 h-4 text-indigo-600" />
+              <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               Account & Credentials
             </h2>
 
@@ -146,14 +187,14 @@ export const SettingsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsEditProfileOpen(true)}
-                className="p-4 rounded-2xl border border-slate-200 hover:border-blue-300 bg-white hover:bg-blue-50/30 text-left transition-all flex items-center gap-3 shadow-2xs"
+                className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 bg-white dark:bg-slate-800/80 hover:bg-blue-50/30 dark:hover:bg-slate-700 text-left transition-all flex items-center gap-3 shadow-2xs cursor-pointer"
               >
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                   <User className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
-                  <span className="text-xs font-bold text-slate-900 block">Edit Profile</span>
-                  <span className="text-[11px] text-slate-500">Update mobile and profile info</span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block">Edit Profile</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Update mobile and profile info</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-400" />
               </button>
@@ -161,14 +202,14 @@ export const SettingsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsChangePasswordOpen(true)}
-                className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-white hover:bg-indigo-50/30 text-left transition-all flex items-center gap-3 shadow-2xs"
+                className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 bg-white dark:bg-slate-800/80 hover:bg-indigo-50/30 dark:hover:bg-slate-700 text-left transition-all flex items-center gap-3 shadow-2xs cursor-pointer"
               >
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                   <KeyRound className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
-                  <span className="text-xs font-bold text-slate-900 block">Change Password</span>
-                  <span className="text-[11px] text-slate-500">Update Supabase Auth password</span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block">Change Password</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Update Supabase Auth password</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-400" />
               </button>
@@ -178,14 +219,14 @@ export const SettingsPage: React.FC = () => {
 
         {/* Admin Dashboard shortcut if admin */}
         {isAdmin && (
-          <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-xs font-bold text-indigo-950 block">Administrator Dashboard</span>
-                <span className="text-[11px] text-indigo-700">Access protected upload and management controls</span>
+                <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200 block">Administrator Dashboard</span>
+                <span className="text-[11px] text-indigo-700 dark:text-indigo-400">Access protected upload and management controls</span>
               </div>
             </div>
             <Link
@@ -199,10 +240,10 @@ export const SettingsPage: React.FC = () => {
 
         {/* Logout Action */}
         {user && (
-          <div className="pt-4 border-t border-slate-100 flex justify-end">
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
             <button
               onClick={handleLogout}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 flex items-center gap-1.5 transition-colors"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/60 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Log Out</span>
